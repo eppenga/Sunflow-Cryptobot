@@ -132,6 +132,7 @@ def log_error(exception):
     # Debug
     debug = False
 
+    # Output debug
     if debug:
         print(defs.now_utc()[1] + "Defs: log_exchange: Debug")
         print("Exception RAW:")
@@ -140,10 +141,7 @@ def log_error(exception):
         print("Exception STRING:")
         print(str(exception))
         print()
-    
-    # Declare some variables global
-    global ws
-    
+       
     # Initialize variables
     halt_execution = True
     
@@ -157,18 +155,13 @@ def log_error(exception):
     if ("(ErrCode: 12940)" in exception) or ("RemoteDisconnected" in exception):
         print(defs.now_utc()[1] + "Defs: log_error: *** Warning: Connection reset, trying to reconnect! ***\n")
         halt_execution = False
-        sleep(10)
-        ws = WebSocket(
-            testnet=False,
-            channel_type="spot"
-        )
     
     # Write to error log file
     with open(config.error_file, 'a', encoding='utf-8') as file:
         file.write(exception)
     
     # Output to stdout
-    print(defs.now_utc()[1] + "Defs: log_error: Full exception\n")  
+    print(defs.now_utc()[1] + "Defs: log_error: Displaying exception:\n")
     print(exception)
     
     # Terminate hard

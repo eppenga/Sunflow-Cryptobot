@@ -9,7 +9,7 @@ import json
 import config, defs
 
 # Initialize variables
-debug  = False
+debug = False
 
 # Create a new all buy database file
 def save(transactions):

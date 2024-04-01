@@ -168,6 +168,7 @@ def handle_kline(message):
         if not active_order['active']:
             
             # Initialize variables
+            advice_near = 0
             advice_indicators = advice_spread = False
 
             # Check technical indicators for buy decission
@@ -191,7 +192,7 @@ def handle_kline(message):
             # *** CHECK *** To be implemented
             
             # Combine all data to make a buy decission
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: Buy matrix: Indicators: " + str(advice_indicators) + " (" + str(technical_advice[0]) + ") | Spread: " + str(advice_spread) + " (" + str(advice_near) + "%)\n")
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: Buy matrix: Indicators: " + str(advice_indicators) + " (" + str(round(technical_advice[0], 2)) + ") | Spread: " + str(advice_spread) + " (" + str(advice_near) + "%)\n")
             if (advice_indicators) and (advice_spread):
                 buy_result   = orders.buy(symbol, spot, active_order, all_buys, info)
                 active_order = buy_result[0]

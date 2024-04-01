@@ -32,6 +32,7 @@ def get_ticker(symbol):
         )
     except Exception as e:
         defs.log_error(e)
+
     # Log data if possible
     if pre_ticker:
         defs.log_exchange(pre_ticker, message)

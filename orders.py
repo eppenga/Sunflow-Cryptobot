@@ -18,7 +18,7 @@ session = HTTP(
     api_secret = config.api_secret,
 )
 
-# Get orderId, either from exchange order or internal format *** CHECK ***
+# Get orderId from exchange order
 def order_id(order):
     
     id = order['result']['orderId']
@@ -66,7 +66,9 @@ def history(orderId):
             defs.log_exchange(order, message)
 
     # If realtime and history fails, throw an error
-    # *** CHECK ***
+    if order['result']['list'] == []:
+        message = defs.now()[1] + "Orders: history: Trying to load non-existing error, something is corrupt!"
+        defs.log_error()
 
     if debug:
         print(defs.now_utc()[1] + "Orders: OrderId: Order history")

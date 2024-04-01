@@ -24,54 +24,150 @@ def calculate(klines, spot):
         print(defs.now_utc()[1] + "Indicators: calculate: Calculating indicators")
         start_time = int(time.time() * 1000)
         
-    ## Indicators: Calculate Oscillators
-    df['RSI']      = ta.rsi(df['close'], length=14)
-    #df['Stoch_K']
-    df['CCI']      = ta.cci(df['high'], df['low'], df['close'], length=20)
-    #df['ADX]
-    df['AO']       = ta.ao(df['high'], df['low'], fast=5, slow=34)    
-    df['Momentum'] = ta.mom(df['close'], length=10)
-    #df['MACD']
-    #df['Stoch_RSI]
-    #df['William']
+    # Indicators: Calculate various Oscillators
+    df['RSI']         = ta.rsi(df['close'], length=14)
+    df['CCI']         = ta.cci(df['high'], df['low'], df['close'], length=20)
+    df['AO']          = ta.ao(df['high'], df['low'], fast=5, slow=34)    
+    df['Momentum']    = ta.mom(df['close'], length=10)
+    df['WilliamsR']   = ta.willr(df['high'], df['low'], df['close'], length=14)
     #df['BullBear']
-    #df['UO']
+    df['UO']          = ta.uo(df['high'], df['low'], df['close'], fast=7, medium=14, slow=28)
 
-    ## Indicators: Calculate Moving Averages
-    df['EMA10']    = ta.ema(df['close'], length=10)
-    df['SMA10']    = ta.sma(df['close'], length=10)
-    df['EMA20']    = ta.ema(df['close'], length=20)
-    df['SMA20']    = ta.sma(df['close'], length=20)      
-    df['EMA30']    = ta.ema(df['close'], length=30)
-    df['SMA30']    = ta.sma(df['close'], length=30)
-    df['EMA50']    = ta.ema(df['close'], length=50)
-    df['SMA50']    = ta.sma(df['close'], length=50)
-    df['VWMA']     = ta.vwma(df['close'], df['volume'], length=20)
-    df['HMA']      = ta.hma(df['close'], length=9)
+    # Indicator: Stochastic %K Oscillator
+    stoch_k           = {}
+    stoch_k_result    = ta.stoch(df['high'], df['low'], df['close'], k=14, d=3, smooth_k=3)
+    stoch_k['k']      = stoch_k_result['STOCHk_14_3_3']
+    stoch_k['d']      = stoch_k_result['STOCHd_14_3_3']
 
-    ## Indicators: High Low
-    #df['hilo']     = ta.hilo(df[])
+    # Indicator: MACD Lines Oscillator
+    macd              = {}
+    macd_result       = ta.macd(df['close'], fast=12, slow=26)
+    macd['line']      = macd_result['MACD_12_26_9']
+    macd['histogram'] = macd_result['MACDh_12_26_9']
+    macd['signal']    = macd_result['MACDs_12_26_9']
+    
+    # Indicator: Stochastic RSI Fast Oscillator
+    stoch_rsi         = {}
+    stoch_rsi_result  = ta.stochrsi(df['close'], length=14, rsi_length=14, k=3, d=3)   
+    stoch_rsi['k']    = stoch_rsi_result['STOCHRSIk_14_14_3_3']
+    stoch_rsi['d']    = stoch_rsi_result['STOCHRSId_14_14_3_3']
+
+    # Indicator: Average Directional Index Oscillator
+    adx               = {}
+    adx_result        = ta.adx(df['high'], df['low'], df['close'], length=14)
+    adx['adx']        = adx_result['ADX_14']
+    adx['dmp']        = adx_result['DMP_14']
+    adx['dmn']        = adx_result['DMN_14']
+
+    ## Indicators: Calculate various Moving Averages
+    df['EMA10']       = ta.ema(df['close'], length=10)
+    df['SMA10']       = ta.sma(df['close'], length=10)
+    df['EMA20']       = ta.ema(df['close'], length=20)
+    df['SMA20']       = ta.sma(df['close'], length=20)      
+    df['EMA30']       = ta.ema(df['close'], length=30)
+    df['SMA30']       = ta.sma(df['close'], length=30)
+    df['EMA50']       = ta.ema(df['close'], length=50)
+    df['SMA50']       = ta.sma(df['close'], length=50)
+    df['EMA100']      = ta.ema(df['close'], length=100)
+    df['SMA100']      = ta.sma(df['close'], length=100)
+    df['EMA200']      = ta.ema(df['close'], length=200)
+    df['SMA200']      = ta.sma(df['close'], length=200)
+    df['VWMA']        = ta.vwma(df['close'], df['volume'], length=20)
+    df['HMA']         = ta.hma(df['close'], length=9)
 
     ## Show DataFrame
-    if debug:print(df)
+    if debug:
+        print("Combined Dataframes")
+        print(df)
+        print("MACD Dataframes")
+        print(macd_result)
+        print("Stochastic %K Dataframes")
+        print(stoch_k_result)
+        print("Stochastic RSI Fast Dataframes")
+        print(stoch_rsi_result)
+        print("Average Directional Index")
+        print(adx_result)
 
     ## Determine advice per indicator
 
-    # Indicator RSI
+    # RSI Oscillator
     rsi = df['RSI'].iloc[-1]
     bsn = 'N'
     if rsi > 70:bsn = 'S'
     if rsi < 30:bsn = 'B'
     indicators['rsi'] = [rsi, bsn, 'O']
 
-    # Indicator CCI
+    # Stochastic %K Oscillator
+    bsn = 'N'
+    if stoch_k['k'].iloc[-1] < 20:
+        if stoch_k['k'].iloc[-1] > stoch_k['d'].iloc[-1]: bsn = 'B'
+    if stoch_k['k'].iloc[-1] > 80:
+        if stoch_k['k'].iloc[-1] < stoch_k['d'].iloc[-1]: bsn = 'S'
+    indicators['stochk'] = [stoch_k['k'].iloc[-1], bsn, 'O']
+
+    # CCI Oscillator
     cci = df['CCI'].iloc[-1]
     bsn = 'N'
     if rsi < -100:bsn = 'S'
     if rsi > 100 :bsn = 'B'
-    indicators['cci'] = [cci, bsn, 'O']    
-   
-    # Indicators for EMA and SMA
+    indicators['cci'] = [cci, bsn, 'O']
+    
+    # ADX Oscillator
+    bsn = 'N'
+    if adx['adx'].iloc[-1] > 25:
+        if adx['dmp'].iloc[-1] > adx['dmn'].iloc[-1]: bsn = 'B'
+        if adx['dmp'].iloc[-1] < adx['dmn'].iloc[-1]: bsn = 'S'
+    indicators['adx'] = [adx['adx'].iloc[-1], bsn, 'O']
+
+    # Awesome Oscillator
+    ao = df['AO']
+    bsn = 'N'
+    if ao.iloc[-1] >= 0:
+        if high_low(ao):bsn = 'B'
+    if ao.iloc[-1] < 0:
+        if high_low(ao, True):bsn = 'S'
+    indicators['ao'] = [ao.iloc[-1], bsn, 'O']
+
+    # Momentum Oscillator
+    momentum = df['Momentum']
+    bsn = 'N'
+    if momentum.iloc[-1] >= 0:
+        if high_low(momentum):bsn = 'B'
+    if momentum.iloc[-1] < 0:
+        if high_low(momentum, True):bsn = 'S'
+    indicators['momentum'] = [momentum.iloc[-1], bsn, 'O']
+    
+    # MACD Oscillator
+    bsn = 'N'
+    if macd['histogram'].iloc[-1] >= 0:
+        if high_low(macd['histogram']):bsn = 'B'
+    if macd['histogram'].iloc[-1] < 0:
+        if high_low(macd['histogram'], True): bsn = 'S'
+    indicators['macd'] = [macd['histogram'].iloc[-1], bsn, 'O']
+
+    # Stochastic RSI Fast Oscillator
+    bsn = 'N'
+    if stoch_rsi['k'].iloc[-1] < 20:
+        if stoch_rsi['k'].iloc[-1] > stoch_rsi['d'].iloc[-1]: bsn = 'B'
+    if stoch_rsi['k'].iloc[-1] > 80:
+        if stoch_rsi['k'].iloc[-1] < stoch_rsi['d'].iloc[-1]: bsn = 'S'
+    indicators['stochrsi'] = [stoch_rsi['k'].iloc[-1], bsn, 'O']
+
+    # WilliamsR Oscillator
+    williams_r = df['WilliamsR'].iloc[-1]
+    bsn = 'N'
+    if williams_r < 30:bsn = 'B'
+    if williams_r > 70:bsn = 'S'
+    indicators['williamsr'] = [williams_r, bsn, 'O']   
+
+    # Ultimate Oscillator
+    uo = df['UO'].iloc[-1]
+    bsn = 'N'
+    if uo < 30:bsn = 'B'
+    if uo > 70:bsn = 'S'
+    indicators['uo'] = [uo, bsn, 'O']
+
+    # EMA and SMA Moving Averages
     ema10 = df['EMA10'].iloc[-1]
     sma10 = df['SMA10'].iloc[-1]
     ema20 = df['EMA20'].iloc[-1]
@@ -80,6 +176,10 @@ def calculate(klines, spot):
     sma30 = df['SMA30'].iloc[-1]
     ema50 = df['EMA50'].iloc[-1]
     sma50 = df['SMA50'].iloc[-1]
+    ema100 = df['EMA50'].iloc[-1]
+    sma100 = df['SMA50'].iloc[-1]
+    ema200 = df['EMA50'].iloc[-1]
+    sma200 = df['SMA50'].iloc[-1]    
     indicators['EMA10'] = [ema10, hesma(ema10, spot), 'A']
     indicators['SMA10'] = [sma10, hesma(sma10, spot), 'A']
     indicators['EMA20'] = [ema20, hesma(ema20, spot), 'A']
@@ -88,6 +188,10 @@ def calculate(klines, spot):
     indicators['SMA30'] = [sma30, hesma(sma30, spot), 'A']
     indicators['EMA50'] = [ema50, hesma(ema50, spot), 'A']
     indicators['SMA50'] = [sma50, hesma(sma50, spot), 'A']
+    indicators['EMA100'] = [ema50, hesma(ema100, spot), 'A']
+    indicators['SMA100'] = [sma50, hesma(sma100, spot), 'A']
+    indicators['EMA200'] = [ema50, hesma(ema200, spot), 'A']
+    indicators['SMA200'] = [sma50, hesma(sma200, spot), 'A']
 
     # Output to stdout
     if debug:
@@ -109,6 +213,28 @@ def hesma(hesma, spot):
    
     # Return bsn advice
     return bsn
+
+# Check if the previous value was lower (default) or higher
+def high_low(values, invert = False):
+    
+    # Initialize variables
+    check = False
+    
+    # Get the last and single last value
+    last_value  = values.iloc[-1]
+    single_last = values.iloc[-2]
+    
+    # Compare the two
+    if last_value >= single_last:
+        check = True
+        
+    # Invert
+    if invert:
+        if single_last >= last_value:
+            check = True
+    
+    # Return data
+    return check
 
 # Calculate value of technical
 def technicals_value(count, countB, countS):
