@@ -34,7 +34,7 @@ def history(orderId):
     order = []
     
     # First try realtime
-    message = "Orders: history: session: get_open_orders\n"
+    message = defs.now_utc()[1] + "Orders: history: session: get_open_orders\n"
     print(message)
     try:
         order = session.get_open_orders(
@@ -47,7 +47,7 @@ def history(orderId):
       
     # If realtime fails, get it from history
     if order['result']['list'] == []:
-        message = "Orders: history: session: get_order_history\n" 
+        message = defs.now_utc()[1] + "Orders: history: session: get_order_history\n" 
         print(message)
         try:
             order = session.get_order_history(
@@ -62,7 +62,7 @@ def history(orderId):
     # *** CHECK ***
 
     if debug:
-        print("Orders: OrderId: Order history")
+        print(defs.now_utc()[1] + "Orders: OrderId: Order history")
         print(order)
 
     return order
@@ -123,10 +123,10 @@ def buy(symbol, spot, active_order, transactions, info):
     active_order['trigger']  = defs.precision(spot * (1 + (active_order['distance'] / 100)), info['tickSize'])
 
     # Output to stdout
-    print("Orders: buy: *** BUY BUY BUY! ***\n")
+    print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
 
     # Place Buy order
-    message = "Orders: buy: session: place_order\n"
+    message = defs.now_utc()[1] + "Orders: buy: session: place_order\n"
     print(message)
     try:
         order = session.place_order(
@@ -150,14 +150,14 @@ def buy(symbol, spot, active_order, transactions, info):
     
     # Set the status
     transaction['status'] = "Open"
-    print("Orders: buy: Initial buy order placed for " + str(active_order['qty']) + " " + info['quoteCoin'] + " with trigger price " + str(active_order['trigger']) + " " + info['baseCoin'] + "\n")
+    print(defs.now_utc()[1] + "Orders: buy: Initial buy order placed for " + str(active_order['qty']) + " " + info['quoteCoin'] + " with trigger price " + str(active_order['trigger']) + " " + info['baseCoin'] + "\n")
     
     # Store the transaction in the database buys file
     all_buys = database.register_buy(transaction, transactions)
-    print("Orders: buy: Registered buy order in database " + config.dbase_file + "\n")
+    print(defs.now_utc()[1] + "Orders: buy: Registered buy order in database " + config.dbase_file + "\n")
 
     # Output to stdout
-    print("Orders: buy: Trailing buy is ready to start\n")
+    print(defs.now_utc()[1] + "Orders: buy: Trailing buy is ready to start\n")
     
     # Return trailing order and new buy order database
     return active_order, all_buys
@@ -190,7 +190,7 @@ def check_sell(spot, profit, distance, all_buys):
     if all_sells:
         can_sell = True
         if debug:
-            print("Orders: check_sell: We can sell " + str(counter) + " orders for a total of " + str(qty) + " units.")
+            print(defs.now_utc()[1] + "Orders: check_sell: We can sell " + str(counter) + " orders for a total of " + str(qty) + " units.")
     
     # Return data
     return all_sells, qty, can_sell
@@ -208,10 +208,10 @@ def sell(symbol, spot, qty, active_order, info):
     active_order['trigger']  = defs.precision(spot * (1 - (active_order['distance'] / 100)), info['tickSize'])
 
     # Output to stdout
-    print("Orders: sell: *** SELL SELL SELL! ***\n")
+    print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
 
     # Place sell order
-    message = "Orders: sell: session: place_order\n"
+    message = defs.now_utc()[1] + "Orders: sell: session: place_order\n"
     print(message)
     try:
         order = session.place_order(
@@ -231,7 +231,7 @@ def sell(symbol, spot, qty, active_order, info):
     active_order['orderid'] = int(order['result']['orderId'])
     
     # Output to stdout
-    print("Orders: sell: Initial sell order placed for " + str(qty) + " " + info['baseCoin'] + " with trigger price " + str(active_order['trigger']) + " " + info['baseCoin'] + "\n")
+    print(defs.now_utc()[1] + "Orders: sell: Initial sell order placed for " + str(qty) + " " + info['baseCoin'] + " with trigger price " + str(active_order['trigger']) + " " + info['baseCoin'] + "\n")
     
     # Return data
     return active_order

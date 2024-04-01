@@ -40,7 +40,7 @@ def check_order(symbol, active_order, all_buys, all_sells):
     # Check any 10th check_order anyway, sometimes orders get stuck *** CHECK *** MAYBE CHECK EVERY MINUTE
     check_counter = check_counter + 1
     if check_counter == 10:
-        print("Trailing: check_orders: Doing an additional check on trailing order\n")
+        print(defs.now_utc()[1] + "Trailing: check_orders: Doing an additional check on trailing order\n")
         check_counter  = 0
         do_check_order = True
 
@@ -48,10 +48,10 @@ def check_order(symbol, active_order, all_buys, all_sells):
     if do_check_order:
 
         # Output to stdout
-        print("Trailing: check_orders: Get open order from exchange\n")
+        print(defs.now_utc()[1] + "Trailing: check_orders: Get open order from exchange\n")
 
         # Has trailing endend, check if order does still exist
-        message = "Trailing: check_orders: session: get_open_orders\n"
+        message = defs.now_utc()[1] + "Trailing: check_orders: session: get_open_orders\n"
         print(message)
         try:
             order = session.get_open_orders(
@@ -66,7 +66,7 @@ def check_order(symbol, active_order, all_buys, all_sells):
         # Trailing has ended, the order doesn't exist anymore, make active_order inactive
         if order['result']['list'] == []:
             active_order['active'] = False
-            print("Trailing: check_order: Trailing " + active_order['side'] + ": *** Order has been filled! ***\n")
+            print(defs.now_utc()[1] + "Trailing: check_order: Trailing " + active_order['side'] + ": *** Order has been filled! ***\n")
 
             # Close the transaction
             transaction = orders.transaction_from_id(active_order['orderid'])
@@ -95,7 +95,7 @@ def trail(symbol, active_order, info, all_buys, all_sells):
 
     # Mention trailing
     if debug:
-        print("Trailing: trail: Trailing " + active_order['side'] + ": Checking")
+        print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Checking")
 
     # Check if the order still exists
     check_order_results = check_order(symbol, active_order, all_buys, all_sells)
@@ -132,7 +132,7 @@ def trail(symbol, active_order, info, all_buys, all_sells):
                 # Calculate trigger price distance percentage
                 if price_difference > 0:
                     active_order['calc_distance'] = 0.3 * math.sqrt(price_difference) + active_order['distance'] + add_up
-                    print("Trailing: trail: Dynamical trigger distance changed to " + str(round(active_order['calc_distance'], 4)) + "%\n")
+                    print(defs.now_utc()[1] + "Trailing: trail: Dynamical trigger distance changed to " + str(round(active_order['calc_distance'], 4)) + "%\n")
                        
             # Choose trailing buy or sell
             if active_order['side'] == "Sell":
@@ -151,7 +151,7 @@ def trail(symbol, active_order, info, all_buys, all_sells):
             # Amend order                
             if do_amend:
                 active_order['trigger'] = active_order['trigger_new']
-                message = "Trailing: trail: session: amend_order\n"
+                message = defs.now_utc()[1] + "Trailing: trail: session: amend_order\n"
                 print(message)
                 try:
                     order = session.amend_order(
@@ -163,12 +163,13 @@ def trail(symbol, active_order, info, all_buys, all_sells):
                 except Exception as e:
                     defs.log_error(e)
                 defs.log_exchange(order, message)
-                print("Trailing: trail: Trailing " + active_order['side'] + ": lastPrice changed, adjusted trigger price to " + str(active_order['trigger']) + " " + info['quoteCoin'] + "\n")
+                print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": lastPrice changed, adjusted trigger price to " + str(active_order['trigger']) + " " + info['quoteCoin'] + "\n")
             else:
-                print("Trailing: trail: Trailing " + active_order['side'] + ": lastPrice changed, trigger price not adjusted because lastPrice change was not relevant\n")
+                print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": lastPrice changed, trigger price not adjusted because lastPrice change was not relevant\n")
 
     # Output to stdout
     if debug:
+        print(defs.now_utc()[0])
         print(str(active_order) + "\n")
     
     # Return modified data
@@ -181,10 +182,10 @@ def amend_sell(symbol, orderid, qty, info):
     qty = defs.precision(qty, info['basePrecision'])
 
     # Output to stdout
-    print("Trailing: amend_sell: Quantity of trailing sell order adjusted to " + str(qty) + " " + info['baseCoin'] + "\n")
+    print(defs.now_utc()[1] + "Trailing: amend_sell: Quantity of trailing sell order adjusted to " + str(qty) + " " + info['baseCoin'] + "\n")
 
     # Ammend order
-    message = "Trailing: amend_sell: session: amend_order\n"
+    message = defs.now_utc()[1] + "Trailing: amend_sell: session: amend_order\n"
     print(message)
     try:
         order = session.amend_order(

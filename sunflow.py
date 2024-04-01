@@ -73,7 +73,7 @@ def handle_ticker(message):
 
         # Show incoming message
         if debug:
-            print("Sunflow: handle_ticker: *** Incoming ticker ***")
+            print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Incoming ticker ***")
             print(str(message) + "\n")
 
         # Get ticker
@@ -83,7 +83,7 @@ def handle_ticker(message):
 
         # Has price changed, then run all kinds of actions
         if spot != ticker['lastPrice']:
-            print("Sunflow: handle_ticker: lastPrice changed from " + str(spot) + " " + info['quoteCoin'] + " to " + str(ticker['lastPrice']) + " " + info['quoteCoin'] + "\n")
+            print(defs.now_utc()[1] + "Sunflow: handle_ticker: lastPrice changed from " + str(spot) + " " + info['quoteCoin'] + " to " + str(ticker['lastPrice']) + " " + info['quoteCoin'] + "\n")
                 
             # Run trailing if active
             if active_order['active']:
@@ -111,7 +111,7 @@ def handle_ticker(message):
 
                 # Only amend order if the quantity to be sold has changed
                 if debug:
-                    print("Sunflow: handle_ticker: qty = " + str(qty) + ", active_order['qty'] = " + str(active_order['qty']))
+                    print(defs.now_utc()[1] + "Sunflow: handle_ticker: qty = " + str(qty) + ", active_order['qty'] = " + str(active_order['qty']))
                 if qty != active_order['qty'] and qty > 0:
                     trailing.amend_sell(symbol, active_order['orderid'], qty, info)
                     active_order['qty'] = qty
@@ -123,7 +123,7 @@ def handle_ticker(message):
     except Exception as e:
         tb_info = traceback.extract_tb(e.__traceback__)
         filename, line, func, text = tb_info[-1]
-        print(f"An error occurred in {filename} on line {line}: {e}")
+        print(defs.now_utc()[1] + f"Sunflow: handle_ticker: An error occurred in {filename} on line {line}: {e}")
         print("Full traceback:")
         traceback.print_tb(e.__traceback__)
 
@@ -141,7 +141,7 @@ def handle_kline(message):
      
         # Show incoming message
         if debug:
-            print("Sunflow: handle_kline: *** Incoming kline ***")
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: *** Incoming kline ***")
             print(message)
 
         # Get newest kline
@@ -157,7 +157,7 @@ def handle_kline(message):
         if message['data'][0]['confirm'] == True:
 
             # Add new kline and remove the last
-            print("Sunflow: handle_kline: Adding new kline to klines\n")
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: Adding new kline to klines\n")
             klines = defs.new_kline(kline, klines)
       
         else:            
@@ -191,7 +191,7 @@ def handle_kline(message):
             # *** CHECK *** To be implemented
             
             # Combine all data to make a buy decission
-            print("Sunflow: handle_kline: Buy matrix: Indicators: " + str(advice_indicators) + " (" + str(technical_advice[0]) + ") | Spread: " + str(advice_spread) + " (" + str(advice_near) + "%)\n")
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: Buy matrix: Indicators: " + str(advice_indicators) + " (" + str(technical_advice[0]) + ") | Spread: " + str(advice_spread) + " (" + str(advice_near) + "%)\n")
             if (advice_indicators) and (advice_spread):
                 buy_result   = orders.buy(symbol, spot, active_order, all_buys, info)
                 active_order = buy_result[0]
@@ -201,7 +201,7 @@ def handle_kline(message):
     except Exception as e:
         tb_info = traceback.extract_tb(e.__traceback__)
         filename, line, func, text = tb_info[-1]
-        print(f"An error occurred in {filename} on line {line}: {e}")
+        print(defs.now_utc()[1] + f"An error occurred in {filename} on line {line}: {e}")
         print("Full traceback:")
         traceback.print_tb(e.__traceback__)
     
@@ -213,7 +213,7 @@ def handle_orderbook(message):
       
         # Show incoming message
         if debug:
-            print("Sunflow: handle_orderbook: *** Incoming orderbook ***")
+            print(defs.now_utc()[1] + "Sunflow: handle_orderbook: *** Incoming orderbook ***")
             print(message)
         
         # Recalculate depth to numerical value
@@ -248,7 +248,7 @@ def handle_orderbook(message):
 
         # Output the stdout
         if debug:        
-            print("Sunflow: handle_orderbook: Orderbook")
+            print(defs.now_utc()[1] + "Sunflow: handle_orderbook: Orderbook")
             print(f"Spot price         : {spot}")
             print(f"Lower depth       : {spot - depth}")
             print(f"Upper depth       : {spot + depth}\n")
@@ -260,7 +260,7 @@ def handle_orderbook(message):
             print(f"Buy within depth  : {buy_percentage:.2f}%")
             print(f"Sell within depth : {sell_percentage:.2f}%")
 
-        print(f"Sunflow: handle_orderbook: Orderbook: Market depth (Buy / Sell | depth (Advice)): {buy_percentage:.2f}% / {sell_percentage:.2f}% | {depth}% ", end="")
+        print(defs.now_utc()[1] + f"Sunflow: handle_orderbook: Orderbook: Market depth (Buy / Sell | depth (Advice)): {buy_percentage:.2f}% / {sell_percentage:.2f}% | {depth}% ", end="")
         if buy_percentage >= sell_percentage:
             print("(BUY)\n")
         else:
@@ -270,7 +270,7 @@ def handle_orderbook(message):
     except Exception as e:
         tb_info = traceback.extract_tb(e.__traceback__)
         filename, line, func, text = tb_info[-1]
-        print(f"An error occurred in {filename} on line {line}: {e}")
+        print(defs.now_utc()[1] + f"An error occurred in {filename} on line {line}: {e}")
         print("Full traceback:")
         traceback.print_tb(e.__traceback__)
 
@@ -326,7 +326,7 @@ def main():
         try:
             sleep(1)  # Your processing logic here
         except (RemoteDisconnected, ProtocolError, ChunkedEncodingError) as e:
-            print(f"Connection lost. Reconnecting due to: {e}")
+            print(defs.now_utc()[1] + f"Connection lost. Reconnecting due to: {e}")
             sleep(5)  # Wait a bit before reconnecting to avoid hammering the server
             ws = connect_websocket()
             subscribe_streams(ws)

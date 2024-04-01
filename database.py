@@ -6,7 +6,7 @@
 import json
 
 # Load internal libraries
-import config
+import config, defs
 
 # Initialize variables
 debug  = False
@@ -29,10 +29,10 @@ def load(dbase_file):
         with open(dbase_file, 'r') as json_file:
             transactions = json.load(json_file)
     except FileNotFoundError:
-        print("Database with buy transactions not found, exiting...")
+        print(defs.now_utc()[1] + "Defs: load: Database with buy transactions not found, exiting...")
         exit()
     except json.decoder.JSONDecodeError:
-        print("Defs: load_dbase: Database with buy transactions not yet filled, may come soon!")
+        print(defs.now_utc()[1] + "Defs: load: Database with buy transactions not yet filled, may come soon!")
 
     # Return database
     return transactions
@@ -57,7 +57,7 @@ def register_buy(transaction, transactions):
         transactions_new.append(transaction)
     
     if debug:
-        print("\nNew Transactions")
+        print(defs.now_utc()[1] + "\nDefs: register_buy: New Transactions")
         print(transactions_new)
         print()
     

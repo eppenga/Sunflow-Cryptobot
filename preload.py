@@ -22,7 +22,7 @@ session = HTTP(testnet = False)
 def get_ticker(symbol):
    
     # Load ticker via normal session
-    message = "Preload: get_ticker: session: get_tickers\n"
+    message = defs.now_utc()[1] + "Preload: get_ticker: session: get_tickers\n"
     print(message)
     try:
         pre_ticker   = session.get_tickers(
@@ -39,9 +39,10 @@ def get_ticker(symbol):
     ticker['lastPrice'] = float(pre_ticker['result']['list'][0]['lastPrice'])
     
     # Output to stdout
-    print("Preload: get_ticker: Initial ticker loaded!")
+    print(defs.now_utc()[1] + "Preload: get_ticker: Initial ticker loaded!")
     
     if debug:
+        print(defs.now_utc()[1])
         print(ticker)
        
     #return ticker
@@ -51,7 +52,7 @@ def get_ticker(symbol):
 def get_klines(symbol, interval=15, limit=50):
    
     # Load klines via normal session
-    message = "Orders: get_klines: session: get_kline\n"
+    message = defs.now_utc()[1] + "Orders: get_klines: session: get_kline\n"
     print(message)
     try:
         pre_klines = session.get_kline(
@@ -79,15 +80,15 @@ def get_klines(symbol, interval=15, limit=50):
         klines[key].reverse()
         
     # Output to stdout
-    print("Preload: get_klines: Initial klines loaded!")
+    print(defs.now_utc()[1] + "Preload: get_klines: Initial klines loaded!")
     
     if debug:
-        print("Preload: get_klines: Prefilled klines")
-        print("Time : " + str(klines['time']))
-        print("Open : " + str(klines['open']))
-        print("High : " + str(klines['high']))
-        print("Low  : " + str(klines['low']))
-        print("Close: " + str(klines['close']))
+        print(defs.now_utc()[1] + "Preload: get_klines: Prefilled klines")
+        print(defs.now_utc()[1] + "Time : " + str(klines['time']))
+        print(defs.now_utc()[1] + "Open : " + str(klines['open']))
+        print(defs.now_utc()[1] + "High : " + str(klines['high']))
+        print(defs.now_utc()[1] + "Low  : " + str(klines['low']))
+        print(defs.now_utc()[1] + "Close: " + str(klines['close']))
     
     # return klines
     return klines
@@ -96,7 +97,7 @@ def get_klines(symbol, interval=15, limit=50):
 def get_info(symbol, spot, multiplier):
 
     # Load instrument info via normal session
-    message = "Orders: get_info: session: get_instruments_info\n"
+    message = defs.now_utc()[1] + "Orders: get_info: session: get_instruments_info\n"
     print(message)
     try:
         pre_info = session.get_instruments_info(
@@ -134,10 +135,10 @@ def get_info(symbol, spot, multiplier):
     info['minBuyQuote'] = defs.precision(minimumOrder * spot * multiplier, info['quotePrecision'])
 
     # Output to stdout
-    print("Preload: get_info: Instrument info loaded!")
+    print(defs.now_utc()[1] + "Preload: get_info: Instrument info loaded!")
     
     if debug:
-        print("Preload: get_info: Instrument info")
+        print(defs.now_utc()[1] + "Preload: get_info: Instrument info")
         print(info)
     
     # Summarize all info and return data
@@ -165,7 +166,7 @@ def get_buys(dbase_file):
     
     # Get the database
     all_buys = database.load(dbase_file)
-    print("Preload: get_buys: Loaded database with buy transactions!\n")
+    print(defs.now_utc()[1] + "Preload: get_buys: Loaded database with buy transactions!\n")
     
     # Return the database
     return all_buys
@@ -192,7 +193,7 @@ def check_files():
         with open(config.exchange_file, 'a') as file:
             pass
     
-    print("Preload: check_files: All folders and files checked!")
+    print(defs.now_utc()[1] + "Preload: check_files: All folders and files checked!")
     
 # Check orders in database if they still exist
 def check_orders(transactions):
@@ -203,13 +204,13 @@ def check_orders(transactions):
     # Initialize variables
     all_buys = []
 
-    print("Preload: check_orders: Checking all order on exchange!\n")
+    print(defs.now_utc()[1] + "Preload: check_orders: Checking all order on exchange!\n")
 
     # Loop through all buys
     for transaction in transactions:
 
         # Get exchange info
-        print("Preload: check_orders: Now checking order: " + str(transaction['orderId']))
+        print(defs.now_utc()[1] + "Preload: check_orders: Now checking order: " + str(transaction['orderId']))
         exchange_transaction = orders.transaction_from_id(transaction['orderId'])
 
         if "Filled" in exchange_transaction['orderStatus']:

@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from time import sleep
 
 # Load internal libraries
-import config
+import config, defs
 
 # Initialize variables
 debug = False
@@ -92,9 +92,9 @@ def check_spread(transactions, spot, spread):
          
     if debug:
         if can_buy:
-            print("Defs: check_spread: No adjacent order found, we can buy")
+            print(defs.now_utc()[1] + "Defs: check_spread: No adjacent order found, we can buy")
         else:
-            print("Defs: check_spread: Adjacent order found, we can't buy")
+            print(defs.now_utc()[1] + "Defs: check_spread: Adjacent order found, we can't buy")
 
     # Return buy advice
     return can_buy, near
@@ -105,18 +105,20 @@ def now_utc():
     # Current UTC datetime
     current_time = datetime.now(timezone.utc)
     milliseconds = round(current_time.microsecond / 10000) / 100
-    timestamp = current_time.strftime('%Y-%m-%d %H:%M:%S') + f'.{int(milliseconds * 100):02d}' + " | "
+    timestamp_0 = current_time.strftime('%Y-%m-%d %H:%M:%S') + f'.{int(milliseconds * 100):02d}'
+    timestamp_1 = current_time.strftime('%Y-%m-%d %H:%M:%S') + f'.{int(milliseconds * 100):02d}' + " | "
+    timestamp_2 = str(milliseconds)
+    timestamp_3 = str(milliseconds) + " | "
     
-    return timestamp
+    return timestamp_0, timestamp_1, timestamp_2, timestamp_3
 
 # Log all responses from exchange
 def log_exchange(response, message):
     
-    # Debug
-    debug = False
+    # Create log message   
+    to_log = now_utc()[1] + message
     
-    to_log = now_utc() + message
-    
+    # Extend log message based on error level
     if config.error_level == 0:
         to_log = message + "\n" + str(response) + "\n\n"
     
@@ -131,6 +133,7 @@ def log_error(exception):
     debug = False
 
     if debug:
+        print(defs.now_utc()[1] + "Defs: log_exchange: Debug")
         print("Exception RAW:")
         print(exception)
         print()
@@ -148,11 +151,11 @@ def log_error(exception):
     exception = str(exception)
     
     if "(ErrCode: 170213)" in exception:
-        print("Defs: error: *** Warning: Order slipped while trying to amend! ***\n")
+        print(defs.now_utc()[1] + "Defs: log_error: *** Warning: Order slipped while trying to amend! ***\n")
         halt_execution = False
     
     if ("(ErrCode: 12940)" in exception) or ("RemoteDisconnected" in exception):
-        print("Defs: error: *** Warning: Connection reset, trying to reconnect! ***\n")
+        print(defs.now_utc()[1] + "Defs: log_error: *** Warning: Connection reset, trying to reconnect! ***\n")
         halt_execution = False
         sleep(10)
         ws = WebSocket(
@@ -164,11 +167,12 @@ def log_error(exception):
     with open(config.error_file, 'a', encoding='utf-8') as file:
         file.write(exception)
     
-    # Output to stdout  
+    # Output to stdout
+    print(defs.now_utc()[1] + "Defs: log_error: Full exception\n")  
     print(exception)
     
     # Terminate hard
     if halt_execution:
-        print("Defs: error: *** Termination program, error to severe! ***\n")
+        print(defs.now_utc()[1] + "Defs: error: *** Termination program, error to severe! ***\n")
         print(exception)
         exit()

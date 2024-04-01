@@ -7,6 +7,9 @@ import time
 import pandas as pd
 import pandas_ta as ta
 
+# Load internal libraries
+import defs
+
 # Initialize variables
 debug = False
 
@@ -18,7 +21,7 @@ def calculate(klines, spot):
     df = pd.DataFrame(klines)
     
     if debug:
-        print("\nIndicators: calculate: Calculating indicators")
+        print(defs.now_utc()[1] + "Indicators: calculate: Calculating indicators")
         start_time = int(time.time() * 1000)
         
     ## Indicators: Calculate Oscillators
@@ -88,10 +91,10 @@ def calculate(klines, spot):
 
     # Output to stdout
     if debug:
-        print("Indicators: calculate: Advice calculated:")
+        print(defs.now_utc()[1] + "Indicators: calculate: Advice calculated:")
         print(indicators)
         end_time = int(time.time() * 1000)
-        print("Pandas_ta spent " + (str(end_time - start_time)) + " ms calculating indicators and advice\n")
+        print(defs.now_utc()[1] + "Pandas_ta spent " + (str(end_time - start_time)) + " ms calculating indicators and advice\n")
     
     # Return technicals
     return indicators
@@ -188,7 +191,7 @@ def advice(indicators):
     adviceO = technicals_advice(strengthO);                  # Oscillator advice
 
     if debug:
-        print("Indicators: advice: Technical Indicator Advice")
+        print(defs.now_utc()[1] + "Indicators: advice: Technical Indicator Advice")
         print("Moving Averages BUY      : " + str(countAB))
         print("Moving Averages NEUTRAL  : " + str(countAN))
         print("Moving Averages SELL     : " + str(countAS))
