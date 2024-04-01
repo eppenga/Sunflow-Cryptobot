@@ -17,6 +17,8 @@ def save(transactions):
     # Write the file
     with open(config.dbase_file, 'w') as json_file:
         json.dump(transactions, json_file)
+    
+    print("Database: save: Saved database to file")
 
 # Load the database with buy transactions
 def load(dbase_file):
@@ -29,10 +31,10 @@ def load(dbase_file):
         with open(dbase_file, 'r') as json_file:
             transactions = json.load(json_file)
     except FileNotFoundError:
-        print(defs.now_utc()[1] + "Defs: load: Database with buy transactions not found, exiting...")
+        print(defs.now_utc()[1] + "Database: load: Database with buy transactions not found, exiting...")
         exit()
     except json.decoder.JSONDecodeError:
-        print(defs.now_utc()[1] + "Defs: load: Database with buy transactions not yet filled, may come soon!")
+        print(defs.now_utc()[1] + "Database: load: Database with buy transactions not yet filled, may come soon!")
 
     # Return database
     return transactions
@@ -57,12 +59,12 @@ def register_buy(transaction, transactions):
         transactions_new.append(transaction)
     
     if debug:
-        print(defs.now_utc()[1] + "\nDefs: register_buy: New Transactions")
+        print(defs.now_utc()[1] + "\nDatabase: register_buy: New Transactions")
         print(transactions_new)
         print()
-    
-    with open(config.dbase_file, 'w') as json_file:
-        json.dump(transactions_new, json_file)
+
+    # Save to database
+    save(transactions_new)    
     
     # Return new buy database
     return transactions_new
@@ -75,6 +77,12 @@ def register_sell(all_buys, all_sells):
 
     # Filter out all_buys entries that have their orderId in sell_order_ids
     filtered_buys = [buy for buy in all_buys if buy['orderId'] not in sell_order_ids]
+
+    # Count unique order ids
+    unique_ids = len(sell_order_ids)
+    
+    # Output to stdout
+    print("Datbase: register_sell: There were " + str(unique_ids) + " orders in trailing sell")
     
     # Return the cleaned buys
     return filtered_buys
