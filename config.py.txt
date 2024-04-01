@@ -30,7 +30,7 @@ api_secret         = "123456"                                   # API Secret
 
 # Data storage
 data_folder        = "data/"                                    # Where is data stored
-data_suffix        = data_folder + "_" + symbol                 # Format of data and log files
+data_suffix        = data_folder + symbol + "_"                 # Format of data and log files
 dbase_file         = data_suffix + "buy_orders.json"            # Database file buy orders
 exchange_file     =  data_suffix + "exchange.log"               # Exchange log file
 error_file         = data_suffix + "errors.log"                 # Error log file
