@@ -1,0 +1,5 @@
+setuptools
+pybit
+pandas
+pandas_ta
+pyarrow
