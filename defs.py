@@ -143,6 +143,7 @@ def log_error(exception):
         print()
        
     # Initialize variables
+    print_execution = True
     halt_execution = True
     
     # Convert to string
@@ -151,6 +152,7 @@ def log_error(exception):
     if "(ErrCode: 170213)" in exception:
         print(defs.now_utc()[1] + "Defs: log_error: *** Warning: Order slipped while trying to amend! ***\n")
         halt_execution = False
+        print_execution = False
     
     if ("(ErrCode: 12940)" in exception) or ("RemoteDisconnected" in exception):
         print(defs.now_utc()[1] + "Defs: log_error: *** Warning: Connection reset, trying to reconnect! ***\n")
@@ -161,8 +163,9 @@ def log_error(exception):
         file.write(exception)
     
     # Output to stdout
-    print(defs.now_utc()[1] + "Defs: log_error: Displaying exception:\n")
-    print(exception)
+    if print_execution:
+        print(defs.now_utc()[1] + "Defs: log_error: Displaying exception:\n")
+        print(exception)
     
     # Terminate hard
     if halt_execution:
