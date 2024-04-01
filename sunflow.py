@@ -182,7 +182,7 @@ def handle_kline(message):
             # Check spread for buy decission
             if use_spread['enabled']:
                 check_spread_advice = defs.check_spread(all_buys, spot, use_spread['distance'])
-                advice_spread = round(check_spread_advice[0], 2)
+                advice_spread = check_spread_advice[0]
                 advice_near   = round(check_spread_advice[1], 2)
             else:
                 advice_spread = True
