@@ -44,7 +44,10 @@ def history(orderId):
         )
     except Exception as e:
         defs.log_error(e)
-    defs.log_exchange(order, message)
+
+    # Log data if possible
+    if order:      
+        defs.log_exchange(order, message)
       
     # If realtime fails, get it from history
     if order['result']['list'] == []:
@@ -57,7 +60,10 @@ def history(orderId):
             )
         except Exception as e:
             defs.log_error(e)
-        defs.log_exchange(order, message)
+
+        # Log data if possible
+        if order:
+            defs.log_exchange(order, message)
 
     # If realtime and history fails, throw an error
     # *** CHECK ***
@@ -142,7 +148,10 @@ def buy(symbol, spot, active_order, transactions, info):
         )
     except Exception as e:
         defs.log_error(e)
-    defs.log_exchange(order, message)
+        
+    # Log data if possible
+    if order:      
+        defs.log_exchange(order, message)
         
     # Get order info
     active_order['orderid'] = int(order['result']['orderId'])
@@ -159,7 +168,7 @@ def buy(symbol, spot, active_order, transactions, info):
     print(defs.now_utc()[1] + "Orders: buy: Registered buy order in database " + config.dbase_file + "\n")
 
     # Output to stdout
-    print(defs.now_utc()[1] + "Orders: buy: Trailing buy is ready to start\n")
+    print(defs.now_utc()[1] + "Orders: buy: Starting trailing buy\n")
     
     # Return trailing order and new buy order database
     return active_order, all_buys
@@ -228,7 +237,10 @@ def sell(symbol, spot, qty, active_order, info):
         )
     except Exception as e:
         defs.log_error(e)
-    defs.log_exchange(order, message)
+        
+    # Log data if possible
+    if order:      
+        defs.log_exchange(order, message)
     
     # Get order info
     active_order['orderid'] = int(order['result']['orderId'])

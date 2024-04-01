@@ -32,7 +32,9 @@ def get_ticker(symbol):
         )
     except Exception as e:
         defs.log_error(e)
-    defs.log_exchange(pre_ticker, message)
+    # Log data if possible
+    if pre_ticker:
+        defs.log_exchange(pre_ticker, message)
    
     # Transform ticker into required format
     ticker['time']      = int(pre_ticker['time'])
@@ -65,7 +67,10 @@ def get_klines(symbol, interval=15, limit=50):
         )
     except Exception as e:
         defs.log_error(e)
-    defs.log_exchange(pre_klines, message)
+
+    # Log data if possible
+    if pre_klines:      
+        defs.log_exchange(pre_klines, message)
     
     # Transform klines into required format
     for item in pre_klines['result']['list']:
@@ -109,7 +114,10 @@ def get_info(symbol, spot, multiplier):
         )
     except Exception as e:
         defs.log_error(e)
-    defs.log_exchange(pre_info, message)
+        
+    # Log data if possible
+    if pre_info:        
+        defs.log_exchange(pre_info, message)
      
     # Transform instrument info intro rquired format
     info                   = {}

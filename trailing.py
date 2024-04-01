@@ -62,7 +62,10 @@ def check_order(symbol, active_order, all_buys, all_sells):
             )
         except Exception as e:
             defs.log_error(e)
-        defs.log_exchange(order, message)
+
+        # Log data if possible
+        if order:
+            defs.log_exchange(order, message)
 
         # Trailing has ended, the order doesn't exist anymore, make active_order inactive
         if order['result']['list'] == []:
@@ -164,7 +167,12 @@ def trail(symbol, active_order, info, all_buys, all_sells):
                     )
                 except Exception as e:
                     defs.log_error(e)
-                defs.log_exchange(order, message)
+                    
+                # Log data if possible
+                if order:
+                    defs.log_exchange(order, message)
+                
+                # Output to stdout
                 print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": lastPrice changed, adjusted trigger price to " + str(active_order['trigger']) + " " + info['quoteCoin'] + "\n")
             else:
                 print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": lastPrice changed, trigger price not adjusted because lastPrice change was not relevant\n")
@@ -199,4 +207,7 @@ def amend_sell(symbol, orderid, qty, info):
         )
     except Exception as e:
         defs.log_error(e)
-    defs.log_exchange(order, message)
+    
+    # Log data if possible
+    if order:
+        defs.log_exchange(order, message)
