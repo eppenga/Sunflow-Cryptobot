@@ -53,6 +53,7 @@ def check_order(symbol, active_order, all_buys, all_sells):
         # Has trailing endend, check if order does still exist
         message = defs.now_utc()[1] + "Trailing: check_orders: session: get_open_orders\n"
         print(message)
+        order = {}
         try:
             order = session.get_open_orders(
                 category = "spot",
@@ -153,6 +154,7 @@ def trail(symbol, active_order, info, all_buys, all_sells):
                 active_order['trigger'] = active_order['trigger_new']
                 message = defs.now_utc()[1] + "Trailing: trail: session: amend_order\n"
                 print(message)
+                order = {}
                 try:
                     order = session.amend_order(
                         category     = "spot",
@@ -187,6 +189,7 @@ def amend_sell(symbol, orderid, qty, info):
     # Ammend order
     message = defs.now_utc()[1] + "Trailing: amend_sell: session: amend_order\n"
     print(message)
+    order = {}
     try:
         order = session.amend_order(
             category = "spot",

@@ -24,6 +24,7 @@ def get_ticker(symbol):
     # Load ticker via normal session
     message = defs.now_utc()[1] + "Preload: get_ticker: session: get_tickers\n"
     print(message)
+    pre_ticker = {}
     try:
         pre_ticker   = session.get_tickers(
             category = "spot",
@@ -54,6 +55,7 @@ def get_klines(symbol, interval=15, limit=50):
     # Load klines via normal session
     message = defs.now_utc()[1] + "Orders: get_klines: session: get_kline\n"
     print(message)
+    pre_klines = {}
     try:
         pre_klines = session.get_kline(
             category = "spot",
@@ -99,6 +101,7 @@ def get_info(symbol, spot, multiplier):
     # Load instrument info via normal session
     message = defs.now_utc()[1] + "Orders: get_info: session: get_instruments_info\n"
     print(message)
+    pre_info = {}
     try:
         pre_info = session.get_instruments_info(
             category = "spot",

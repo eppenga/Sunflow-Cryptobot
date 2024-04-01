@@ -36,6 +36,7 @@ def history(orderId):
     # First try realtime
     message = defs.now_utc()[1] + "Orders: history: session: get_open_orders\n"
     print(message)
+    order = {}
     try:
         order = session.get_open_orders(
             category = "spot",
@@ -128,6 +129,7 @@ def buy(symbol, spot, active_order, transactions, info):
     # Place Buy order
     message = defs.now_utc()[1] + "Orders: buy: session: place_order\n"
     print(message)
+    order = {}
     try:
         order = session.place_order(
             category     = "spot",
@@ -213,6 +215,7 @@ def sell(symbol, spot, qty, active_order, info):
     # Place sell order
     message = defs.now_utc()[1] + "Orders: sell: session: place_order\n"
     print(message)
+    order = {}
     try:
         order = session.place_order(
             category     = "spot",
