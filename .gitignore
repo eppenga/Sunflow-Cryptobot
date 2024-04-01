@@ -10,6 +10,7 @@
 *.backup
 config.py
 test*.*
+todo*
 /data
 
 # Ignore python
