@@ -2,6 +2,8 @@
 #
 # Config file
 
+# CHANGE TO YOUR LIKING
+
 # Default values
 symbol             = "OPUSDT"     # Symbol bot used for trading
 interval           = 1            # Klines timeframe interval 
@@ -20,15 +22,18 @@ indicators_enabled = True         # Use technical indicators
 indicators_minimum = -1.00        # Minimum advice value
 indicators_maximum = -0.25        # Maximum advice value
 
-# Data storage
-data_folder        = "data/"                                    # Where is data stored 
-dbase_file         = data_folder + "buy_orders.json"            # Database file buy orders
-exchange_file     =  data_folder + "exchange.log"               # Exchange log file
-error_file         = data_folder + "errors.log"                 # Error log file
-
 # Exchange keys (ALWAYS KEEP THESE SECRET)
 api_key            = "123456"                                   # API Key
 api_secret         = "123456"                                   # API Secret
+
+# ONLY FOR ADVANCED USERS
+
+# Data storage
+data_folder        = "data/"                                    # Where is data stored
+data_suffix        = data_folder + "_" + symbol                 # Format of data and log files
+dbase_file         = data_suffix + "buy_orders.json"            # Database file buy orders
+exchange_file     =  data_suffix + "exchange.log"               # Exchange log file
+error_file         = data_suffix + "errors.log"                 # Error log file
 
 # Debug
 debug              = False                                      # Turn debug on or off
