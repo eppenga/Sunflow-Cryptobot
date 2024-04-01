@@ -81,8 +81,11 @@ def register_sell(all_buys, all_sells):
     # Count unique order ids
     unique_ids = len(sell_order_ids)
     
+    # Save to database
+    save(filtered_buys)
+    
     # Output to stdout
-    print("Datbase: register_sell: There were " + str(unique_ids) + " orders in trailing sell")
+    print("Database: register_sell: There were " + str(unique_ids) + " orders in trailing sell")
     
     # Return the cleaned buys
     return filtered_buys

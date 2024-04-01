@@ -83,7 +83,6 @@ def check_order(symbol, active_order, all_buys, all_sells):
             # Order was sold, create new all buys database and reset all sells
             if transaction['side'] == "Sell":
                 all_buys = database.register_sell(all_buys, all_sells)
-                database.save(all_buys)
                 all_sells = []
 
     # Return modified data
