@@ -18,7 +18,7 @@ def save(transactions):
     with open(config.dbase_file, 'w') as json_file:
         json.dump(transactions, json_file)
     
-    print("Database: save: Saved database to file")
+    print(defs.now_utc()[1] + "Database: save: Saved database to file")
 
 # Load the database with buy transactions
 def load(dbase_file):
@@ -85,7 +85,7 @@ def register_sell(all_buys, all_sells):
     save(filtered_buys)
     
     # Output to stdout
-    print("Database: register_sell: There were " + str(unique_ids) + " orders in trailing sell")
+    print(defs.now_utc()[1] + "Database: register_sell: There were " + str(unique_ids) + " orders in trailing sell")
     
     # Return the cleaned buys
     return filtered_buys
