@@ -144,10 +144,10 @@ def handle_ticker(message):
                         # Revert old situation
                         all_sells_new = all_sells
                     if amend_code == 100:
-                        # Critical error, let's exit sunflow
-                        print(defs.now_utc()[1] + "Trailing: trail: Critical error, exiting\n")
+                        # Critical error, let's log it and revert
+                        all_sells_new = all_sells
+                        print(defs.now_utc()[1] + "Trailing: trail: Critical error, logging to file\n")
                         defs.log_error(amend_error)
-                        exit()
                 
                 # Reset all sells
                 #all_sells = all_sells_new

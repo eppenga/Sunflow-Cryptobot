@@ -188,10 +188,10 @@ def trail(symbol, active_order, info, all_buys, all_sells):
                     # Revert old situation
                     all_buys_new = all_buys
                 if amend_code == 100:
-                    # Critical error, let's exit sunflow
-                    print(defs.now_utc()[1] + "Trailing: trail: Critical error, exiting\n")
+                    # Critical error, let's log it and revert
+                    all_buys_new = all_buys
+                    print(defs.now_utc()[1] + "Trailing: trail: Critical error, logging to file\n")
                     defs.log_error(amend_error)
-                    exit()
 
     # Reset all_buys
     all_buys = all_buys_new

@@ -149,10 +149,10 @@ def log_error(exception):
     exception = str(exception)
 
     # Add timestamp to exception
-    exception = now_utc()[0] + "\n" + exception + "\n"
+    exception = now_utc()[1] + exception + "\n"
 
     if ("(ErrCode: 12940)" in exception) or ("RemoteDisconnected" in exception):
-        print(defs.now_utc()[1] + "Defs: log_error: *** Warning: Connection reset, trying to reconnect! ***\n")
+        print(defs.now_utc()[1] + "Defs: log_error: *** Warning: Remote Disconnected! ***\n")
         halt_execution = False
     
     # Write to error log file
