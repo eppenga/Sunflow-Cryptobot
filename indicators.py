@@ -11,7 +11,7 @@ import pandas_ta as ta
 import defs
 
 # Initialize variables
-debug = True
+debug = False
 
 # Calculcate indicators based on klines
 def calculate(klines, spot):
@@ -42,7 +42,7 @@ def calculate(klines, spot):
     # Indicator: MACD Lines Oscillator
     macd              = {}
     macd_result       = ta.macd(df['close'], fast=12, slow=26)
-    macd['line']      = macd_result['MACD_12_26_9']
+    macd['macd']      = macd_result['MACD_12_26_9']
     macd['histogram'] = macd_result['MACDh_12_26_9']
     macd['signal']    = macd_result['MACDs_12_26_9']
     
@@ -103,7 +103,7 @@ def calculate(klines, spot):
         if stoch_k['k'].iloc[-1] > stoch_k['d'].iloc[-1]: bsn = 'B'
     if stoch_k['k'].iloc[-1] > 80:
         if stoch_k['k'].iloc[-1] < stoch_k['d'].iloc[-1]: bsn = 'S'
-    indicators['stochk'] = [stoch_k['k'].iloc[-1], bsn, 'O']
+    indicators['stochk'] = [{stoch_k['k'].iloc[-1], stoch_k['d'].iloc[-1]}, bsn, 'O']
 
     # CCI Oscillator
     cci = df['CCI'].iloc[-1]
@@ -117,7 +117,7 @@ def calculate(klines, spot):
     if adx['adx'].iloc[-1] > 25:
         if adx['dmp'].iloc[-1] > adx['dmn'].iloc[-1]: bsn = 'B'
         if adx['dmp'].iloc[-1] < adx['dmn'].iloc[-1]: bsn = 'S'
-    indicators['adx'] = [adx['adx'].iloc[-1], bsn, 'O']
+    indicators['adx'] = [{adx['dmp'].iloc[-1], adx['dmn'].iloc[-1], adx['adx'].iloc[-1]}, bsn, 'O']
 
     # Awesome Oscillator
     ao = df['AO']
@@ -143,7 +143,7 @@ def calculate(klines, spot):
         if high_low(macd['histogram']):bsn = 'B'
     if macd['histogram'].iloc[-1] < 0:
         if high_low(macd['histogram'], True): bsn = 'S'
-    indicators['macd'] = [macd['histogram'].iloc[-1], bsn, 'O']
+    indicators['macd'] = [{macd['histogram'].iloc[-1], macd['macd'].iloc[-1], macd['signal'].iloc[-1]}, bsn, 'O']
 
     # Stochastic RSI Fast Oscillator
     bsn = 'N'
@@ -151,7 +151,7 @@ def calculate(klines, spot):
         if stoch_rsi['k'].iloc[-1] > stoch_rsi['d'].iloc[-1]: bsn = 'B'
     if stoch_rsi['k'].iloc[-1] > 80:
         if stoch_rsi['k'].iloc[-1] < stoch_rsi['d'].iloc[-1]: bsn = 'S'
-    indicators['stochrsi'] = [stoch_rsi['k'].iloc[-1], bsn, 'O']
+    indicators['stochrsi'] = [{stoch_rsi['k'].iloc[-1], stoch_rsi['d'].iloc[-1]}, bsn, 'O']
 
     # WilliamsR Oscillator
     williams_r = df['WilliamsR'].iloc[-1]
@@ -219,11 +219,11 @@ def high_low(values, invert = False):
     
     # Initialize variables
     check = False
-    
+       
     # Get the last and single last value
     last_value  = values.iloc[-1]
     single_last = values.iloc[-2]
-    
+
     # Compare the two
     if last_value >= single_last:
         check = True
