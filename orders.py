@@ -120,7 +120,7 @@ def transaction_from_id(orderId):
     return transaction
         
 # New buy order
-def buy(symbol, spot, active_order, transactions, info):
+def buy(symbol, spot, active_order, all_buys, info):
 
     # Initialize variables
     active_order['side']     = "Buy"
@@ -163,10 +163,10 @@ def buy(symbol, spot, active_order, transactions, info):
     
     # Set the status
     transaction['status'] = "Open"
-    print(defs.now_utc()[1] + "Orders: buy: Initial buy order placed for " + str(active_order['qty']) + " " + info['quoteCoin'] + " with trigger price " + str(active_order['trigger']) + " " + info['baseCoin'] + "\n")
+    print(defs.now_utc()[1] + "Orders: buy: Initial buy order placed for " + str(active_order['qty']) + " " + info['quoteCoin'] + " with trigger price " + str(active_order['trigger']) + " " + info['quoteCoin'] + "\n")
     
     # Store the transaction in the database buys file
-    all_buys = database.register_buy(transaction, transactions)
+    all_buys = database.register_buy(transaction, all_buys)
     print(defs.now_utc()[1] + "Orders: buy: Registered buy order in database " + config.dbase_file + "\n")
 
     # Output to stdout
@@ -176,18 +176,16 @@ def buy(symbol, spot, active_order, transactions, info):
     return active_order, all_buys
     
 # What orders and how much can we sell with profit
-def check_sell(spot, profit, distance, all_buys):
-
-    # Debug
-    debug = False
+def check_sell(spot, profit, active_order, all_buys, info):
 
     # Initialize variables
     qty               = 0
+    distance          = active_order['distance']
     counter           = 0
     can_sell          = False
     all_sells         = []
-    
-    # Walk through buy database and find profitable transactions
+       
+    # Walk through buy database and find profitable buys
     for transaction in all_buys:
 
         # Only walk through closed buy orders
@@ -199,17 +197,19 @@ def check_sell(spot, profit, distance, all_buys):
                 qty = qty + transaction['cumExecQty']
                 all_sells.append(transaction)
                 counter = counter + 1
-          
+    
+    # Adjust quantity to exchange regulations
+    qty = defs.precision(qty, info['basePrecision'])
+    
     if all_sells:
         can_sell = True
-        if debug:
-            print(defs.now_utc()[1] + "Orders: check_sell: We can sell " + str(counter) + " orders for a total of " + str(qty) + " units.")
+        print(defs.now_utc()[1] + "Orders: check_sell: We can sell " + str(counter) + " orders for a total of " + str(qty) + " " + info['baseCoin'] + "\n")
     
     # Return data
     return all_sells, qty, can_sell
 
 # New sell order
-def sell(symbol, spot, qty, active_order, info):
+def sell(symbol, spot, active_order, info):
     
     # Initialize variables
     active_order['side']     = "Sell"
@@ -217,7 +217,6 @@ def sell(symbol, spot, qty, active_order, info):
     active_order['start']    = spot
     active_order['previous'] = spot
     active_order['current']  = spot
-    active_order['qty']      = qty
     active_order['trigger']  = defs.precision(spot * (1 - (active_order['distance'] / 100)), info['tickSize'])
 
     # Output to stdout
@@ -248,7 +247,7 @@ def sell(symbol, spot, qty, active_order, info):
     active_order['orderid'] = int(order['result']['orderId'])
     
     # Output to stdout
-    print(defs.now_utc()[1] + "Orders: sell: Initial sell order placed for " + str(qty) + " " + info['baseCoin'] + " with trigger price " + str(active_order['trigger']) + " " + info['baseCoin'] + "\n")
+    print(defs.now_utc()[1] + "Orders: sell: Initial sell order placed for " + str(active_order['qty']) + " " + info['baseCoin'] + " with trigger price " + str(active_order['trigger']) + " " + info['quoteCoin'] + "\n")
     
     # Return data
     return active_order

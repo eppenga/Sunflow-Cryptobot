@@ -69,7 +69,7 @@ def precision(value, step_size=0.1):
     return value
 
 # Check if there are no adjacent orders already 
-def check_spread(transactions, spot, spread):
+def check_spread(all_buys, spot, spread):
 
     # Debug
     debug = False
@@ -82,8 +82,8 @@ def check_spread(transactions, spot, spread):
     min_price = spot * (1 - (spread / 100))
     max_price = spot * (1 + (spread / 100))
 
-    # Loop through the transactions
-    for transaction in transactions:
+    # Loop through the all buys
+    for transaction in all_buys:
         avg_price = transaction["avgPrice"]
         if (avg_price >= min_price) and (avg_price <= max_price):
              can_buy = False
@@ -146,7 +146,7 @@ def log_error(exception):
     print_execution = True
     halt_execution = True
     
-    # Convert to string
+    # Safeguard from type errors
     exception = str(exception)
     
     if "(ErrCode: 170213)" in exception:

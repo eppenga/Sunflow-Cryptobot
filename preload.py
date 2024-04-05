@@ -43,7 +43,7 @@ def get_ticker(symbol):
     ticker['lastPrice'] = float(pre_ticker['result']['list'][0]['lastPrice'])
     
     # Output to stdout
-    print(defs.now_utc()[1] + "Preload: get_ticker: Initial ticker loaded!")
+    print(defs.now_utc()[1] + "Preload: get_ticker: Initial ticker loaded!\n")
     
     if debug:
         print(defs.now_utc()[1])
@@ -88,7 +88,7 @@ def get_klines(symbol, interval=15, limit=50):
         klines[key].reverse()
         
     # Output to stdout
-    print(defs.now_utc()[1] + "Preload: get_klines: Initial klines loaded!")
+    print(defs.now_utc()[1] + "Preload: get_klines: Initial klines loaded!\n")
     
     if debug:
         print(defs.now_utc()[1] + "Preload: get_klines: Prefilled klines")
@@ -147,7 +147,7 @@ def get_info(symbol, spot, multiplier):
     info['minBuyQuote'] = defs.precision(minimumOrder * spot * multiplier, info['quotePrecision'])
 
     # Output to stdout
-    print(defs.now_utc()[1] + "Preload: get_info: Instrument info loaded!")
+    print(defs.now_utc()[1] + "Preload: get_info: Instrument info loaded!\n")
     
     if debug:
         print(defs.now_utc()[1] + "Preload: get_info: Instrument info")
@@ -205,7 +205,7 @@ def check_files():
         with open(config.exchange_file, 'a') as file:
             pass
     
-    print(defs.now_utc()[1] + "Preload: check_files: All folders and files checked!")
+    print(defs.now_utc()[1] + "Preload: check_files: All folders and files checked!\n")
     
 # Check orders in database if they still exist
 def check_orders(transactions):
@@ -231,4 +231,7 @@ def check_orders(transactions):
             time.sleep(0.2)
         
     # Save refreshed database
-    database.save(all_buys) 
+    database.save(all_buys)
+    
+    # Return correct database
+    return all_buys 

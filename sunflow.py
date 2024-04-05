@@ -16,49 +16,53 @@ import config, defs, preload, indicators, trailing, orders
 ### Initialize variables ###
 
 # Set default values
-debug                     = config.debug                   # Debug
-symbol                    = config.symbol                  # Symbol bot used for trading
-klines                    = {}                             # KLines for symbol
-interval                  = config.interval                # KLines timeframe interval 
-limit                     = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
-ticker                    = {}                             # Ticker data, including lastPrice and time
-info                      = {}                             # Instrument info on symbol
-spot                      = 0                              # Spot price, always equal to lastPrice
-profit                    = config.profit                  # Minimum profit percentage
-depth                     = config.depth                   # Depth in percentages used to calculate market depth from orderbook
-multiplier                = config.multiplier              # Multiply minimum order quantity by this
+debug                         = config.debug                   # Debug
+symbol                        = config.symbol                  # Symbol bot used for trading
+klines                        = {}                             # KLines for symbol
+interval                      = config.interval                # KLines timeframe interval 
+limit                         = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
+ticker                        = {}                             # Ticker data, including lastPrice and time
+info                          = {}                             # Instrument info on symbol
+spot                          = 0                              # Spot price, always equal to lastPrice
+profit                        = config.profit                  # Minimum profit percentage
+depth                         = config.depth                   # Depth in percentages used to calculate market depth from orderbook
+multiplier                    = config.multiplier              # Multiply minimum order quantity by this
 
 # Minimum spread between historical buy orders
-use_spread                = {}                             # Spread
-use_spread['enabled']     = config.spread_enabled          # Use spread
-use_spread['distance']    = config.spread_distance         # Minimum spread in percentages
+use_spread                    = {}                             # Spread
+use_spread['enabled']         = config.spread_enabled          # Use spread
+use_spread['distance']        = config.spread_distance         # Minimum spread in percentages
 
 # Technical indicators
-use_indicators            = {}                             # Technical indicators
-use_indicators['enabled'] = config.indicators_enabled      # Use technical indicators
-use_indicators['minimum'] = config.indicators_minimum      # Minimum advice value
-use_indicators['maximum'] = config.indicators_maximum      # Maximum advice value
+use_indicators                = {}                             # Technical indicators
+use_indicators['enabled']     = config.indicators_enabled      # Use technical indicators
+use_indicators['minimum']     = config.indicators_minimum      # Minimum advice value
+use_indicators['maximum']     = config.indicators_maximum      # Maximum advice value
 
 # Trailing order
-active_order              = {}                              # Trailing order data
-active_order['side']      = ""                              # Trailing buy
-active_order['active']    = False                           # Trailing order active or not
-active_order['start']     = 0                               # Start price when trailing order began     
-active_order['previous']  = 0                               # Previous price
-active_order['current']   = 0                               # Current price
-active_order['distance']  = config.distance                 # Trigger price distance percentage
-active_order['orderid']   = 0                               # Orderid
-active_order['trigger']   = 0                               # Trigger price for order
-active_order['wiggle']    = True                            # Make the distance dynamical
-active_order['qty']       = 0                               # Order quantity
+active_order                  = {}                              # Trailing order data
+active_order['side']          = ""                              # Trailing buy
+active_order['active']        = False                           # Trailing order active or not
+active_order['start']         = 0                               # Start price when trailing order began     
+active_order['previous']      = 0                               # Previous price
+active_order['current']       = 0                               # Current price
+active_order['distance']      = config.distance                 # Trigger price distance percentage
+active_order['calc_distance'] = config.distance                 # Trigger price distance percentage when wiggling
+active_order['orderid']       = 0                               # Orderid
+active_order['trigger']       = 0                               # Trigger price for order
+active_order['trigger_new']   = 0                               # New trigger price when trailing 
+active_order['wiggle']        = config.wiggle                   # Make the distance dynamical
+active_order['add_up']        = 0                               # Custom percentage to add up to triggerprice when wiggling
+active_order['qty']           = 0                               # Order quantity
+active_order['qty_new']       = 0                               # New order quantity when trailing
 
 # Databases for buy and sell orders
-all_buys                  = {}                              # All buys retreived from database file buy orders
-all_sells                 = {}                              # Sell order linked to database with all buys orders
+all_buys                      = {}                              # All buys retreived from database file buy orders
+all_sells                     = {}                              # Sell order linked to database with all buys orders
 
 # Websockets where ticker is always on
-ws_kline                      = True                        # Use klines websocket
-ws_orderbook                  = False                       # Use orderbook websocket
+ws_kline                      = True                            # Use klines websocket
+ws_orderbook                  = False                           # Use orderbook websocket
 
 ### Functions ###
 
@@ -94,27 +98,52 @@ def handle_ticker(message):
                 all_buys     = trail_results[1]
 
             # Check if and how much we can sell
-            check_sell_results = orders.check_sell(spot, profit, active_order['distance'], all_buys)
-            all_sells = check_sell_results[0]
-            qty       = check_sell_results[1]
-            can_sell  = check_sell_results[2]
-            
-            # Adjust quantity to exchange regulations
-            qty = defs.precision(qty, info['basePrecision'])
-
+            check_sell_results      = orders.check_sell(spot, profit, active_order, all_buys, info)
+            all_sells_new           = check_sell_results[0]
+            active_order['qty_new'] = check_sell_results[1]
+            can_sell                = check_sell_results[2]
+                        
             # Initiate first sell
             if not active_order['active'] and can_sell:
-                active_order = orders.sell(symbol, spot, qty, active_order, info)
+                # There is no old quantity on first sell
+                active_order['qty'] = active_order['qty_new']
+                # Fill all_sells for the first time
+                all_sells = all_sells_new
+                # Place the first sell order
+                active_order = orders.sell(symbol, spot, active_order, info)
 
             # Amend existing sell trailing order if required
             if active_order['active'] and active_order['side'] == "Sell":
 
                 # Only amend order if the quantity to be sold has changed
-                if debug:
-                    print(defs.now_utc()[1] + "Sunflow: handle_ticker: qty = " + str(qty) + ", active_order['qty'] = " + str(active_order['qty']))
-                if qty != active_order['qty'] and qty > 0:
-                    trailing.amend_sell(symbol, active_order['orderid'], qty, info)
-                    active_order['qty'] = qty
+                if active_order['qty_new'] != active_order['qty'] and active_order['qty_new'] > 0:
+                    amend_result = trailing.amend_quantity_sell(symbol, active_order, info)
+                    amend_code   = amend_result[0]
+                    amend_error  = amend_result[1]
+
+                    # Determine what to do based on error code of amend result
+                    if amend_code == 0:
+                        # Everything went fine, we can continue trailing
+                        print("Sunflow: handle_ticker: Adjusted quantity from " + str(active_order['qty']) + " " + info['baseCoin'] + " to " +  str(active_order['qty_new']) + " " + info['quoteCoin'] + "\n")
+                        active_order['qty'] = active_order['qty_new']
+                        all_sells           = all_sells_new
+                    if amend_code == 1:
+                        # Order slipped, close trailing process
+                        print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
+                        close_trail_results = trailing.close_trail(active_order, all_buys, all_sells)
+                        active_order = close_trail_results[0]
+                        all_buys     = close_trail_results[1]
+                        all_sells    = close_trail_results[2]
+                        # Revert old situation
+                        all_sells_new = all_sells
+                    if amend_code == 100:
+                        # Critical error, let's exit sunflow
+                        print(defs.now_utc()[1] + "Trailing: trail: Critical error, exiting\n")
+                        defs.log_error(amend_error)
+                        exit()
+                
+                # Reset all sells
+                #all_sells = all_sells_new
 
         # Always set new spot price
         spot = ticker['lastPrice']
@@ -157,7 +186,7 @@ def handle_kline(message):
         if message['data'][0]['confirm'] == True:
 
             # Add new kline and remove the last
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: Adding new kline to klines\n")
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: Popping new kline onto the existing " + str(len(klines['close'])) + " klines\n")
             klines = defs.new_kline(kline, klines)
       
         else:            
@@ -170,6 +199,9 @@ def handle_kline(message):
             # Initialize variables
             advice_near = 0
             advice_indicators = advice_spread = False
+            technical_advice = {}
+            technical_advice[0] = 0
+            technical_advice[1] = 0
 
             # Check technical indicators for buy decission
             if use_indicators['enabled']:
@@ -296,10 +328,9 @@ ticker   = preload.get_ticker(symbol)
 spot     = ticker['lastPrice']
 info     = preload.get_info(symbol, spot, multiplier)
 all_buys = preload.get_buys(config.dbase_file) 
-preload.check_orders(all_buys)
+all_buys = preload.check_orders(all_buys)
 
 print("*** Starting ***\n")
-
 
 ### Websockets ###
 

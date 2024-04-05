@@ -12,65 +12,74 @@ import config, defs
 debug = False
 
 # Create a new all buy database file
-def save(transactions):
+def save(all_buys):
 
     # Write the file
-    with open(config.dbase_file, 'w') as json_file:
-        json.dump(transactions, json_file)
+    with open(config.dbase_file, 'w', encoding='utf-8') as json_file:
+        json.dump(all_buys, json_file)
     
-    print(defs.now_utc()[1] + "Database: save: Saved database to file")
+    print(defs.now_utc()[1] + "Database: save: Saved database with all buys to file\n")
 
-# Load the database with buy transactions
+# Load the database with all buys
 def load(dbase_file):
 
     # Initialize variables
-    transactions     = []
+    all_buys = []
 
     # Load existing database file
     try:
-        with open(dbase_file, 'r') as json_file:
-            transactions = json.load(json_file)
+        with open(dbase_file, 'r', encoding='utf-8') as json_file:
+            all_buys = json.load(json_file)
     except FileNotFoundError:
-        print(defs.now_utc()[1] + "Database: load: Database with buy transactions not found, exiting...")
+        print(defs.now_utc()[1] + "Database: load: Database with all buys not found, exiting...\n")
         exit()
     except json.decoder.JSONDecodeError:
-        print(defs.now_utc()[1] + "Database: load: Database with buy transactions not yet filled, may come soon!")
+        print(defs.now_utc()[1] + "Database: load: Database with all buys not yet filled, may come soon!\n")
 
     # Return database
-    return transactions
+    return all_buys
 
-# Register all buy transactions in a database file
-def register_buy(transaction, transactions):
+# Register all buys in a database file
+def register_buy(buy_order, all_buys):
+
+    # Debug
+    debug = False
 
     # Initialize variables
-    transactions_new = []
-    loop_transaction = False
-    loop_appended    = False
+    all_buys_new  = []
+    loop_buy      = False
+    loop_appended = False
     
     # If order already exists in buys dbase, change status
-    for loop_transaction in transactions:
-        if loop_transaction['orderId'] == transaction['orderId']:
+    for loop_buy in all_buys:
+        if loop_buy['orderId'] == buy_order['orderId']:
             loop_appended = True
-            loop_transaction = transaction
-        transactions_new.append(loop_transaction)
+            loop_buy = buy_order
+        all_buys_new.append(loop_buy)
     
-    # If not changed existing transaction, then add as new transaction
+    # If not found in buy orders, then add new buy order
     if not loop_appended:
-        transactions_new.append(transaction)
-    
+        all_buys_new.append(buy_order)
+      
     if debug:
-        print(defs.now_utc()[1] + "\nDatabase: register_buy: New Transactions")
-        print(transactions_new)
+        print(defs.now_utc()[1] + "Database: register_buy: New database with buys")
+        print(all_buys_new)
         print()
 
     # Save to database
-    save(transactions_new)    
+    save(all_buys_new)    
     
     # Return new buy database
-    return transactions_new
+    return all_buys_new
 
 # Remove all sold buy transaction from the database file
 def register_sell(all_buys, all_sells):
+    
+    # Debug
+    debug = False
+    
+    # Initialize variables
+    unique_ids = 0
     
     # Get a set of all sell order IDs for efficient lookup
     sell_order_ids = {sell['orderId'] for sell in all_sells}
@@ -80,12 +89,27 @@ def register_sell(all_buys, all_sells):
 
     # Count unique order ids
     unique_ids = len(sell_order_ids)
+        
+    if unique_ids == 0:
+        defs.log_error("\n0 orders in trailing sell when trying to register\n")
     
     # Save to database
     save(filtered_buys)
     
+    if debug:
+        print("All sell orders")
+        print(all_sells)
+        
+        print("\nRemoved these unique ids")
+        print(sell_order_ids)
+        print()   
+        
+        print("New all buys database")
+        print(filtered_buys)
+        print()
+    
     # Output to stdout
-    print(defs.now_utc()[1] + "Database: register_sell: There were " + str(unique_ids) + " orders in trailing sell")
+    print(defs.now_utc()[1] + "Database: register_sell: There were " + str(unique_ids) + " orders in trailing sell\n")
     
     # Return the cleaned buys
     return filtered_buys

@@ -12,6 +12,7 @@ config.py
 test*.*
 todo*
 /data
+/backup
 
 # Ignore python
 /__pycache__
