@@ -46,6 +46,7 @@ def register_buy(buy_order, all_buys):
     debug = False
 
     # Initialize variables
+    counter       = 0
     all_buys_new  = []
     loop_buy      = False
     loop_appended = False
@@ -53,6 +54,7 @@ def register_buy(buy_order, all_buys):
     # If order already exists in buys dbase, change status
     for loop_buy in all_buys:
         if loop_buy['orderId'] == buy_order['orderId']:
+            counter = counter + 1
             loop_appended = True
             loop_buy = buy_order
         all_buys_new.append(loop_buy)
@@ -60,9 +62,10 @@ def register_buy(buy_order, all_buys):
     # If not found in buy orders, then add new buy order
     if not loop_appended:
         all_buys_new.append(buy_order)
+        counter = counter + 1
       
     if debug:
-        print(defs.now_utc()[1] + "Database: register_buy: New database with buys")
+        print(defs.now_utc()[1] + "Database: register_buy: New database with " + str(counter) + " buys")
         print(all_buys_new)
         print()
 
@@ -109,7 +112,7 @@ def register_sell(all_buys, all_sells):
         print()
     
     # Output to stdout
-    print(defs.now_utc()[1] + "Database: register_sell: There were " + str(unique_ids) + " orders in trailing sell\n")
+    print(defs.now_utc()[1] + "Database: register_sell: Sold " + str(unique_ids) + " orders via trailing sell\n")
     
     # Return the cleaned buys
     return filtered_buys
