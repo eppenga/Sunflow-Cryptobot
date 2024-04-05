@@ -102,7 +102,14 @@ def handle_ticker(message):
             all_sells_new           = check_sell_results[0]
             active_order['qty_new'] = check_sell_results[1]
             can_sell                = check_sell_results[2]
-                        
+            
+            # If trailing buy is already running while we can sell
+            if active_order['active'] and active_order['side'] == "Buy" and can_sell:
+                print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Warning loosing money, we can sell while we are buying! ***\n")
+                # Cancel trailing buy order
+                # Remove from all_buys database
+                # set active_order["side"] to Sell
+
             # Initiate first sell
             if not active_order['active'] and can_sell:
                 # There is no old quantity on first sell

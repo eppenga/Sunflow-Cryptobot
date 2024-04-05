@@ -11,7 +11,7 @@ import pandas_ta as ta
 import defs
 
 # Initialize variables
-debug = False
+debug = True
 
 # Calculcate indicators based on klines
 def calculate(klines, spot):
@@ -176,10 +176,10 @@ def calculate(klines, spot):
     sma30 = df['SMA30'].iloc[-1]
     ema50 = df['EMA50'].iloc[-1]
     sma50 = df['SMA50'].iloc[-1]
-    ema100 = df['EMA50'].iloc[-1]
-    sma100 = df['SMA50'].iloc[-1]
-    ema200 = df['EMA50'].iloc[-1]
-    sma200 = df['SMA50'].iloc[-1]    
+    ema100 = df['EMA100'].iloc[-1]
+    sma100 = df['SMA100'].iloc[-1]
+    ema200 = df['EMA200'].iloc[-1]
+    sma200 = df['SMA200'].iloc[-1]    
     indicators['EMA10'] = [ema10, hesma(ema10, spot), 'A']
     indicators['SMA10'] = [sma10, hesma(sma10, spot), 'A']
     indicators['EMA20'] = [ema20, hesma(ema20, spot), 'A']
@@ -188,10 +188,10 @@ def calculate(klines, spot):
     indicators['SMA30'] = [sma30, hesma(sma30, spot), 'A']
     indicators['EMA50'] = [ema50, hesma(ema50, spot), 'A']
     indicators['SMA50'] = [sma50, hesma(sma50, spot), 'A']
-    indicators['EMA100'] = [ema50, hesma(ema100, spot), 'A']
-    indicators['SMA100'] = [sma50, hesma(sma100, spot), 'A']
-    indicators['EMA200'] = [ema50, hesma(ema200, spot), 'A']
-    indicators['SMA200'] = [sma50, hesma(sma200, spot), 'A']
+    indicators['EMA100'] = [ema100, hesma(ema100, spot), 'A']
+    indicators['SMA100'] = [sma100, hesma(sma100, spot), 'A']
+    indicators['EMA200'] = [ema200, hesma(ema200, spot), 'A']
+    indicators['SMA200'] = [sma200, hesma(sma200, spot), 'A']
 
     # Output to stdout
     if debug:
