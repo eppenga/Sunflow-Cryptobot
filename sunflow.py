@@ -214,7 +214,7 @@ def handle_kline(message):
             if use_indicators['enabled']:
                 technical_indicators = indicators.calculate(klines, spot)
                 technical_advice     = indicators.advice(technical_indicators)
-                if (technical_advice[0] > use_indicators['minimum']) and (technical_advice[0] < use_indicators['maximum']):
+                if (technical_advice[0] >= use_indicators['minimum']) and (technical_advice[0] <= use_indicators['maximum']):
                     advice_indicators = True
             else:
                 advice_indicators = True
