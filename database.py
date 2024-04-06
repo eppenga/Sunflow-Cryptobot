@@ -21,7 +21,7 @@ def save(all_buys):
     # Get number of orders 
     order_count = len(all_buys)
     
-    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buys to file\n")
+    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buy orders to file\n")
 
 # Load the database with all buys
 def load(dbase_file):
