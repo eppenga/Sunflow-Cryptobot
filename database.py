@@ -17,8 +17,11 @@ def save(all_buys):
     # Write the file
     with open(config.dbase_file, 'w', encoding='utf-8') as json_file:
         json.dump(all_buys, json_file)
+
+    # Get number of orders 
+    order_count = len(all_buys)
     
-    print(defs.now_utc()[1] + "Database: save: Saved database with all buys to file\n")
+    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buys to file\n")
 
 # Load the database with all buys
 def load(dbase_file):
