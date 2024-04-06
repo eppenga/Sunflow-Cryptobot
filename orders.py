@@ -203,7 +203,7 @@ def check_sell(spot, profit, active_order, all_buys, info):
     
     if all_sells:
         can_sell = True
-        print(defs.now_utc()[1] + "Orders: check_sell: We can sell " + str(counter) + " orders for a total of " + str(qty) + " " + info['baseCoin'] + "\n")
+        print(defs.now_utc()[1] + "Orders: check_sell: Selling " + str(counter) + " orders for a total of " + str(qty) + " " + info['baseCoin'] + "\n")
     
     # Return data
     return all_sells, qty, can_sell
