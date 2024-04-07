@@ -36,6 +36,10 @@ dbase_file         = data_suffix + "buy_orders.json"            # Database file 
 exchange_file     =  data_suffix + "exchange.log"               # Exchange log file
 error_file         = data_suffix + "errors.log"                 # Error log file
 
+# Websockets
+ws_kline           = True                                       # Use klines websocket
+ws_orderbook       = False                                      # Use orderbook websocket
+
 # Debug
 debug              = False                                      # Turn debug on or off
 error_level        = 1                                          # Error level 0 is extended, 1 is normal

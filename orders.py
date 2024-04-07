@@ -3,10 +3,11 @@
 # Order functions
 
 # Load external libraries
+import pandas as pd
 from pybit.unified_trading import HTTP
 
 # Load internal libraries
-import config, database, defs, orders
+import config, database, defs
 
 # Initialize variables
 debug  = False
@@ -120,16 +121,21 @@ def transaction_from_id(orderId):
     return transaction
         
 # New buy order
-def buy(symbol, spot, active_order, all_buys, info):
+def buy(symbol, spot, active_order, prices, all_buys, info):
 
-    # Initialize variables
+    # Initialize active_order
     active_order['side']     = "Buy"
     active_order['active']   = True
     active_order['start']    = spot
     active_order['previous'] = spot
     active_order['current']  = spot
     active_order['qty']      = info['minBuyQuote']
-    active_order['trigger']  = defs.precision(spot * (1 + (active_order['distance'] / 100)), info['tickSize'])
+    
+    # Calculate trigger price distance
+    active_order = distance(active_order, prices)
+    
+    # Set trigger price
+    active_order['trigger']  = defs.precision(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
 
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
@@ -159,7 +165,7 @@ def buy(symbol, spot, active_order, all_buys, info):
     active_order['orderid'] = int(order['result']['orderId'])
 
     # Get the transaction
-    transaction = orders.transaction_from_order(order)
+    transaction = transaction_from_order(order)
     
     # Set the status
     transaction['status'] = "Open"
@@ -209,15 +215,20 @@ def check_sell(spot, profit, active_order, all_buys, info):
     return all_sells, qty, can_sell
 
 # New sell order
-def sell(symbol, spot, active_order, info):
+def sell(symbol, spot, active_order, prices, info):
     
-    # Initialize variables
+    # Initialize active_order
     active_order['side']     = "Sell"
     active_order['active']   = True
     active_order['start']    = spot
     active_order['previous'] = spot
     active_order['current']  = spot
-    active_order['trigger']  = defs.precision(spot * (1 - (active_order['distance'] / 100)), info['tickSize'])
+    
+    # Calculate trigger price distance
+    active_order = distance(active_order, prices)
+
+    # Set trigger price
+    active_order['trigger']  = defs.precision(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
 
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
@@ -252,3 +263,36 @@ def sell(symbol, spot, active_order, info):
     # Return data
     return active_order
 
+# Calculate trigger price distance if set to dynamical
+def distance(active_order, prices):
+
+    # Initialize variables
+    scaler = 2   # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
+    number = 5   # Last {number} of prices will be used
+    
+    # By default fluctuation equals distance
+    active_order['fluctuation'] = active_order['distance']   
+    
+    if active_order['wiggle']:
+
+        # Convert the list to a pandas DataFrame
+        df = pd.DataFrame(prices, columns=['price'])
+
+        # Calculate the daily returns
+        df['returns'] = df['price'].pct_change()
+
+        # Apply an exponentially weighted moving standard deviation to the returns
+        df['ewm_std'] = df['returns'].ewm(span=number, adjust=False).std()
+
+        # Normalize the last value of EWM_Std to a 0-1 scale
+        fluctuation = df['ewm_std'].iloc[-1] / df['ewm_std'].max()
+
+        # Calculate trigger price distance percentage
+        active_order['fluctuation'] = (fluctuation / scaler) + active_order['distance']
+        print(defs.now_utc()[1] + "Orders: distance: Dynamical trigger price distance set to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+    
+    else:
+        print(defs.now_utc()[1] + "Orders: distance: Using fixed trigger price distance as " + str(round(active_order['fluctuation'], 4)) + "%\n")
+    
+    # Return modified data
+    return active_order

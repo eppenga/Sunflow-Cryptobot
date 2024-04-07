@@ -3,7 +3,6 @@
 # Traling buy and sell
 
 # Load external libraries
-import math
 from pybit.unified_trading import HTTP
 
 # Load internal libraries
@@ -112,7 +111,7 @@ def close_trail(active_order, all_buys, all_sells):
     return active_order, all_buys, all_sells
 
 # Trailing buy or sell
-def trail(symbol, active_order, info, all_buys, all_sells):
+def trail(symbol, active_order, info, all_buys, all_sells, prices):
 
     # Initialize variables
     do_amend    = False     # We can amend a trailing order
@@ -145,17 +144,17 @@ def trail(symbol, active_order, info, all_buys, all_sells):
             active_order['previous'] = active_order['current']
             
             # Set calculated distance by default to distance
-            active_order['calc_distance'] = active_order['distance']
+            active_order['fluctuation'] = active_order['distance']
             
             # Determine distance of trigger price
             if active_order['wiggle']:
-                active_order = calc_distance(active_order)
+                active_order = orders.distance(active_order, prices)
                        
             # Calculate new trigger price
             if active_order['side'] == "Sell":
-                active_order['trigger_new'] = defs.precision(active_order['current'] * (1 - (active_order['calc_distance'] / 100)), info['tickSize'])
+                active_order['trigger_new'] = defs.precision(active_order['current'] * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
             else:
-                active_order['trigger_new'] = defs.precision(active_order['current'] * (1 + (active_order['calc_distance'] / 100)), info['tickSize'])
+                active_order['trigger_new'] = defs.precision(active_order['current'] * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
 
             # Check if we can amend trigger price
             if active_order['side'] == "Sell":
@@ -204,27 +203,7 @@ def trail(symbol, active_order, info, all_buys, all_sells):
         
     # Return modified data
     return active_order, all_buys
-
-# Calculate trigger price distance if set to dynamical
-def calc_distance(active_order):
-
-    # Initialze variables
-    price_difference = 0
-
-    # Calculate price difference
-    if active_order['side'] == "Sell":
-        price_difference = active_order['current'] - active_order['start']
-    else:
-        price_difference = active_order['start'] - active_order['current']
-
-    # Calculate trigger price distance percentage
-    if price_difference > 0:
-        active_order['calc_distance'] = 0.3 * math.sqrt(price_difference) + active_order['distance'] + active_order['add_up']
-        print(defs.now_utc()[1] + "Trailing: trail: Dynamical trigger distance changed to " + str(round(active_order['calc_distance'], 4)) + "%\n")
-    
-    # Return modified data
-    return active_order
-    
+   
 # Change the quantity of the current trailing sell
 def amend_quantity_sell(symbol, active_order, info):
 

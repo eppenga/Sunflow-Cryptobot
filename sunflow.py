@@ -18,8 +18,8 @@ import config, defs, preload, indicators, trailing, orders
 # Set default values
 debug                         = config.debug                   # Debug
 symbol                        = config.symbol                  # Symbol bot used for trading
-klines                        = {}                             # KLines for symbol
-interval                      = config.interval                # KLines timeframe interval 
+klines                        = {}                             # Klines for symbol
+interval                      = config.interval                # Klines timeframe interval 
 limit                         = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
 ticker                        = {}                             # Ticker data, including lastPrice and time
 info                          = {}                             # Instrument info on symbol
@@ -27,6 +27,7 @@ spot                          = 0                              # Spot price, alw
 profit                        = config.profit                  # Minimum profit percentage
 depth                         = config.depth                   # Depth in percentages used to calculate market depth from orderbook
 multiplier                    = config.multiplier              # Multiply minimum order quantity by this
+prices                        = {}                             # Last {limit} prices based on ticker
 
 # Minimum spread between historical buy orders
 use_spread                    = {}                             # Spread
@@ -47,7 +48,7 @@ active_order['start']         = 0                               # Start price wh
 active_order['previous']      = 0                               # Previous price
 active_order['current']       = 0                               # Current price
 active_order['distance']      = config.distance                 # Trigger price distance percentage
-active_order['calc_distance'] = config.distance                 # Trigger price distance percentage when wiggling
+active_order['fluctuation']   = config.distance                 # Trigger price distance percentage when wiggling
 active_order['orderid']       = 0                               # Orderid
 active_order['trigger']       = 0                               # Trigger price for order
 active_order['trigger_new']   = 0                               # New trigger price when trailing 
@@ -61,8 +62,8 @@ all_buys                      = {}                              # All buys retre
 all_sells                     = {}                              # Sell order linked to database with all buys orders
 
 # Websockets where ticker is always on
-ws_kline                      = True                            # Use klines websocket
-ws_orderbook                  = False                           # Use orderbook websocket
+ws_kline                      = config.ws_kline                 # Use klines websocket
+ws_orderbook                  = config.ws_orderbook             # Use orderbook websocket
 
 ### Functions ###
 
@@ -87,13 +88,17 @@ def handle_ticker(message):
 
         # Has price changed, then run all kinds of actions
         if spot != ticker['lastPrice']:
+            
+            # Add last price to prices list and report
+            prices.append(spot)
+            del prices[0]
             print(defs.now_utc()[1] + "Sunflow: handle_ticker: lastPrice changed from " + str(spot) + " " + info['quoteCoin'] + " to " + str(ticker['lastPrice']) + " " + info['quoteCoin'] + "\n")
                 
             # Run trailing if active
             if active_order['active']:
                 active_order['current'] = spot
                 active_order['status']  = 'Trailing'
-                trail_results = trailing.trail(symbol, active_order, info, all_buys, all_sells)
+                trail_results = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices)
                 active_order = trail_results[0]
                 all_buys     = trail_results[1]
 
@@ -117,7 +122,7 @@ def handle_ticker(message):
                 # Fill all_sells for the first time
                 all_sells = all_sells_new
                 # Place the first sell order
-                active_order = orders.sell(symbol, spot, active_order, info)
+                active_order = orders.sell(symbol, spot, active_order, prices, info)
 
             # Amend existing sell trailing order if required
             if active_order['active'] and active_order['side'] == "Sell":
@@ -192,8 +197,11 @@ def handle_kline(message):
         # Check if we have a finished kline
         if message['data'][0]['confirm'] == True:
 
-            # Add new kline and remove the last
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: Popping new kline onto the existing " + str(len(klines['close'])) + " klines\n")
+            # Check if the number of klines still matches the config and report
+            klines_count = len(klines['close'])
+            if klines_count != limit:
+                klines = preload.get_klines(symbol, interval, limit)
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: Popping new kline onto the existing " + str(klines_count) + " klines\n")
             klines = defs.new_kline(kline, klines)
       
         else:            
@@ -233,7 +241,7 @@ def handle_kline(message):
             # Combine all data to make a buy decission
             print(defs.now_utc()[1] + "Sunflow: handle_kline: Buy matrix: Indicators: " + str(advice_indicators) + " (" + str(round(technical_advice[0], 2)) + ") | Spread: " + str(advice_spread) + " (" + str(advice_near) + "%)\n")
             if (advice_indicators) and (advice_spread):
-                buy_result   = orders.buy(symbol, spot, active_order, all_buys, info)
+                buy_result   = orders.buy(symbol, spot, active_order, prices, all_buys, info)
                 active_order = buy_result[0]
                 all_buys     = buy_result[1]
 
@@ -314,30 +322,51 @@ def handle_orderbook(message):
         print("Full traceback:")
         traceback.print_tb(e.__traceback__)
 
+# Prechecks to see if we can start sunflow
+def prechecks():
+    
+    # initialize variables
+    goahead = True
+    
+    if not ws_kline and not ws_orderbook:
+        goahead = False     
+        print(defs.now_utc()[1] + "Sunflow: prechecks: ws_klines and ws_orderbook can't both be False")
+    
+    if not use_spread['enabled'] and not use_indicators['enabled']:
+        goahead = False
+        print(defs.now_utc()[1] + "Sunflow: prechecks: Indicators and Spread can't both be False")
+
+    # Return result
+    return goahead
+
 
 ### Start main program ###
 
-# Welcome screen
-print("\n*************************")
-print("*** Sunflow Cryptobot ***")
-print("*************************\n")
-print("Symbol  : " + symbol)
-print("Interval: " + str(interval) + "m")
-print("Limit   : " + str(limit))
-print()
+# Check if we can start
+if prechecks:
 
-# Preload all requirements
-print("*** Preloading ***")
+    # Welcome screen
+    print("\n*************************")
+    print("*** Sunflow Cryptobot ***")
+    print("*************************\n")
+    print("Symbol  : " + symbol)
+    print("Interval: " + str(interval) + "m")
+    print("Limit   : " + str(limit))
+    print()
 
-preload.check_files()
-klines   = preload.get_klines(symbol, interval, limit)
-ticker   = preload.get_ticker(symbol)
-spot     = ticker['lastPrice']
-info     = preload.get_info(symbol, spot, multiplier)
-all_buys = preload.get_buys(config.dbase_file) 
-all_buys = preload.check_orders(all_buys)
+    # Preload all requirements
+    print("*** Preloading ***")
 
-print("*** Starting ***\n")
+    preload.check_files()
+    klines   = preload.get_klines(symbol, interval, limit)
+    ticker   = preload.get_ticker(symbol)
+    spot     = ticker['lastPrice']
+    info     = preload.get_info(symbol, spot, multiplier)
+    all_buys = preload.get_buys(config.dbase_file) 
+    all_buys = preload.check_orders(all_buys)
+    prices   = klines['close']
+    
+    print("*** Starting ***\n")
 
 ### Websockets ###
 
@@ -365,7 +394,7 @@ def main():
         try:
             sleep(1)
         except (RemoteDisconnected, ProtocolError, ChunkedEncodingError) as e:
-            print(defs.now_utc()[1] + f"Connection lost. Reconnecting due to: {e}")
+            print(defs.now_utc()[1] + f"Sunflow: main: Connection lost. Reconnecting due to: {e}")
             sleep(5)
             ws = connect_websocket()
             subscribe_streams(ws)
