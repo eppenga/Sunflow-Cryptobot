@@ -363,10 +363,10 @@ def main():
 
     while True:
         try:
-            sleep(1)  # Your processing logic here
+            sleep(1)
         except (RemoteDisconnected, ProtocolError, ChunkedEncodingError) as e:
             print(defs.now_utc()[1] + f"Connection lost. Reconnecting due to: {e}")
-            sleep(5)  # Wait a bit before reconnecting to avoid hammering the server
+            sleep(5)
             ws = connect_websocket()
             subscribe_streams(ws)
 
