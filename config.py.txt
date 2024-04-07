@@ -10,7 +10,7 @@ interval           = 1            # Klines timeframe interval
 limit              = 250          # Number of klines downloaded, used for calculcating technical indicators
 profit             = 0.2          # Minimum profit percentage
 distance           = 0.1          # Trigger price distance percentage
-wiggle             = True         # Have a dynamical trigger price distance percentage
+wiggle             = "Spot"       # Have a dynamical trigger price distance percentage
 depth              = 0.1          # Depth in percentages used to calculate market depth from orderbook
 multiplier         = 1            # Multiply minimum order quantity by this
 

@@ -3,6 +3,7 @@
 # Order functions
 
 # Load external libraries
+import math
 import pandas as pd
 from pybit.unified_trading import HTTP
 
@@ -130,12 +131,7 @@ def buy(symbol, spot, active_order, prices, all_buys, info):
     active_order['previous'] = spot
     active_order['current']  = spot
     active_order['qty']      = info['minBuyQuote']
-    
-    # Calculate trigger price distance
-    active_order = distance(active_order, prices)
-    
-    # Set trigger price
-    active_order['trigger']  = defs.precision(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
+    active_order['trigger']  = defs.precision(spot * (1 + (active_order['distance'] / 100)), info['tickSize'])
 
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
@@ -223,12 +219,7 @@ def sell(symbol, spot, active_order, prices, info):
     active_order['start']    = spot
     active_order['previous'] = spot
     active_order['current']  = spot
-    
-    # Calculate trigger price distance
-    active_order = distance(active_order, prices)
-
-    # Set trigger price
-    active_order['trigger']  = defs.precision(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
+    active_order['trigger']  = defs.precision(spot * (1 - (active_order['distance'] / 100)), info['tickSize'])
 
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
@@ -267,13 +258,16 @@ def sell(symbol, spot, active_order, prices, info):
 def distance(active_order, prices):
 
     # Initialize variables
-    scaler = 2   # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
-    number = 5   # Last {number} of prices will be used
+    scaler = 3   # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
+    number = 7   # Last {number} of prices will be used
+    fluctuation      = 0
+    price_difference = 0
     
     # By default fluctuation equals distance
-    active_order['fluctuation'] = active_order['distance']   
+    active_order['fluctuation'] = active_order['distance']
     
-    if active_order['wiggle']:
+    # Use EMA to set distance
+    if active_order['wiggle'] == "EMA":
 
         # Convert the list to a pandas DataFrame
         df = pd.DataFrame(prices, columns=['price'])
@@ -289,10 +283,26 @@ def distance(active_order, prices):
 
         # Calculate trigger price distance percentage
         active_order['fluctuation'] = (fluctuation / scaler) + active_order['distance']
-        print(defs.now_utc()[1] + "Orders: distance: Dynamical trigger price distance set to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+        print(defs.now_utc()[1] + "Orders: distance: Using EMA to set trigger price distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
     
+    # Use spot to set distance
+    elif active_order['wiggle'] == "Spot":
+
+        # Calculate price difference
+        if active_order['side'] == "Sell":
+            price_difference = active_order['current'] - active_order['start']
+        else:
+            price_difference = active_order['start'] - active_order['current']
+
+        # Calculate trigger price distance percentage
+        if price_difference > 0:
+            active_order['fluctuation'] = 0.3 * math.sqrt(price_difference) + active_order['distance'] + active_order['add_up']
+            print(defs.now_utc()[1] + "Orders: distance: Using spot to set trigger price distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+
+    # Use fixed from config file to set distance        
     else:
-        print(defs.now_utc()[1] + "Orders: distance: Using fixed trigger price distance as " + str(round(active_order['fluctuation'], 4)) + "%\n")
-    
+        active_order['fluctuation'] = active_order['distance']
+        print(defs.now_utc()[1] + "Orders: distance: Using fixed data to set trigger distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+        
     # Return modified data
     return active_order
