@@ -87,7 +87,7 @@ def check_spread(all_buys, spot, spread):
         avg_price = transaction["avgPrice"]
         if (avg_price >= min_price) and (avg_price <= max_price):
              can_buy = False
-             near = min((avg_price / min_price * 100) - 100, (avg_price / max_price * 100) - 100)
+             near = min(abs((avg_price / min_price * 100) - 100), abs((avg_price / max_price * 100) - 100))
              break
          
     if debug:
