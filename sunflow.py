@@ -53,7 +53,6 @@ active_order['orderid']       = 0                               # Orderid
 active_order['trigger']       = 0                               # Trigger price for order
 active_order['trigger_new']   = 0                               # New trigger price when trailing 
 active_order['wiggle']        = config.wiggle                   # Make the distance dynamical
-active_order['add_up']        = 0                               # Custom percentage to add up to triggerprice when wiggling
 active_order['qty']           = 0                               # Order quantity
 active_order['qty_new']       = 0                               # New order quantity when trailing
 

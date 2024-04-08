@@ -257,6 +257,9 @@ def sell(symbol, spot, active_order, prices, info):
 # Calculate trigger price distance if set to dynamical
 def distance(active_order, prices):
 
+    # Debug
+    debug = True
+
     # Initialize variables
     scaler = 3   # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
     number = 7   # Last {number} of prices will be used
@@ -288,15 +291,23 @@ def distance(active_order, prices):
     # Use spot to set distance
     elif active_order['wiggle'] == "Spot":
 
-        # Calculate price difference
+        # Calculate price difference in percentage
         if active_order['side'] == "Sell":
-            price_difference = active_order['current'] - active_order['start']
+            price_difference = ((active_order['current'] - active_order['start']) / active_order['start']) * 100
         else:
-            price_difference = active_order['start'] - active_order['current']
+            price_difference = ((active_order['start'] - active_order['current']) / active_order['start']) * 100
 
         # Calculate trigger price distance percentage
         if price_difference > 0:
-            active_order['fluctuation'] = 0.3 * math.sqrt(price_difference) + active_order['distance'] + active_order['add_up']
+            fluctuation = (1 / math.sqrt(10)) * math.sqrt(price_difference / 2)
+
+            if debug:
+                print(defs.now_utc()[1] + "Orders: distance: Calculated fluctuation " + str(fluctuation) + "\n")
+
+            if fluctuation < active_order['distance']:
+                active_order['fluctuation'] = active_order['distance']
+            else:
+                active_order['fluctuation'] = fluctuation
             print(defs.now_utc()[1] + "Orders: distance: Using spot to set trigger price distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Use fixed from config file to set distance        
