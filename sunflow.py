@@ -8,7 +8,7 @@ from pybit.unified_trading import WebSocket
 from requests.exceptions import ChunkedEncodingError
 from urllib3.exceptions import ProtocolError
 from http.client import RemoteDisconnected
-import traceback
+import sys, traceback
 
 # Load internal libraries
 import config, defs, preload, indicators, trailing, orders
@@ -324,9 +324,13 @@ def handle_orderbook(message):
 # Prechecks to see if we can start sunflow
 def prechecks():
     
-    # initialize variables
+    # Declare some variables global
+    global symbol
+    
+    # Initialize variables
     goahead = True
     
+    # Do checks
     if not ws_kline and not ws_orderbook:
         goahead = False     
         print(defs.now_utc()[1] + "Sunflow: prechecks: ws_klines and ws_orderbook can't both be False")
@@ -335,6 +339,10 @@ def prechecks():
         goahead = False
         print(defs.now_utc()[1] + "Sunflow: prechecks: Indicators and Spread can't both be False")
 
+    # Get first parameter
+    if len(sys.argv) > 1:
+        symbol = sys.argv[1]
+
     # Return result
     return goahead
 
@@ -342,7 +350,7 @@ def prechecks():
 ### Start main program ###
 
 # Check if we can start
-if prechecks:
+if prechecks():
 
     # Welcome screen
     print("\n*************************")
@@ -352,7 +360,7 @@ if prechecks:
     print("Interval: " + str(interval) + "m")
     print("Limit   : " + str(limit))
     print()
-
+    
     # Preload all requirements
     print("*** Preloading ***")
 
