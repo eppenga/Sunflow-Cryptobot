@@ -302,7 +302,7 @@ def distance(active_order, prices):
             fluctuation = (1 / math.sqrt(10)) * math.sqrt(price_difference / 2)
 
             if debug:
-                print(defs.now_utc()[1] + "Orders: distance: Calculated fluctuation " + str(round(fluctuation), 4) + "\n")
+                print(defs.now_utc()[1] + "Orders: distance: Calculated fluctuation " + str(round(fluctuation, 4)) + "\n")
 
             if fluctuation < active_order['distance']:
                 active_order['fluctuation'] = active_order['distance']
