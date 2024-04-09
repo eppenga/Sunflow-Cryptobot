@@ -17,13 +17,14 @@ session = HTTP(
 
 # Initialize variables
 debug = False
-check_counter = 0
+stuck_counter  = 0
+spiker_counter = 0
    
 # Check if we can do trailing buy or sell
 def check_order(symbol, active_order, all_buys, all_sells):
 
     # Declare some variables global
-    global check_counter
+    global stuck_counter, spiker_counter
     
     # Initialize variables
     do_check_order = False
@@ -37,10 +38,10 @@ def check_order(symbol, active_order, all_buys, all_sells):
             do_check_order = True
 
     # Check any 10th check_order anyway, sometimes orders get stuck *** CHECK *** MAYBE CHECK EVERY MINUTE
-    check_counter = check_counter + 1
-    if check_counter == 10:
+    stuck_counter = stuck_counter + 1
+    if stuck_counter == 10:
         print(defs.now_utc()[1] + "Trailing: check_orders: Doing an additional check on trailing order\n")
-        check_counter  = 0
+        stuck_counter  = 0
         do_check_order = True
 
     # Current price crossed trigger price
@@ -69,12 +70,53 @@ def check_order(symbol, active_order, all_buys, all_sells):
         # Check if trailing order if filled, and if so close trailing process
         if order['result']['list'] == []:
             print(defs.now_utc()[1] + "Trailing: check_order: Trailing " + active_order['side'] + ": *** Order has been filled! ***\n")
+            spiker_counter = 0
             close_trail_results = close_trail(active_order, all_buys, all_sells)
             active_order = close_trail_results[0]
             all_buys     = close_trail_results[1]
             all_sells    = close_trail_results[2]
+        else:
+            check_spiker_result = check_spiker(active_order, order, all_buys)
+            active_order = check_spiker_result[0]
+            all_buys     = check_spiker_result[1]
 
     # Return modified data
+    return active_order, all_buys
+
+# Checks if the trailing error spiked
+def check_spiker(active_order, order, all_buys):
+
+    # Declare some variables global
+    global spiker_counter
+
+    # Check if the order spiked and is stuck
+    transaction = orders.decode(order)
+    if active_order['side'] == "Sell":
+        # Did it spike and was forgotten when selling
+        if transaction['triggerPrice'] > active_order['current']:
+            spiker_counter = spiker_counter + 1
+            # It spiked when selling
+            if check_spiker == 3:
+                print(defs.now_utc()[1] + "Trailing: check_order: " + active_order['side'] + ": *** It spiked, yakes! ***\n")
+                # Reset trailing sell
+                active_order['active'] = False
+                # Remove order from exchange
+                orders.cancel(active_order['orderid'])
+    else:
+        # Did it spike and was forgotten when buying
+        if transaction['triggerPrice'] < active_order['current']:
+            spiker_counter = spiker_counter + 1
+            # It spiked when buying
+            if check_spiker == 3:
+                print(defs.now_utc()[1] + "Trailing: check_order: " + active_order['side'] + ": *** It spiked, yakes! ***\n")
+                # Reset trailing buy
+                active_order['active'] = False
+                # Remove order from all buys
+                database.remove(active_order['orderid'])                        
+                # Remove order from exchange
+                all_buys = orders.cancel(active_order['orderid'], all_buys)                                
+        
+    # Return data
     return active_order, all_buys
 
 # Trailing order does not exist anymore, close it

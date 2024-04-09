@@ -97,9 +97,30 @@ def decode(order):
     transaction['cumExecQty']   = float(order['result']['list'][0]['cumExecQty'])
     transaction['cumExecValue'] = float(order['result']['list'][0]['cumExecValue'])
     transaction['cumExecFee']   = float(order['result']['list'][0]['cumExecFee'])
+    transaction['triggerPrice'] = float(order['result']['list'][0]['triggerPrice'])
 
     # Return order
     return transaction
+
+# Cancel an order at the exchange
+def cancel(symbol, orderid):
+    
+    # Cancel order
+    message = defs.now_utc()[1] + "Orders: cancel: session: cancel_order\n"
+    print(message)
+    order = {}
+    try:
+        order = session.cancel_order(
+            category = "spot",
+            symbol   = symbol,
+            orderId  = orderid
+        )
+    except Exception as e:
+        defs.log_error(e)
+        
+    # Log data if possible
+    if order:      
+        defs.log_exchange(order, message)    
 
 # Turn an order from the exchange into a properly formatted transaction after placing or amending an order
 def transaction_from_order(order):

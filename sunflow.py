@@ -372,7 +372,7 @@ if prechecks():
     all_buys = preload.get_buys(config.dbase_file) 
     all_buys = preload.check_orders(all_buys)
     prices   = klines['close']
-    
+        
     print("*** Starting ***\n")
 
 ### Websockets ###

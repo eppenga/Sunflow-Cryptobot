@@ -42,6 +42,36 @@ def load(dbase_file):
     # Return database
     return all_buys
 
+# Remove an order from the all buys database file
+def remove(orderid, all_buys):
+    
+    # Debug
+    debug = False
+    
+    # Initialize variables
+    all_buys_new = []
+    found_order   = False
+    
+    # Remove the order
+    for loop_buy in all_buys:
+        if loop_buy['orderId'] != orderid:
+            found_order = True
+            all_buys_new.append(loop_buy)
+
+    # Output to stdout
+    if not found_order:
+        message = "Database: remove: The order with ID " + str(orderid) + " which we were about to remove was not found!"
+        print(defs.now_utc()[1] + message + "\n")
+        defs.log_error(message)
+    else:
+        print(defs.now_utc()[1] + "Database: remove: Order with ID " + str(orderid) + " removed from all buys database!\n")
+    
+    # Save to database
+    save(all_buys_new)   
+    
+    # Retrun database
+    return all_buys_new
+
 # Register all buys in a database file
 def register_buy(buy_order, all_buys):
 
