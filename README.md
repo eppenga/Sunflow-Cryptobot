@@ -1,5 +1,5 @@
 # Sunflow Crypto Trading Bot
-**Crypto Trading Bot to use on Bybit, works fast and efficient. Uses websockets to trade in realtime, also featuring trailing buy and sell. Can use an additional interval to work as confirmation for buy orders. Option to run as dynamic gribot to save on funds. Uses simular technical analysis for buy confirmation as TradingView.**
+**Crypto Trading Bot to use on Bybit, works fast and efficient. Uses websockets to trade in realtime featuring trailing buy and sell. Option to use additional interval to work as confirmation for buy orders. Option to run as dynamic gribot to save on funds. Option to use technical analysis for buy confirmation simular to TradingView.**
 
 ## Features
 - Trailing Buy and Sell
