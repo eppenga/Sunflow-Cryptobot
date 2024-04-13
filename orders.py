@@ -203,8 +203,9 @@ def check_sell(spot, profit, active_order, all_buys, info):
 
     # Initialize variables
     qty               = 0
-    distance          = active_order['distance']
     counter           = 0
+    nearest           = []
+    distance          = active_order['distance']
     can_sell          = False
     all_sells         = []
        
@@ -215,8 +216,9 @@ def check_sell(spot, profit, active_order, all_buys, info):
         if transaction['status'] == 'Closed':
                        
             # Check if a transaction is profitable
-            profitable_price = transaction['avgPrice'] * (1 + ((profit + distance) / 100))        
-            if  spot >= profitable_price:
+            profitable_price = transaction['avgPrice'] * (1 + ((profit + distance) / 100))
+            nearest.append(profitable_price - spot)
+            if spot >= profitable_price:
                 qty = qty + transaction['cumExecQty']
                 all_sells.append(transaction)
                 counter = counter + 1
@@ -226,7 +228,10 @@ def check_sell(spot, profit, active_order, all_buys, info):
     
     if all_sells:
         can_sell = True
-        print(defs.now_utc()[1] + "Orders: check_sell: Selling " + str(counter) + " orders for a total of " + str(qty) + " " + info['baseCoin'] + "\n")
+        print(defs.now_utc()[1] + "Orders: check_sell: Can sell " + str(counter) + " orders for a total of " + str(qty) + " " + info['baseCoin'] + "\n")
+    else:
+        rise_to = str(defs.precision(min(nearest), info['tickSize']))
+        print(defs.now_utc()[1] + "Orders: check_sell: Price needs to rise " + rise_to + " " + info['quoteCoin'] + " to be able to start selling\n")
     
     # Return data
     return all_sells, qty, can_sell
