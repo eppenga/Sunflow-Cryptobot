@@ -9,20 +9,20 @@ symbol             = "OPUSDT"     # Symbol bot used for trading
 interval_1         = 1            # Klines timeframe default interval
 interval_2         = 3            # Klines timeframe confirmation interval, set to 0 if you only want to use default interval
 limit              = 250          # Number of klines downloaded, used for calculcating technical indicators
-profit             = 0.2          # Minimum profit percentage
-distance           = 0.1          # Trigger price distance percentage
+profit             = 0.40         # Minimum profit percentage
+distance           = 0.10         # Trigger price distance percentage
 wiggle             = "Spot"       # Have a dynamical trigger price distance percentage
-depth              = 0.1          # Depth in percentages used to calculate market depth from orderbook
-multiplier         = 1            # Multiply minimum order quantity by this
+depth              = 0.10         # Depth in percentages used to calculate market depth from orderbook
+multiplier         = 1.00         # Multiply minimum order quantity by this
 
 # Spread between orders
 spread_enabled     = True         # Use spread
-spread_distance    = 0.10         # Minimum spread in percentages
+spread_distance    = 0.20         # Minimum spread in percentages
 
 # Technical indicators
 indicators_enabled = True         # Use technical indicators
-indicators_minimum = -1.00        # Minimum advice value
-indicators_maximum = -0.25        # Maximum advice value
+indicators_minimum = -0.50        # Minimum advice value
+indicators_maximum = +0.50        # Maximum advice value
 
 # Orderbook
 orderbook_enabled  = False        # Use technical indicators
@@ -39,7 +39,7 @@ api_secret         = "123456"                                   # API Secret
 data_folder        = "data/"                                    # Where is data stored
 data_suffix        = data_folder + symbol + "_"                 # Format of data and log files
 dbase_file         = data_suffix + "buy_orders.json"            # Database file buy orders
-exchange_file     =  data_suffix + "exchange.log"               # Exchange log file
+exchange_file      =  data_suffix + "exchange.log"              # Exchange log file
 error_file         = data_suffix + "errors.log"                 # Error log file
 
 # Websockets
