@@ -232,7 +232,8 @@ def check_sell(spot, profit, active_order, all_buys, info):
         can_sell = True
         print(defs.now_utc()[1] + "Orders: check_sell: Can sell " + str(counter) + " orders for a total of " + str(qty) + " " + info['baseCoin'] + "\n")
     else:
-        rise_to = str(defs.precision(min(nearest), info['tickSize'])) + " " + info['quoteCoin']
+        if nearest:
+            rise_to = str(defs.precision(min(nearest), info['tickSize'])) + " " + info['quoteCoin']
     
     # Return data
     return all_sells, qty, can_sell, rise_to
