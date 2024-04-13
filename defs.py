@@ -168,3 +168,75 @@ def log_error(exception):
         print(defs.now_utc()[1] + "Defs: error: *** Termination program, error to severe! ***\n")
         print(exception)
         exit()
+
+# Outputs a (Pass) or (Fail)
+def report_result(result):
+
+    # Initialize variable
+    pafa = "(None)"
+
+    # Logic
+    if result:
+        pafa = "(Pass)"
+    else:
+        pafa = "(Fail)"
+
+    # Return result
+    return pafa
+
+# Outputs to stdout the buy decission
+def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook):
+            
+    # Debug
+    debug = False
+
+    # Initialize variables
+    can_buy = False
+    message = "Buy matrix: "
+
+    # Get the intervals
+    intervals = list(technical_advice.keys())
+
+    # Create message for stdout
+    if use_indicators['enabled']:
+        if intervals[1] != 0:
+            message += "TA-1 " + str(intervals[0]) + "m: " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
+            message += report_result(technical_advice[intervals[0]]['result']) + ", "
+            message += "TA-2 " + str(intervals[1]) + "m: " + str(round(technical_advice[intervals[1]]['value'], 2)) + " "
+            message += report_result(technical_advice[intervals[1]]['result']) + ", "
+        else:
+            message += "TA " + str(intervals[0]) + "m: " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
+            message += report_result(technical_advice[intervals[0]]['result']) + ", "
+    if use_spread['enabled']:
+        message += "Spread: " + str(spread_advice['nearest']) + "% "
+        message += report_result(spread_advice['result']) + ", "
+    
+    if use_orderbook['enabled']:
+        message += "Orderbook: " + str(orderbook_advice['value']) + "% "
+        message += report_result(orderbook_advice['result']) + ", "
+
+    if (technical_advice[intervals[0]]['result']) and technical_advice[intervals[1]]['result'] and (spread_advice['result']) and (orderbook_advice['result']):
+        can_buy = True
+        message += "PASS!"
+    else:
+        can_buy = False
+        message += "FAIL!"
+
+    # Debug
+    if debug:
+        print("\n\n*** Simplified buy reporting ***\n")
+
+        print("Intervals:")
+        print(intervals, "\n")
+
+        print("Technical advice:")
+        print(technical_advice, "\n")
+        
+        print("Spread advice:")
+        print(spread_advice, "\n")
+        
+        print("Orderbook advice:")
+        print(orderbook_advice, "\n")
+    
+    # Return result
+    return can_buy, message

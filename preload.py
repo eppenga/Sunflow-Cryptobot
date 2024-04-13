@@ -9,17 +9,17 @@ import os, time
 # Load internal libraries
 import config, database, defs, orders
 
-# Initialize variables
-debug  = False
-ticker = {'time': 0, 'lastPrice': 0}
-klines = {'time': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volume': [], 'turnover': []}
-info   = {'time': 0, 'symbol': '', 'baseCoin': '', 'quoteCoin': '', 'status': '', 'basePrecision': 0, 'quotePrecision': 0, 'minOrderQty': 0, 'maxOrderQty': 0, 'minOrderAmt': 0, 'maxOrderAmt': 0, 'tickSize': 0} 
+# Debug
+debug = False
 
 # Connect to exchange
 session = HTTP(testnet = False)
 
 # Preload ticker
 def get_ticker(symbol):
+
+    # Initialize ticker
+    ticker = {'time': 0, 'lastPrice': 0}
    
     # Load ticker via normal session
     message = defs.now_utc()[1] + "Preload: get_ticker: session: get_tickers\n"
@@ -53,8 +53,14 @@ def get_ticker(symbol):
     return ticker
 
 # Preload klines
-def get_klines(symbol, interval=15, limit=50):
+def get_klines(symbol, interval, limit):
    
+    # Debug
+    debug = False
+    
+    # Initialize klines
+    klines = {'time': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volume': [], 'turnover': []}
+    
     # Load klines via normal session
     message = defs.now_utc()[1] + "Orders: get_klines: session: get_kline\n"
     print(message)
@@ -88,10 +94,10 @@ def get_klines(symbol, interval=15, limit=50):
         klines[key].reverse()
         
     # Output to stdout
-    print(defs.now_utc()[1] + "Preload: get_klines: Initial klines loaded!\n")
+    print(defs.now_utc()[1] + "Preload: get_klines: Initial klines with interval " + str(interval) + "m loaded!\n")
     
     if debug:
-        print(defs.now_utc()[1] + "Preload: get_klines: Prefilled klines")
+        print(defs.now_utc()[1] + "Preload: get_klines: Prefilled klines with interval " + str(interval) + "m")
         print(defs.now_utc()[1] + "Time : " + str(klines['time']))
         print(defs.now_utc()[1] + "Open : " + str(klines['open']))
         print(defs.now_utc()[1] + "High : " + str(klines['high']))
@@ -103,6 +109,9 @@ def get_klines(symbol, interval=15, limit=50):
 
 # Preload instrument info
 def get_info(symbol, spot, multiplier):
+
+    # Initialize info
+    info   = {'time': 0, 'symbol': '', 'baseCoin': '', 'quoteCoin': '', 'status': '', 'basePrecision': 0, 'quotePrecision': 0, 'minOrderQty': 0, 'maxOrderQty': 0, 'minOrderAmt': 0, 'maxOrderAmt': 0, 'tickSize': 0} 
 
     # Load instrument info via normal session
     message = defs.now_utc()[1] + "Orders: get_info: session: get_instruments_info\n"
@@ -222,7 +231,7 @@ def check_orders(transactions):
     for transaction in transactions:
 
         # Get exchange info
-        print(defs.now_utc()[1] + "Preload: check_orders: Now checking order: " + str(transaction['orderId']))
+        print(defs.now_utc()[1] + "Preload: check_orders: Now checking order: " + str(transaction['orderId']) + "\n")
         exchange_transaction = orders.transaction_from_id(transaction['orderId'])
 
         if "Filled" in exchange_transaction['orderStatus']:

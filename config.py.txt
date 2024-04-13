@@ -6,7 +6,8 @@
 
 # Default values
 symbol             = "OPUSDT"     # Symbol bot used for trading
-interval           = 1            # Klines timeframe interval 
+interval_1         = 1            # Klines timeframe default interval
+interval_2         = 3            # Klines timeframe confirmation interval, set to 0 if you only want to use default interval
 limit              = 250          # Number of klines downloaded, used for calculcating technical indicators
 profit             = 0.2          # Minimum profit percentage
 distance           = 0.1          # Trigger price distance percentage
@@ -22,6 +23,11 @@ spread_distance    = 0.10         # Minimum spread in percentages
 indicators_enabled = True         # Use technical indicators
 indicators_minimum = -1.00        # Minimum advice value
 indicators_maximum = -0.25        # Maximum advice value
+
+# Orderbook
+orderbook_enabled  = False        # Use technical indicators
+orderbook_minimum  = 40.00        # Minimum orderbook percentage
+orderbook_maximum  = 60.00        # Maximum orderbook percentage
 
 # Exchange keys (ALWAYS KEEP THESE SECRET)
 api_key            = "123456"                                   # API Key

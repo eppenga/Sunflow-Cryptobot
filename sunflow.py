@@ -19,7 +19,8 @@ import config, defs, preload, indicators, trailing, orders
 debug                         = config.debug                   # Debug
 symbol                        = config.symbol                  # Symbol bot used for trading
 klines                        = {}                             # Klines for symbol
-interval                      = config.interval                # Klines timeframe interval 
+interval_1                    = config.interval_1              # Klines timeframe interval 1
+interval_2                    = config.interval_2              # Klines timeframe interval 2
 limit                         = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
 ticker                        = {}                             # Ticker data, including lastPrice and time
 info                          = {}                             # Instrument info on symbol
@@ -39,6 +40,12 @@ use_indicators                = {}                             # Technical indic
 use_indicators['enabled']     = config.indicators_enabled      # Use technical indicators
 use_indicators['minimum']     = config.indicators_minimum      # Minimum advice value
 use_indicators['maximum']     = config.indicators_maximum      # Maximum advice value
+
+# Orderbook
+use_orderbook                 = {}                            # Orderbook
+use_orderbook['enabled']      = config.orderbook_enabled      # Use orderbook
+use_orderbook['minimum']      = config.orderbook_minimum      # Minimum orderbook percentage
+use_orderbook['maximum']      = config.orderbook_maximum      # Maximum orderbook percentage
 
 # Trailing order
 active_order                  = {}                              # Trailing order data
@@ -63,6 +70,10 @@ all_sells                     = {}                              # Sell order lin
 # Websockets where ticker is always on
 ws_kline                      = config.ws_kline                 # Use klines websocket
 ws_orderbook                  = config.ws_orderbook             # Use orderbook websocket
+
+technical_advice = {}
+technical_advice[interval_1] = {'result': False, 'value': 0, 'level': 'Neutral'}
+technical_advice[interval_2] = {'result': False, 'value': 0, 'level': 'Neutral'}
 
 ### Functions ###
 
@@ -110,7 +121,7 @@ def handle_ticker(message):
             # If trailing buy is already running while we can sell
             if active_order['active'] and active_order['side'] == "Buy" and can_sell:
                 print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Warning loosing money, we can sell while we are buying! ***\n")
-                # Cancel trailing buy order
+                # Cancel trailing buy order *** CHECK *** To be implemented!
                 # Remove from all_buys database
                 # set active_order["side"] to Sell
 
@@ -167,21 +178,34 @@ def handle_ticker(message):
         print("Full traceback:")
         traceback.print_tb(e.__traceback__)
 
+def handle_kline_1(message):
+    handle_kline(message, interval_1)
+
+def handle_kline_2(message):
+    handle_kline(message, interval_2)
+
 # Handle messages to keep klines up to date
-def handle_kline(message):
+def handle_kline(message, interval):
+
+    # Debug
+    debug = False
 
     # Errors are not reported within websocket
     try:
 
         # Declare some variables global
-        global klines, active_order, all_buys
+        global klines, active_order, all_buys, technical_advice
 
         # Initialize variables
-        kline = {}
+        can_buy              = False
+        kline                = {}
+        spread_advice        = {} 
+        orderbook_advice     = {}
+        technical_indicators = {}
      
         # Show incoming message
         if debug:
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: *** Incoming kline ***")
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: *** Incoming kline with interval" + str(interval) + "m ***")
             print(message)
 
         # Get newest kline
@@ -197,49 +221,62 @@ def handle_kline(message):
         if message['data'][0]['confirm'] == True:
 
             # Check if the number of klines still matches the config and report
-            klines_count = len(klines['close'])
+            klines_count = len(klines[interval]['close'])
             if klines_count != limit:
-                klines = preload.get_klines(symbol, interval, limit)
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: Popping new kline onto the existing " + str(klines_count) + " klines\n")
-            klines = defs.new_kline(kline, klines)
+                klines[interval] = preload.get_klines(symbol, interval, limit)
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: Added new kline with interval "  + str(interval) + "m onto existing " + str(klines_count) + " klines\n")
+            klines[interval] = defs.new_kline(kline, klines[interval])
       
         else:            
             # Remove the first kline and replace with fresh kline
-            klines = defs.update_kline(kline, klines)       
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: Refreshed first kline with interval "  + str(interval) + "m\n")
+            klines[interval] = defs.update_kline(kline, klines[interval])
         
         # Only initiate buy and do complex calculations when not already trailing
         if not active_order['active']:
             
-            # Initialize variables
-            advice_near = 0
-            advice_indicators = advice_spread = False
-            technical_advice = {}
-            technical_advice[0] = 0
-            technical_advice[1] = 0
-
-            # Check technical indicators for buy decission
+            # Check TECHNICAL INDICATORS for buy decission
             if use_indicators['enabled']:
-                technical_indicators = indicators.calculate(klines, spot)
-                technical_advice     = indicators.advice(technical_indicators)
-                if (technical_advice[0] >= use_indicators['minimum']) and (technical_advice[0] <= use_indicators['maximum']):
-                    advice_indicators = True
+                technical_indicators                = indicators.calculate(klines[interval], spot)
+                result                              = indicators.advice(technical_indicators)
+                technical_advice[interval]['value'] = result[0]
+                technical_advice[interval]['level'] = result[1]
+
+                # Check if technical advice is within range
+                if (technical_advice[interval]['value'] >= use_indicators['minimum']) and (technical_advice[interval]['value'] <= use_indicators['maximum']):
+                    technical_advice[interval]['result'] = True
+                else:
+                    technical_advice[interval]['result'] = False
             else:
-                advice_indicators = True
+                # If indicators are not enabled, always true
+                technical_advice[interval]['result'] = True
             
-            # Check spread for buy decission
+            # Check SPREAD for buy decission
             if use_spread['enabled']:
-                check_spread_advice = defs.check_spread(all_buys, spot, use_spread['distance'])
-                advice_spread = check_spread_advice[0]
-                advice_near   = round(check_spread_advice[1], 2)
+                result                   = defs.check_spread(all_buys, spot, use_spread['distance'])
+                spread_advice['result']  = result[0]
+                spread_advice['nearest'] = round(result[1], 2)
             else:
-                advice_spread = True
+                # If spread is not enabled, always true
+                spread_advice['result'] = True
+
+            # Check ORDERBOOK for buy decission *** CHECK *** To be implemented
+            if use_orderbook['enabled']:
+                # Put orderbook logic here
+                orderbook_advice['value']  = 0
+                orderbook_advice['result'] = True
+            else:
+                # If orderbook is not enabled, always true
+                orderbook_advice['result'] = True
             
-            # Check orderbook for buy decission
-            # *** CHECK *** To be implemented
+            # Get buy decission and report
+            result  = defs.decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook)
+            can_buy = result[0]
+            message = result[1]
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: " + message + "\n")
             
-            # Combine all data to make a buy decission
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: Buy matrix: Indicators: " + str(advice_indicators) + " (" + str(round(technical_advice[0], 2)) + ") | Spread: " + str(advice_spread) + " (" + str(advice_near) + "%)\n")
-            if (advice_indicators) and (advice_spread):
+            # Execute buy decission
+            if can_buy:
                 buy_result   = orders.buy(symbol, spot, active_order, prices, all_buys, info)
                 active_order = buy_result[0]
                 all_buys     = buy_result[1]
@@ -356,23 +393,25 @@ if prechecks():
     print("\n*************************")
     print("*** Sunflow Cryptobot ***")
     print("*************************\n")
-    print("Symbol  : " + symbol)
-    print("Interval: " + str(interval) + "m")
-    print("Limit   : " + str(limit))
+    print("Symbol    : " + symbol)
+    print("Interval 1: " + str(interval_1) + "m")
+    print("Interval 2: " + str(interval_2) + "m")
+    print("Limit     : " + str(limit))
     print()
     
     # Preload all requirements
-    print("*** Preloading ***")
+    print("*** Preloading ***\n")
 
     preload.check_files()
-    klines   = preload.get_klines(symbol, interval, limit)
-    ticker   = preload.get_ticker(symbol)
-    spot     = ticker['lastPrice']
-    info     = preload.get_info(symbol, spot, multiplier)
-    all_buys = preload.get_buys(config.dbase_file) 
-    all_buys = preload.check_orders(all_buys)
-    prices   = klines['close']
-        
+    klines[interval_1] = preload.get_klines(symbol, 1, limit)
+    klines[interval_2] = preload.get_klines(symbol, 3, limit)
+    ticker             = preload.get_ticker(symbol)
+    spot               = ticker['lastPrice']
+    info               = preload.get_info(symbol, spot, multiplier)
+    all_buys           = preload.get_buys(config.dbase_file) 
+    all_buys           = preload.check_orders(all_buys)
+    prices             = klines[interval_1]['close']
+       
     print("*** Starting ***\n")
 
 ### Websockets ###
@@ -387,7 +426,10 @@ def subscribe_streams(ws):
 
     # At request get klines from websocket
     if ws_kline:
-        ws.kline_stream(interval=1, symbol=symbol, callback=handle_kline)
+        ws.kline_stream(interval=interval_1, symbol=symbol, callback=handle_kline_1)
+        # Use second interval as confirmation
+        if interval_2 != 0:
+            ws.kline_stream(interval=interval_2, symbol=symbol, callback=handle_kline_2)
 
     # At request get orderbook from websocket
     if ws_orderbook:
