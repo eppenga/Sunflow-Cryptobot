@@ -204,6 +204,7 @@ def check_sell(spot, profit, active_order, all_buys, info):
     # Initialize variables
     qty               = 0
     counter           = 0
+    rise_to           = ""
     nearest           = []
     distance          = active_order['distance']
     can_sell          = False
@@ -226,15 +227,15 @@ def check_sell(spot, profit, active_order, all_buys, info):
     # Adjust quantity to exchange regulations
     qty = defs.precision(qty, info['basePrecision'])
     
+    # Can sell or not
     if all_sells:
         can_sell = True
         print(defs.now_utc()[1] + "Orders: check_sell: Can sell " + str(counter) + " orders for a total of " + str(qty) + " " + info['baseCoin'] + "\n")
     else:
-        rise_to = str(defs.precision(min(nearest), info['tickSize']))
-        print(defs.now_utc()[1] + "Orders: check_sell: Price needs to rise " + rise_to + " " + info['quoteCoin'] + " to be able to start selling\n")
+        rise_to = str(defs.precision(min(nearest), info['tickSize'])) + " " + info['quoteCoin']
     
     # Return data
-    return all_sells, qty, can_sell
+    return all_sells, qty, can_sell, rise_to
 
 # New sell order
 def sell(symbol, spot, active_order, prices, info):

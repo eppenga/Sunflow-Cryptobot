@@ -86,7 +86,7 @@ def handle_ticker(message):
         # Declare some variables global
         global spot, ticker, active_order, all_buys, all_sells
 
-        # Show incoming message
+        # Debug show incoming message
         if debug:
             print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Incoming ticker ***")
             print(str(message) + "\n")
@@ -99,10 +99,9 @@ def handle_ticker(message):
         # Has price changed, then run all kinds of actions
         if spot != ticker['lastPrice']:
             
-            # Add last price to prices list and report
+            # Add last price to prices list and remove first
             prices.append(spot)
             del prices[0]
-            print(defs.now_utc()[1] + "Sunflow: handle_ticker: lastPrice changed from " + str(spot) + " " + info['quoteCoin'] + " to " + str(ticker['lastPrice']) + " " + info['quoteCoin'] + "\n")
                 
             # Run trailing if active
             if active_order['active']:
@@ -117,6 +116,14 @@ def handle_ticker(message):
             all_sells_new           = check_sell_results[0]
             active_order['qty_new'] = check_sell_results[1]
             can_sell                = check_sell_results[2]
+            rise_to                 = check_sell_results[3]
+
+            # Output to stdout
+            print(defs.now_utc()[1] + "Sunflow: handle_ticker: lastPrice changed from " + str(spot) + " " + info['quoteCoin'] + " to " + str(ticker['lastPrice']) + " " + info['quoteCoin'], end="")
+            if rise_to:
+                print(", it needs to increase " + rise_to + "\n")
+            else:
+                print("\n")
             
             # If trailing buy is already running while we can sell
             if active_order['active'] and active_order['side'] == "Buy" and can_sell:
@@ -229,7 +236,6 @@ def handle_kline(message, interval):
       
         else:            
             # Remove the first kline and replace with fresh kline
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: Refreshed first kline with interval "  + str(interval) + "m\n")
             klines[interval] = defs.update_kline(kline, klines[interval])
         
         # Only initiate buy and do complex calculations when not already trailing
@@ -270,7 +276,7 @@ def handle_kline(message, interval):
                 orderbook_advice['result'] = True
             
             # Get buy decission and report
-            result  = defs.decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook)
+            result  = defs.decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval)
             can_buy = result[0]
             message = result[1]
             print(defs.now_utc()[1] + "Sunflow: handle_kline: " + message + "\n")

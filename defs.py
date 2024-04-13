@@ -185,14 +185,14 @@ def report_result(result):
     return pafa
 
 # Outputs to stdout the buy decission
-def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook):
+def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval):
             
     # Debug
     debug = False
 
     # Initialize variables
     can_buy = False
-    message = "Buy matrix: "
+    message = "Buy matrix (" + str(interval) + "m): "
 
     # Get the intervals
     intervals = list(technical_advice.keys())
