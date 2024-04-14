@@ -11,6 +11,7 @@
 - Error handling including auto reconnect
 
 ![Buy confirmation with optional multiple intervals and technical analysis](https://github.com/eppenga/Sunflow-Cryptobot/assets/4440994/90184716-a793-4c1a-8907-4d746809c763)
+_Buy confirmation with optional multiple intervals and technical analysis._
 
 ### Datafolder
 It automatically creates a data folder where it stores a database of all buy trades (in a human readable json format), errors and a log when a request was made to Bybit. 
