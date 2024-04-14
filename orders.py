@@ -10,7 +10,7 @@ from pybit.unified_trading import HTTP
 # Load internal libraries
 import config, database, defs
 
-# Initialize variables
+# Debug
 debug  = False
 
 # Connect to exchange
