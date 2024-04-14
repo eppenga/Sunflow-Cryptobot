@@ -173,13 +173,13 @@ def log_error(exception):
 def report_result(result):
 
     # Initialize variable
-    pafa = "(None)"
+    pafa = "(No buy)"
 
     # Logic
     if result:
         pafa = "(Buy)"
     else:
-        pafa = "(None)"
+        pafa = "(No buy)"
 
     # Return result
     return pafa
@@ -220,7 +220,7 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
         message += "BUY!"
     else:
         can_buy = False
-        message += "NONE!"
+        message += "NO BUY"
 
     # Debug
     if debug:
