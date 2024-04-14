@@ -177,9 +177,9 @@ def report_result(result):
 
     # Logic
     if result:
-        pafa = "(Pass)"
+        pafa = "(Buy)"
     else:
-        pafa = "(Fail)"
+        pafa = "(None)"
 
     # Return result
     return pafa
@@ -217,10 +217,10 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
 
     if (technical_advice[intervals[0]]['result']) and technical_advice[intervals[1]]['result'] and (spread_advice['result']) and (orderbook_advice['result']):
         can_buy = True
-        message += "PASS!"
+        message += "BUY!"
     else:
         can_buy = False
-        message += "FAIL!"
+        message += "NONE!"
 
     # Debug
     if debug:
