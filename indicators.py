@@ -10,7 +10,7 @@ import pandas_ta as ta
 # Load internal libraries
 import defs
 
-# Initialize variables
+# Debug
 debug = False
 
 # Calculcate indicators based on klines
