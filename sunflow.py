@@ -13,11 +13,15 @@ import sys, traceback
 # Load internal libraries
 import config, defs, preload, indicators, trailing, orders
 
+# Check command line
+if len(sys.argv) > 1:symbol_cl = sys.argv[1]
+
 ### Initialize variables ###
 
 # Set default values
 debug                         = config.debug                   # Debug
 symbol                        = config.symbol                  # Symbol bot used for trading
+if symbol_cl: symbol          = symbol_cl                      # Set symbol via command line
 klines                        = {}                             # Klines for symbol
 interval_1                    = config.interval_1              # Klines timeframe interval 1
 interval_2                    = config.interval_2              # Klines timeframe interval 2
@@ -381,11 +385,15 @@ def prechecks():
     if not use_spread['enabled'] and not use_indicators['enabled']:
         goahead = False
         print(defs.now_utc()[1] + "Sunflow: prechecks: Indicators and Spread can't both be False")
+        
+    if not ws_kline and use_indicators['enabled']:
+        goahead = False
+        print(defs.now_utc()[1] + "Sunflow: prechecks: Must set ws_kline to True when indicators are enabled")
 
-    # Get first parameter
-    if len(sys.argv) > 1:
-        symbol = sys.argv[1]
-
+    if not ws_kline and use_orderbook['enabled']:
+        goahead = False
+        print(defs.now_utc()[1] + "Sunflow: prechecks: Must set ws_orderbook to True when orderbook is enabled")
+    
     # Return result
     return goahead
 
