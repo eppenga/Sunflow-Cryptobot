@@ -25,7 +25,7 @@ pip install -r requirements.txt
 ```
 
 ### Configure
-Configure by creating a config.py file from the config.py.txt file. Copy config.py.txt to config.py and use your favorite editor to modify.
+Configure by creating a config.py file from the config.py.txt file. Rename config.py.txt to config.py and use your favorite editor to modify.
 ```
 ./config.py
 ```

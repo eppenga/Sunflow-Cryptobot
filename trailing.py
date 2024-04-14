@@ -16,7 +16,7 @@ session = HTTP(
 )
 
 # Initialize variables
-debug = False
+debug          = False
 stuck_counter  = 0
 spiker_counter = 0
    
