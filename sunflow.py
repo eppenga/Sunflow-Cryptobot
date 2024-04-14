@@ -13,70 +13,66 @@ import sys, traceback
 # Load internal libraries
 import config, defs, preload, indicators, trailing, orders
 
-# Check command line
-symbol_cl = ""
-if len(sys.argv) > 1:symbol_cl = sys.argv[1]
-
 ### Initialize variables ###
 
 # Set default values
-debug                         = config.debug                   # Debug
-symbol                        = config.symbol                  # Symbol bot used for trading
-if symbol_cl: symbol          = symbol_cl                      # Set symbol via command line
-klines                        = {}                             # Klines for symbol
-interval_1                    = config.interval_1              # Klines timeframe interval 1
-interval_2                    = config.interval_2              # Klines timeframe interval 2
-limit                         = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
-ticker                        = {}                             # Ticker data, including lastPrice and time
-info                          = {}                             # Instrument info on symbol
-spot                          = 0                              # Spot price, always equal to lastPrice
-profit                        = config.profit                  # Minimum profit percentage
-depth                         = config.depth                   # Depth in percentages used to calculate market depth from orderbook
-multiplier                    = config.multiplier              # Multiply minimum order quantity by this
-prices                        = {}                             # Last {limit} prices based on ticker
+debug                        = config.debug                   # Debug
+symbol                       = config.symbol                  # Symbol bot used for trading
+klines                       = {}                             # Klines for symbol
+interval_1                   = config.interval_1              # Klines timeframe interval 1
+interval_2                   = config.interval_2              # Klines timeframe interval 2
+limit                        = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
+ticker                       = {}                             # Ticker data, including lastPrice and time
+info                         = {}                             # Instrument info on symbol
+spot                         = 0                              # Spot price, always equal to lastPrice
+profit                       = config.profit                  # Minimum profit percentage
+depth                        = config.depth                   # Depth in percentages used to calculate market depth from orderbook
+multiplier                   = config.multiplier              # Multiply minimum order quantity by this
+prices                       = {}                             # Last {limit} prices based on ticker
 
 # Minimum spread between historical buy orders
-use_spread                    = {}                             # Spread
-use_spread['enabled']         = config.spread_enabled          # Use spread
-use_spread['distance']        = config.spread_distance         # Minimum spread in percentages
+use_spread                   = {}                             # Spread
+use_spread['enabled']        = config.spread_enabled          # Use spread
+use_spread['distance']       = config.spread_distance         # Minimum spread in percentages
 
 # Technical indicators
-use_indicators                = {}                             # Technical indicators
-use_indicators['enabled']     = config.indicators_enabled      # Use technical indicators
-use_indicators['minimum']     = config.indicators_minimum      # Minimum advice value
-use_indicators['maximum']     = config.indicators_maximum      # Maximum advice value
+use_indicators               = {}                             # Technical indicators
+use_indicators['enabled']    = config.indicators_enabled      # Use technical indicators
+use_indicators['minimum']    = config.indicators_minimum      # Minimum advice value
+use_indicators['maximum']    = config.indicators_maximum      # Maximum advice value
 
 # Orderbook
-use_orderbook                 = {}                            # Orderbook
-use_orderbook['enabled']      = config.orderbook_enabled      # Use orderbook
-use_orderbook['minimum']      = config.orderbook_minimum      # Minimum orderbook percentage
-use_orderbook['maximum']      = config.orderbook_maximum      # Maximum orderbook percentage
+use_orderbook                = {}                             # Orderbook
+use_orderbook['enabled']     = config.orderbook_enabled       # Use orderbook
+use_orderbook['minimum']     = config.orderbook_minimum       # Minimum orderbook percentage
+use_orderbook['maximum']     = config.orderbook_maximum       # Maximum orderbook percentage
 
 # Trailing order
-active_order                  = {}                              # Trailing order data
-active_order['side']          = ""                              # Trailing buy
-active_order['active']        = False                           # Trailing order active or not
-active_order['start']         = 0                               # Start price when trailing order began     
-active_order['previous']      = 0                               # Previous price
-active_order['current']       = 0                               # Current price
-active_order['distance']      = config.distance                 # Trigger price distance percentage
-active_order['fluctuation']   = config.distance                 # Trigger price distance percentage when wiggling
-active_order['orderid']       = 0                               # Orderid
-active_order['trigger']       = 0                               # Trigger price for order
-active_order['trigger_new']   = 0                               # New trigger price when trailing 
-active_order['wiggle']        = config.wiggle                   # Make the distance dynamical
-active_order['qty']           = 0                               # Order quantity
-active_order['qty_new']       = 0                               # New order quantity when trailing
+active_order                 = {}                             # Trailing order data
+active_order['side']         = ""                             # Trailing buy
+active_order['active']       = False                          # Trailing order active or not
+active_order['start']        = 0                              # Start price when trailing order began     
+active_order['previous']     = 0                              # Previous price
+active_order['current']      = 0                              # Current price
+active_order['distance']     = config.distance                # Trigger price distance percentage
+active_order['fluctuation']  = config.distance                # Trigger price distance percentage when wiggling
+active_order['orderid']      = 0                              # Orderid
+active_order['trigger']      = 0                              # Trigger price for order
+active_order['trigger_new']  = 0                              # New trigger price when trailing 
+active_order['wiggle']       = config.wiggle                  # Make the distance dynamical
+active_order['qty']          = 0                              # Order quantity
+active_order['qty_new']      = 0                              # New order quantity when trailing
 
 # Databases for buy and sell orders
-all_buys                      = {}                              # All buys retreived from database file buy orders
-all_sells                     = {}                              # Sell order linked to database with all buys orders
+all_buys                     = {}                             # All buys retreived from database file buy orders
+all_sells                    = {}                             # Sell order linked to database with all buys orders
 
 # Websockets where ticker is always on
-ws_kline                      = config.ws_kline                 # Use klines websocket
-ws_orderbook                  = config.ws_orderbook             # Use orderbook websocket
+ws_kline                     = config.ws_kline                # Use klines websocket
+ws_orderbook                 = config.ws_orderbook            # Use orderbook websocket
 
-technical_advice = {}
+# Set technical advice variable
+technical_advice             = {}
 technical_advice[interval_1] = {'result': False, 'value': 0, 'level': 'Neutral'}
 technical_advice[interval_2] = {'result': False, 'value': 0, 'level': 'Neutral'}
 
@@ -397,7 +393,6 @@ def prechecks():
     
     # Return result
     return goahead
-
 
 ### Start main program ###
 
