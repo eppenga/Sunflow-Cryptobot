@@ -40,4 +40,4 @@ I give no warranty and accept no responsibility or liability for the accuracy or
 
 So use it at your own risk!
 
-_Dedicated to my daughter who has sunflowers eyes_
+_Dedicated to my daughter who has sunflower eyes_
