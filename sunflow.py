@@ -14,6 +14,7 @@ import sys, traceback
 import config, defs, preload, indicators, trailing, orders
 
 # Check command line
+symbol_cl = ""
 if len(sys.argv) > 1:symbol_cl = sys.argv[1]
 
 ### Initialize variables ###
