@@ -5,7 +5,7 @@
 # Load external libraries
 from pybit.unified_trading import WebSocket
 from datetime import datetime, timezone
-from time import sleep
+#from time import sleep
 
 # Load internal libraries
 import config, defs
@@ -240,3 +240,32 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
     
     # Return result
     return can_buy, message
+
+# Calculate price changes for spike detection 
+def spikes(prices, timeframe):
+
+    # Debug
+    debug = True
+
+    # Time calculations
+    latest_time = prices['time'][-1]  # Get the latest time
+    span = latest_time - timeframe    # timeframe in milliseconds
+
+    # Find the closest index to the time {timeframe} ago
+    closest_index = None
+    min_diff = float('inf')
+
+    for i, t in enumerate(prices['time']):
+        diff = abs(t - span)
+        if diff < min_diff:
+            min_diff = diff
+            closest_index = i
+
+    # Calculate the change in close price
+    price_change = None
+    if closest_index is not None and prices['time'][-1] > span:
+        price_change      = prices['price'][-1] - prices['price'][closest_index]
+        price_change_perc = (price_change / prices['price'][closest_index]) * 100
+
+    if debug:
+        print(defs.now_utc()[1] + "Defs: spikes: Price change in the last " + str(round((timeframe / 1000), 2)) +  " seconds is " + str(round(price_change_perc, 2)) + "%\n")

@@ -301,7 +301,7 @@ def distance(active_order, prices):
     if active_order['wiggle'] == "EMA":
 
         # Convert the list to a pandas DataFrame
-        df = pd.DataFrame(prices, columns=['price'])
+        df = pd.DataFrame(prices['price'], columns=['price'])
 
         # Calculate the daily returns
         df['returns'] = df['price'].pct_change()

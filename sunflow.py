@@ -85,7 +85,7 @@ def handle_ticker(message):
     try:
    
         # Declare some variables global
-        global spot, ticker, active_order, all_buys, all_sells
+        global spot, ticker, active_order, all_buys, all_sells, prices
 
         # Debug show incoming message
         if debug:
@@ -99,28 +99,34 @@ def handle_ticker(message):
 
         # Has price changed, then run all kinds of actions
         if spot != ticker['lastPrice']:
-            
+            new_spot = ticker['lastPrice']
+
             # Add last price to prices list and remove first
-            prices.append(spot)
-            del prices[0]
+            prices['time'].append(ticker['time'])
+            prices['price'].append(ticker['lastPrice'])
+            prices['time'].pop(0)
+            prices['price'].pop(0)
+
+            # Calculate price change for spike detection
+            defs.spikes(prices, 1000)
                 
             # Run trailing if active
             if active_order['active']:
-                active_order['current'] = spot
+                active_order['current'] = new_spot
                 active_order['status']  = 'Trailing'
                 trail_results = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices)
                 active_order = trail_results[0]
                 all_buys     = trail_results[1]
 
             # Check if and how much we can sell
-            check_sell_results      = orders.check_sell(spot, profit, active_order, all_buys, info)
+            check_sell_results      = orders.check_sell(new_spot, profit, active_order, all_buys, info)
             all_sells_new           = check_sell_results[0]
             active_order['qty_new'] = check_sell_results[1]
             can_sell                = check_sell_results[2]
             rise_to                 = check_sell_results[3]
 
             # Output to stdout
-            print(defs.now_utc()[1] + "Sunflow: handle_ticker: lastPrice changed from " + str(spot) + " " + info['quoteCoin'] + " to " + str(ticker['lastPrice']) + " " + info['quoteCoin'], end="")
+            print(defs.now_utc()[1] + "Sunflow: handle_ticker: lastPrice changed from " + str(spot) + " " + info['quoteCoin'] + " to " + str(new_spot) + " " + info['quoteCoin'], end="")
             if rise_to:
                 print(", needs to rise with " + rise_to + "\n")
             else:
@@ -140,7 +146,7 @@ def handle_ticker(message):
                 # Fill all_sells for the first time
                 all_sells = all_sells_new
                 # Place the first sell order
-                active_order = orders.sell(symbol, spot, active_order, prices, info)
+                active_order = orders.sell(symbol, new_spot, active_order, prices, info)
 
             # Amend existing sell trailing order if required
             if active_order['active'] and active_order['side'] == "Sell":
@@ -420,8 +426,11 @@ if prechecks():
     info               = preload.get_info(symbol, spot, multiplier)
     all_buys           = preload.get_buys(config.dbase_file) 
     all_buys           = preload.check_orders(all_buys)
-    prices             = klines[interval_1]['close']
-       
+    prices             = {
+        'time': klines[interval_1]['time'],
+        'price': klines[interval_1]['close']
+    }
+
     print("*** Starting ***\n")
 
 ### Websockets ###
