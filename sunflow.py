@@ -122,7 +122,7 @@ def handle_ticker(message):
             # Output to stdout
             print(defs.now_utc()[1] + "Sunflow: handle_ticker: lastPrice changed from " + str(spot) + " " + info['quoteCoin'] + " to " + str(ticker['lastPrice']) + " " + info['quoteCoin'], end="")
             if rise_to:
-                print(", needs to rise with " + rise_to + "\n")
+                print(", needs to rise " + rise_to + "\n")
             else:
                 print("\n")
             
