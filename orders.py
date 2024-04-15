@@ -327,7 +327,7 @@ def distance(active_order, prices):
 
         # Calculate trigger price distance percentage
         if price_difference > 0:
-            fluctuation = (1 / math.sqrt(10)) * math.sqrt(price_difference / 2)
+            fluctuation = (1 / math.pow(10, 1/1.2)) * math.pow(price_difference, 1/1.2) + active_order['distance']
 
             if debug:
                 print(defs.now_utc()[1] + "Orders: distance: Calculated fluctuation " + str(round(fluctuation, 4)) + "\n")
