@@ -248,7 +248,7 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
 def spikes(prices, use_spikes):
 
     # Initialize variables
-    debug = True
+    debug = False
     output = False
 
     # Time calculations
