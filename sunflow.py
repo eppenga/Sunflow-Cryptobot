@@ -47,6 +47,12 @@ use_orderbook['enabled']     = config.orderbook_enabled       # Use orderbook
 use_orderbook['minimum']     = config.orderbook_minimum       # Minimum orderbook percentage
 use_orderbook['maximum']     = config.orderbook_maximum       # Maximum orderbook percentage
 
+# Spike detection
+use_spikes                   = {}                             # Spikes
+use_spikes['enabled']        = config.spike_enabled           # Use spike detection
+use_spikes['interval']       = config.spike_interval          # Timeframe in ms to measure spikes
+use_spikes['threshold']      = config.spike_threshold         # Threshold to reach within timeframe as percentage
+
 # Trailing order
 active_order                 = {}                             # Trailing order data
 active_order['side']         = ""                             # Trailing buy
@@ -56,10 +62,11 @@ active_order['previous']     = 0                              # Previous price
 active_order['current']      = 0                              # Current price
 active_order['distance']     = config.distance                # Trigger price distance percentage
 active_order['fluctuation']  = config.distance                # Trigger price distance percentage when wiggling
+active_order['spike']        = config.distance                # Trigger price distance percentage when use spikes
 active_order['orderid']      = 0                              # Orderid
 active_order['trigger']      = 0                              # Trigger price for order
 active_order['trigger_new']  = 0                              # New trigger price when trailing 
-active_order['wiggle']       = config.wiggle                  # Make the distance dynamical
+active_order['wiggle']       = config.wiggle                  # Method to use for trigger price distance
 active_order['qty']          = 0                              # Order quantity
 active_order['qty_new']      = 0                              # New order quantity when trailing
 
@@ -108,13 +115,14 @@ def handle_ticker(message):
             prices['price'].pop(0)
 
             # Calculate price change for spike detection
-            defs.spikes(prices, 1000)
+            if use_spikes['enabled']:
+                active_order['spike'] = defs.spikes(prices, use_spikes)
                 
             # Run trailing if active
             if active_order['active']:
                 active_order['current'] = new_spot
                 active_order['status']  = 'Trailing'
-                trail_results = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices)
+                trail_results = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices, use_spikes)
                 active_order = trail_results[0]
                 all_buys     = trail_results[1]
 
@@ -396,6 +404,10 @@ def prechecks():
     if not ws_kline and use_orderbook['enabled']:
         goahead = False
         print(defs.now_utc()[1] + "Sunflow: prechecks: Must set ws_orderbook to True when orderbook is enabled")
+    
+    if not use_spikes['enabled'] and active_order['wiggle'] == "Spike":
+        goahead = False
+        print(defs.now_utc()[1] + "Sunflow: prechecks: Must set spike_enabled to True when wiggle = Spike is enabled")
     
     # Return result
     return goahead

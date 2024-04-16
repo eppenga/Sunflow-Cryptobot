@@ -153,7 +153,7 @@ def close_trail(active_order, all_buys, all_sells):
     return active_order, all_buys, all_sells
 
 # Trailing buy or sell
-def trail(symbol, active_order, info, all_buys, all_sells, prices):
+def trail(symbol, active_order, info, all_buys, all_sells, prices, use_spikes):
 
     # Initialize variables
     do_amend    = False     # We can amend a trailing order
@@ -190,7 +190,7 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
             
             # Determine distance of trigger price
             if active_order['wiggle']:
-                active_order = orders.distance(active_order, prices)
+                active_order = orders.distance(active_order, prices, use_spikes)
                        
             # Calculate new trigger price
             if active_order['side'] == "Sell":

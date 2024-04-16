@@ -64,8 +64,11 @@ def update_kline(kline, klines):
 # Round value to the nearest stepSize
 def precision(value, step_size=0.1):
     
+    # Logic
     factor = 1 / step_size
     value = (value * factor) // 1 / factor  # Using floor division in Python
+    
+    # Return rounded value
     return value
 
 # Check if there are no adjacent orders already 
@@ -184,7 +187,7 @@ def report_result(result):
     # Return result
     return pafa
 
-# Outputs to stdout the buy decission
+# Determines buy decission and outputs to stdout
 def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval):
             
     # Debug
@@ -242,14 +245,15 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
     return can_buy, message
 
 # Calculate price changes for spike detection 
-def spikes(prices, timeframe):
+def spikes(prices, use_spikes):
 
-    # Debug
+    # Initialize variables
     debug = True
+    output = False
 
     # Time calculations
     latest_time = prices['time'][-1]  # Get the latest time
-    span = latest_time - timeframe    # timeframe in milliseconds
+    span = latest_time - use_spikes['interval']    # timeframe in milliseconds
 
     # Find the closest index to the time {timeframe} ago
     closest_index = None
@@ -267,5 +271,13 @@ def spikes(prices, timeframe):
         price_change      = prices['price'][-1] - prices['price'][closest_index]
         price_change_perc = (price_change / prices['price'][closest_index]) * 100
 
-    if debug:
-        print(defs.now_utc()[1] + "Defs: spikes: Price change in the last " + str(round((timeframe / 1000), 2)) +  " seconds is " + str(round(price_change_perc, 2)) + "%\n")
+    # Output to stdout
+    if abs(price_change_perc) > use_spikes['threshold']:
+        print(defs.now_utc()[1] + "Defs: spikes: *** SPIKE DETECTED ***\n")
+        output = True 
+
+    if debug or output:
+        print(defs.now_utc()[1] + "Defs: spikes: Price change in the last " + str(round((use_spikes['interval'] / 1000), 2)) +  " seconds is " + str(round(price_change_perc, 2)) + "%\n")
+
+    # Return price change percentage
+    return abs(price_change_perc)

@@ -282,8 +282,8 @@ def sell(symbol, spot, active_order, prices, info):
     # Return data
     return active_order
 
-# Calculate trigger price distance if set to dynamical
-def distance(active_order, prices):
+# Calculate trigger price distance
+def distance(active_order, prices, use_spikes):
 
     # Debug
     debug = True
@@ -317,13 +317,10 @@ def distance(active_order, prices):
         print(defs.now_utc()[1] + "Orders: distance: Using EMA to set trigger price distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
     
     # Use spot to set distance
-    elif active_order['wiggle'] == "Spot":
+    elif active_order['wiggle'] == "Spot" or active_order['wiggle'] == "Spike":
 
-        # Calculate price difference in percentage
-        if active_order['side'] == "Sell":
-            price_difference = ((active_order['current'] - active_order['start']) / active_order['start']) * 100
-        else:
-            price_difference = ((active_order['start'] - active_order['current']) / active_order['start']) * 100
+        # Calculate absolute price difference in percentage
+        price_difference = abs(((active_order['current'] - active_order['start']) / active_order['start']) * 100)
 
         # Calculate trigger price distance percentage
         if price_difference > 0:
@@ -332,16 +329,33 @@ def distance(active_order, prices):
             if debug:
                 print(defs.now_utc()[1] + "Orders: distance: Calculated fluctuation " + str(round(fluctuation, 4)) + "\n")
 
+            # Set fluctuation
             if fluctuation < active_order['distance']:
                 active_order['fluctuation'] = active_order['distance']
             else:
                 active_order['fluctuation'] = fluctuation
-            print(defs.now_utc()[1] + "Orders: distance: Using spot to set trigger price distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+            
+            # Only output for spot
+            if active_order['wiggle'] == "Spot":
+                print(defs.now_utc()[1] + "Orders: distance: Using spot to set trigger price distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Use fixed from config file to set distance        
     else:
         active_order['fluctuation'] = active_order['distance']
         print(defs.now_utc()[1] + "Orders: distance: Using fixed data to set trigger distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+
+    # Use spike to set distance
+    if active_order['wiggle'] == "Spike":
         
+        # Only do this when spike is smaller than price difference, else we would be risking sell at loss
+        if active_order['spike'] < price_difference:
+            
+            # Only do this when spike is larger than minimum fixed trigger price distance, else it would trigger to fast
+            if active_order['spike'] > active_order['distance']:
+                active_order['fluctuation'] = active_order['spike']
+        
+        # Output to stdout
+        print(defs.now_utc()[1] + "Orders: distance: Using spike data to set trigger price distance to "  + str(round(active_order['fluctuation'], 4)) + "%\n")
+
     # Return modified data
     return active_order
