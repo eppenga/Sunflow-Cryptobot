@@ -11,7 +11,7 @@ interval_2         = 3            # Klines timeframe confirmation interval, set 
 limit              = 250          # Number of klines downloaded, used for calculcating technical indicators
 profit             = 0.40         # Minimum profit percentage
 distance           = 0.10         # Fixed trigger price distance percentage
-wiggle             = "Spot"       # Method for trigger price distance, Fixed, Spot or Spike
+wiggle             = "Spot"       # Method for trigger price distance, Fixed, Spot, EMA or Spike
 depth              = 0.10         # Depth in percentages used to calculate market depth from orderbook
 multiplier         = 1.00         # Multiply minimum order quantity by this
 
