@@ -289,8 +289,9 @@ def distance(active_order, prices, use_spikes):
     debug = True
 
     # Initialize variables
-    scaler = 3   # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
-    number = 7   # Last {number} of prices will be used
+    spiker = False  # Used spike to set distance
+    scaler = 3      # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
+    number = 7      # Last {number} of prices will be used
     fluctuation      = 0
     price_difference = 0
     
@@ -303,7 +304,7 @@ def distance(active_order, prices, use_spikes):
         # Convert the list to a pandas DataFrame
         df = pd.DataFrame(prices['price'], columns=['price'])
 
-        # Calculate the daily returns
+        # Calculate the periodic returns
         df['returns'] = df['price'].pct_change()
 
         # Apply an exponentially weighted moving standard deviation to the returns
@@ -352,10 +353,15 @@ def distance(active_order, prices, use_spikes):
             
             # Only do this when spike is larger than minimum fixed trigger price distance, else it would trigger to fast
             if active_order['spike'] > active_order['distance']:
+                spiker = True
                 active_order['fluctuation'] = active_order['spike']
         
         # Output to stdout
-        print(defs.now_utc()[1] + "Orders: distance: Using spike data to set trigger price distance to "  + str(round(active_order['fluctuation'], 4)) + "%\n")
+        if spiker:
+            print(defs.now_utc()[1] + "Orders: distance: Using spike data via spikes to set trigger price distance to ", end="")
+        else:
+            print(defs.now_utc()[1] + "Orders: distance: Using spike data via spot to set trigger price distance to ", end="")
+        print(str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Return modified data
     return active_order
