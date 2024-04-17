@@ -20,10 +20,10 @@ def save(all_buys):
 
     # Get number of orders 
     order_count = len(all_buys)
-    total_qty   = sum(item['qty'] for item in all_buys)
+    total_qty   = sum(item['cumExecQty'] for item in all_buys)
     
     # Output to stdout
-    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buy orders worth " + str(total_qty) + " of the quote currency to file\n")
+    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buy orders and " + str(total_qty) + " in quote currency to file\n")
 
 # Load the database with all buys
 def load(dbase_file):
