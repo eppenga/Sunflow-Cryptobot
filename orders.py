@@ -286,7 +286,7 @@ def sell(symbol, spot, active_order, prices, info):
 def distance(active_order, prices):
 
     # Debug
-    debug = True
+    debug = False
 
     # Initialize variables
     spiker           = False   # Used spike to set distance
