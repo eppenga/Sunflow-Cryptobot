@@ -289,11 +289,11 @@ def distance(active_order, prices):
     debug = True
 
     # Initialize variables
-    spiker = False         # Used spike to set distance
-    scaler = 3             # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
-    number = 7             # Last {number} of prices will be used
-    fluctuation      = 0   # Fluctuation distance of trigger price
-    price_difference = 0   # Price difference between start and current price in percentage
+    spiker           = False   # Used spike to set distance
+    scaler           = 3       # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
+    number           = 7       # Last {number} of prices will be used
+    fluctuation      = 0       # Fluctuation distance of trigger price
+    price_difference = 0       # Price difference between start and current price in percentage
     
     # By default fluctuation equals distance
     active_order['fluctuation'] = active_order['distance']
@@ -359,14 +359,13 @@ def distance(active_order, prices):
         if active_order['spike'] > active_order['distance']:
             # Conditions based on either Buy or Sell
             if active_order['side'] == "Sell":
-                # Ensure not selling at a loss: spike should be larger than price difference
-                if active_order['spike'] < price_difference - config.profit:
-                    spiker = True
-                    active_order['fluctuation'] = active_order['spike']
+                # Ensure not selling at a loss
+                active_order['fluctuation'] = min(active_order['spike'], price_difference + active_order['distance'])
+                spiker = True
             elif active_order['side'] == "Buy":
                 # For Buy orders, price difference is not a concern
-                spiker = True
                 active_order['fluctuation'] = active_order['spike']
+                spiker = True
         
         # Output to stdout
         if spiker:

@@ -95,8 +95,9 @@ def handle_ticker(message):
         global spot, ticker, active_order, all_buys, all_sells, prices
 
         # Initialize variables
-        result = ()
-        ticker = {}
+        result  = ()
+        ticker  = {}
+        spiking = False
 
         # Debug show incoming message
         if debug:
@@ -119,8 +120,17 @@ def handle_ticker(message):
 
             # Calculate price change for spike detection
             if use_spikes['enabled']:
-                active_order['spike'] = defs.spikes(prices, use_spikes)
-                
+                result                = defs.spikes(prices, use_spikes)
+                active_order['spike'] = result[0]
+                spiking               = result[1]
+
+            # Spiking, when not buying or selling, let's buy and see what happens :)
+            if not active_order['active'] and spiking:
+                print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
+                result       = orders.buy(symbol, spot, active_order, prices, all_buys, info)
+                active_order = result[0]
+                all_buys     = result[1]
+
             # Run trailing if active
             if active_order['active']:
                 active_order['current'] = new_spot
@@ -305,9 +315,9 @@ def handle_kline(message, interval):
             
             # Execute buy decission
             if can_buy:
-                buy_result   = orders.buy(symbol, spot, active_order, prices, all_buys, info)
-                active_order = buy_result[0]
-                all_buys     = buy_result[1]
+                result       = orders.buy(symbol, spot, active_order, prices, all_buys, info)
+                active_order = result[0]
+                all_buys     = result[1]
 
     # Report error
     except Exception as e:

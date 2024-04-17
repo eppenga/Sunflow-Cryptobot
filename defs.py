@@ -248,8 +248,8 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
 def spikes(prices, use_spikes):
 
     # Initialize variables
-    debug = False
-    output = False
+    debug   = False
+    spiking = False
 
     # Time calculations
     latest_time = prices['time'][-1]  # Get the latest time
@@ -274,10 +274,10 @@ def spikes(prices, use_spikes):
     # Output to stdout
     if abs(price_change_perc) > use_spikes['threshold']:
         print(defs.now_utc()[1] + "Defs: spikes: *** SPIKE DETECTED ***\n")
-        output = True 
+        spiking = True 
 
-    if debug or output:
+    if debug or spiking:
         print(defs.now_utc()[1] + "Defs: spikes: Price change in the last " + str(round((use_spikes['interval'] / 1000), 2)) +  " seconds is " + str(round(price_change_perc, 2)) + "%\n")
 
     # Return price change percentage
-    return abs(price_change_perc)
+    return abs(price_change_perc), spiking
