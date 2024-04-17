@@ -137,10 +137,10 @@ def handle_ticker(message):
             print(defs.now_utc()[1] + "Sunflow: handle_ticker: lastPrice changed from " + str(spot) + " " + info['quoteCoin'] + " to " + str(new_spot) + " " + info['quoteCoin'], end="")
             if not active_order['active']:
                 if rise_to:
-                    print(", needs to rise " + rise_to + ", NO SELL")
+                    print(", needs to rise " + rise_to + ", NO SELL", end="")
                 else:
                     if len(all_buys) > 0:
-                        print(", SELL")
+                        print(", SELL", end="")
             print("\n")
             
             # If trailing buy is already running while we can sell
