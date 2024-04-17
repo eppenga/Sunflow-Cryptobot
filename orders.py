@@ -347,7 +347,13 @@ def distance(active_order, prices):
 
     # Use spike to set distance
     if active_order['wiggle'] == "Spike":
-        
+
+        # Debug
+        if debug:
+            print(defs.now_utc()[1] + "Orders: distance: debug: Default distance: " + str(round(active_order['distance'], 4)))
+            print(defs.now_utc()[1] + "Orders: distance: debug: Spot distance   : " + str(round(active_order['fluctuation'], 4)))
+            print(defs.now_utc()[1] + "Orders: distance: debug: Spike distance  : " + str(round(active_order['spike'], 4)) +  "\n")
+
         # Check if the spike exceeds the minimum fixed trigger price distance
         if active_order['spike'] > active_order['distance']:
             # Conditions based on either Buy or Sell
