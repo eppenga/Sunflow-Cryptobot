@@ -20,8 +20,10 @@ def save(all_buys):
 
     # Get number of orders 
     order_count = len(all_buys)
+    total_qty   = sum(item['qty'] for item in all_buys)
     
-    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buy orders to file\n")
+    # Output to stdout
+    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buy orders worth " + str(total_qty) + " of the quote currency to file\n")
 
 # Load the database with all buys
 def load(dbase_file):
@@ -98,7 +100,7 @@ def register_buy(buy_order, all_buys):
         counter = counter + 1
       
     if debug:
-        print(defs.now_utc()[1] + "Database: register_buy: New database with " + str(counter) + " buys")
+        print(defs.now_utc()[1] + "Database: register_buy: New database with " + str(counter) + " buy orders")
         print(all_buys_new)
         print()
 

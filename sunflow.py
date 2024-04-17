@@ -122,7 +122,7 @@ def handle_ticker(message):
             if active_order['active']:
                 active_order['current'] = new_spot
                 active_order['status']  = 'Trailing'
-                trail_results = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices, use_spikes)
+                trail_results = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices)
                 active_order = trail_results[0]
                 all_buys     = trail_results[1]
 
@@ -135,10 +135,13 @@ def handle_ticker(message):
 
             # Output to stdout
             print(defs.now_utc()[1] + "Sunflow: handle_ticker: lastPrice changed from " + str(spot) + " " + info['quoteCoin'] + " to " + str(new_spot) + " " + info['quoteCoin'], end="")
-            if rise_to:
-                print(", needs to rise " + rise_to + "\n")
-            else:
-                print("\n")
+            if not active_order['active']:
+                if rise_to:
+                    print(", needs to rise " + rise_to + ", NO SELL")
+                else:
+                    if len(all_buys) > 0:
+                        print(", SELL")
+            print("\n")
             
             # If trailing buy is already running while we can sell
             if active_order['active'] and active_order['side'] == "Buy" and can_sell:
@@ -168,7 +171,7 @@ def handle_ticker(message):
                     # Determine what to do based on error code of amend result
                     if amend_code == 0:
                         # Everything went fine, we can continue trailing
-                        print("Sunflow: handle_ticker: Adjusted quantity from " + str(active_order['qty']) + " " + info['baseCoin'] + " to " +  str(active_order['qty_new']) + " " + info['quoteCoin'] + "\n")
+                        print(defs.now_utc()[1] + "Sunflow: handle_ticker: Adjusted quantity from " + str(active_order['qty']) + " " + info['baseCoin'] + " to " +  str(active_order['qty_new']) + " " + info['quoteCoin'] + "\n")
                         active_order['qty'] = active_order['qty_new']
                         all_sells           = all_sells_new
                     if amend_code == 1:

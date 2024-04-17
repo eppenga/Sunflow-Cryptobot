@@ -283,7 +283,7 @@ def sell(symbol, spot, active_order, prices, info):
     return active_order
 
 # Calculate trigger price distance
-def distance(active_order, prices, use_spikes):
+def distance(active_order, prices):
 
     # Debug
     debug = True
@@ -348,13 +348,16 @@ def distance(active_order, prices, use_spikes):
     # Use spike to set distance
     if active_order['wiggle'] == "Spike":
         
-        # Only do this when spike is smaller than price difference, else we would be risking sell at loss
-        if active_order['spike'] < price_difference:
+        # Double check when selling and spike is smaller than price difference, else we would be risking sell at loss
+        if active_order['spike'] < price_difference and active_order['side'] == "Sell":
             
             # Only do this when spike is larger than minimum fixed trigger price distance, else it would trigger to fast
             if active_order['spike'] > active_order['distance']:
                 spiker = True
                 active_order['fluctuation'] = active_order['spike']
+        else:
+            # For buy we can do this always
+            active_order['fluctuation'] = active_order['spike']
         
         # Output to stdout
         if spiker:
