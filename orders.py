@@ -289,11 +289,11 @@ def distance(active_order, prices):
     debug = True
 
     # Initialize variables
-    spiker = False  # Used spike to set distance
-    scaler = 3      # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
-    number = 7      # Last {number} of prices will be used
-    fluctuation      = 0
-    price_difference = 0
+    spiker = False         # Used spike to set distance
+    scaler = 3             # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
+    number = 7             # Last {number} of prices will be used
+    fluctuation      = 0   # Fluctuation distance of trigger price
+    price_difference = 0   # Price difference between start and current price in percentage
     
     # By default fluctuation equals distance
     active_order['fluctuation'] = active_order['distance']
@@ -348,16 +348,18 @@ def distance(active_order, prices):
     # Use spike to set distance
     if active_order['wiggle'] == "Spike":
         
-        # Double check when selling and spike is smaller than price difference, else we would be risking sell at loss
-        if active_order['spike'] < price_difference and active_order['side'] == "Sell":
-            
-            # Only do this when spike is larger than minimum fixed trigger price distance, else it would trigger to fast
-            if active_order['spike'] > active_order['distance']:
+        # Check if the spike exceeds the minimum fixed trigger price distance
+        if active_order['spike'] > active_order['distance']:
+            # Conditions based on either Buy or Sell
+            if active_order['side'] == "Sell":
+                # Ensure not selling at a loss: spike should be larger than price difference
+                if active_order['spike'] < price_difference - config.profit:
+                    spiker = True
+                    active_order['fluctuation'] = active_order['spike']
+            elif active_order['side'] == "Buy":
+                # For Buy orders, price difference is not a concern
                 spiker = True
                 active_order['fluctuation'] = active_order['spike']
-        else:
-            # For buy we can do this always
-            active_order['fluctuation'] = active_order['spike']
         
         # Output to stdout
         if spiker:
