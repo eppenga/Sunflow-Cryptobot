@@ -95,9 +95,11 @@ def handle_ticker(message):
         global spot, ticker, active_order, all_buys, all_sells, prices
 
         # Initialize variables
-        result  = ()
-        ticker  = {}
-        spiking = False
+        result      = ()
+        ticker      = {}
+        spiking     = False
+        amend_code  = 0
+        amend_error = ""
 
         # Debug show incoming message
         if debug:
@@ -123,13 +125,6 @@ def handle_ticker(message):
                 result                = defs.spikes(prices, use_spikes)
                 active_order['spike'] = result[0]
                 spiking               = result[1]
-
-            # Spiking, when not buying or selling, let's buy and see what happens :)
-            if not active_order['active'] and spiking:
-                print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
-                result       = orders.buy(symbol, spot, active_order, prices, all_buys, info)
-                active_order = result[0]
-                all_buys     = result[1]
 
             # Run trailing if active
             if active_order['active']:
@@ -177,9 +172,9 @@ def handle_ticker(message):
 
                 # Only amend order if the quantity to be sold has changed
                 if active_order['qty_new'] != active_order['qty'] and active_order['qty_new'] > 0:
-                    amend_result = trailing.amend_quantity_sell(symbol, active_order, info)
-                    amend_code   = amend_result[0]
-                    amend_error  = amend_result[1]
+                    result      = trailing.amend_quantity_sell(symbol, active_order, info)
+                    amend_code  = result[0]
+                    amend_error = result[1]
 
                     # Determine what to do based on error code of amend result
                     if amend_code == 0:
@@ -201,9 +196,16 @@ def handle_ticker(message):
                         all_sells_new = all_sells
                         print(defs.now_utc()[1] + "Trailing: trail: Critical error, logging to file\n")
                         defs.log_error(amend_error)
-                
+
                 # Reset all sells
                 #all_sells = all_sells_new
+
+            # Spiking, when not buying or selling, let's buy and see what happens :)
+            if not active_order['active'] and spiking:
+                print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
+                result       = orders.buy(symbol, spot, active_order, prices, all_buys, info)
+                active_order = result[0]
+                all_buys     = result[1]
 
         # Always set new spot price
         spot = ticker['lastPrice']
