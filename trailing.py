@@ -27,6 +27,7 @@ def check_order(symbol, active_order, all_buys, all_sells):
     global stuck_counter, spiker_counter
     
     # Initialize variables
+    result         = ()
     do_check_order = False
 
     # Has current price crossed trigger price
@@ -71,14 +72,14 @@ def check_order(symbol, active_order, all_buys, all_sells):
         if order['result']['list'] == []:
             print(defs.now_utc()[1] + "Trailing: check_order: Trailing " + active_order['side'] + ": *** Order has been filled! ***\n")
             spiker_counter = 0
-            close_trail_results = close_trail(active_order, all_buys, all_sells)
-            active_order = close_trail_results[0]
-            all_buys     = close_trail_results[1]
-            all_sells    = close_trail_results[2]
+            result       = close_trail(active_order, all_buys, all_sells)
+            active_order = result[0]
+            all_buys     = result[1]
+            all_sells    = result[2]
         else:
-            check_spiker_result = check_spiker(active_order, order, all_buys)
-            active_order = check_spiker_result[0]
-            all_buys     = check_spiker_result[1]
+            result       = check_spiker(active_order, order, all_buys)
+            active_order = result[0]
+            all_buys     = result[1]
 
     # Return modified data
     return active_order, all_buys
@@ -156,6 +157,9 @@ def close_trail(active_order, all_buys, all_sells):
 def trail(symbol, active_order, info, all_buys, all_sells, prices):
 
     # Initialize variables
+    result      = ()
+    amend_code  = 0
+    amend_error = ""
     do_amend    = False     # We can amend a trailing order
     do_trailing = False     # We can do trailing buy or sell
 
@@ -164,9 +168,9 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
         print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Checking if we can do trailing")
 
     # Check if the order still exists
-    check_order_results = check_order(symbol, active_order, all_buys, all_sells)
-    active_order = check_order_results[0]
-    all_buys_new = check_order_results[1]
+    result       = check_order(symbol, active_order, all_buys, all_sells)
+    active_order = result[0]
+    all_buys_new = result[1]
 
     # Order still exists, we can do trailing buy or sell
     if active_order['active']:
@@ -208,9 +212,9 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
 
             # Amend trigger price
             if do_amend:
-                amend_result = amend_trigger_price(symbol, active_order, info)
-                amend_code   = amend_result[0]
-                amend_error  = amend_result[1]
+                result      = amend_trigger_price(symbol, active_order, info)
+                amend_code  = result[0]
+                amend_error = result[1]
 
                 # Determine what to do based on error code of amend result
                 if amend_code == 0:
@@ -222,10 +226,10 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
                 if amend_code == 1:
                     # Order slipped, close trailing process
                     print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
-                    close_trail_results = close_trail(active_order, all_buys, all_sells)
-                    active_order = close_trail_results[0]
-                    all_buys     = close_trail_results[1]
-                    all_sells    = close_trail_results[2]
+                    result       = close_trail(active_order, all_buys, all_sells)
+                    active_order = result[0]
+                    all_buys     = result[1]
+                    all_sells    = result[2]
                     # Revert old situation
                     all_buys_new = all_buys
                 if amend_code == 100:
@@ -241,7 +245,7 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
     if debug:
         print(defs.now_utc()[1] + "Trailing: trail: Debug output of active_order:")
         print(str(active_order) + "\n")
-        print(defs.now_utc()[1] + "Trailing: trail: Debug output of error code: " + str(amend_result) + "\n")
+        print(defs.now_utc()[1] + "Trailing: trail: Debug output of error code: " + amend_error + "\n")
         
     # Return modified data
     return active_order, all_buys

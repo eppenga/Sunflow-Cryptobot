@@ -94,13 +94,16 @@ def handle_ticker(message):
         # Declare some variables global
         global spot, ticker, active_order, all_buys, all_sells, prices
 
+        # Initialize variables
+        result = ()
+        ticker = {}
+
         # Debug show incoming message
         if debug:
             print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Incoming ticker ***")
             print(str(message) + "\n")
 
         # Get ticker
-        ticker              = {}
         ticker['time']      = int(message['ts'])
         ticker['lastPrice'] = float(message['data']['lastPrice'])
 
@@ -122,16 +125,16 @@ def handle_ticker(message):
             if active_order['active']:
                 active_order['current'] = new_spot
                 active_order['status']  = 'Trailing'
-                trail_results = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices)
-                active_order = trail_results[0]
-                all_buys     = trail_results[1]
+                result       = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices)
+                active_order = result[0]
+                all_buys     = result[1]
 
             # Check if and how much we can sell
-            check_sell_results      = orders.check_sell(new_spot, profit, active_order, all_buys, info)
-            all_sells_new           = check_sell_results[0]
-            active_order['qty_new'] = check_sell_results[1]
-            can_sell                = check_sell_results[2]
-            rise_to                 = check_sell_results[3]
+            result                  = orders.check_sell(new_spot, profit, active_order, all_buys, info)
+            all_sells_new           = result[0]
+            active_order['qty_new'] = result[1]
+            can_sell                = result[2]
+            rise_to                 = result[3]
 
             # Output to stdout
             print(defs.now_utc()[1] + "Sunflow: handle_ticker: lastPrice changed from " + str(spot) + " " + info['quoteCoin'] + " to " + str(new_spot) + " " + info['quoteCoin'], end="")
@@ -177,10 +180,10 @@ def handle_ticker(message):
                     if amend_code == 1:
                         # Order slipped, close trailing process
                         print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
-                        close_trail_results = trailing.close_trail(active_order, all_buys, all_sells)
-                        active_order = close_trail_results[0]
-                        all_buys     = close_trail_results[1]
-                        all_sells    = close_trail_results[2]
+                        result       = trailing.close_trail(active_order, all_buys, all_sells)
+                        active_order = result[0]
+                        all_buys     = result[1]
+                        all_sells    = result[2]
                         # Revert old situation
                         all_sells_new = all_sells
                     if amend_code == 100:
@@ -227,6 +230,7 @@ def handle_kline(message, interval):
         spread_advice        = {} 
         orderbook_advice     = {}
         technical_indicators = {}
+        result               = ()
      
         # Show incoming message
         if debug:
