@@ -350,6 +350,7 @@ def distance(active_order, prices):
 
         # Debug
         if debug:
+            print(defs.now_utc()[1] + "Orders: distance: debug: Price difference: " + str(round(price_difference, 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Default distance: " + str(round(active_order['distance'], 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Spot distance   : " + str(round(active_order['fluctuation'], 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Spike distance  : " + str(round(active_order['spike'], 4)) +  "\n")
