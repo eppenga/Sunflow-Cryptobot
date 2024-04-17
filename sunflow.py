@@ -225,9 +225,6 @@ def handle_kline_2(message):
 # Handle messages to keep klines up to date
 def handle_kline(message, interval):
 
-    # Debug
-    debug = False
-
     # Errors are not reported within websocket
     try:
 

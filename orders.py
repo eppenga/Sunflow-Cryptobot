@@ -350,6 +350,7 @@ def distance(active_order, prices):
 
         # Debug
         if debug:
+            print(defs.now_utc()[1] + "Orders: distance: debug: Trailing        : " + active_order['side'])
             print(defs.now_utc()[1] + "Orders: distance: debug: Price difference: " + str(round(price_difference, 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Default distance: " + str(round(active_order['distance'], 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Spot distance   : " + str(round(active_order['fluctuation'], 4)))
@@ -366,12 +367,15 @@ def distance(active_order, prices):
                 # For Buy orders, price difference is not a concern
                 active_order['fluctuation'] = active_order['spike']
                 spiker = True
+        else:
+            # Set fluctuation to minimum
+            active_order['fluctuation'] = active_order['distance']
         
         # Output to stdout
         if spiker:
             print(defs.now_utc()[1] + "Orders: distance: Using spike data via spikes to set trigger price distance to ", end="")
         else:
-            print(defs.now_utc()[1] + "Orders: distance: Using spike data via spot to set trigger price distance to ", end="")
+            print(defs.now_utc()[1] + "Orders: distance: Using spike data via fixed to set trigger price distance to ", end="")
         print(str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Return modified data
