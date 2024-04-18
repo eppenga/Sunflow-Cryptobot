@@ -289,7 +289,7 @@ def distance(active_order, prices):
     debug = False
 
     # Initialize variables
-    spiker           = False   # Used spike to set distance
+    waver           = False    # Used wave to set distance
     scaler           = 3       # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
     number           = 7       # Last {number} of prices will be used
     fluctuation      = 0       # Fluctuation distance of trigger price
@@ -345,8 +345,8 @@ def distance(active_order, prices):
         active_order['fluctuation'] = active_order['distance']
         print(defs.now_utc()[1] + "Orders: distance: Using fixed data to set trigger distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
-    # Use spike to set distance
-    if active_order['wiggle'] == "Spike":
+    # Use wave to set distance
+    if active_order['wiggle'] == "Wave":
 
         # Debug
         if debug:
@@ -354,28 +354,28 @@ def distance(active_order, prices):
             print(defs.now_utc()[1] + "Orders: distance: debug: Price difference: " + str(round(price_difference, 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Default distance: " + str(round(active_order['distance'], 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Spot distance   : " + str(round(active_order['fluctuation'], 4)))
-            print(defs.now_utc()[1] + "Orders: distance: debug: Spike distance  : " + str(round(active_order['spike'], 4)) +  "\n")
+            print(defs.now_utc()[1] + "Orders: distance: debug: Wave distance   : " + str(round(active_order['wave'], 4)) +  "\n")
 
         # Check if the spike exceeds the minimum fixed trigger price distance
-        if active_order['spike'] > active_order['distance']:
+        if active_order['wave'] > active_order['distance']:
             # Conditions based on either Buy or Sell
             if active_order['side'] == "Sell":
                 # Ensure not selling at a loss
-                active_order['fluctuation'] = min(active_order['spike'], price_difference + active_order['distance'])
-                spiker = True
+                active_order['fluctuation'] = min(active_order['wave'], price_difference + active_order['distance'])
+                waver = True
             elif active_order['side'] == "Buy":
                 # For Buy orders, price difference is not a concern
-                active_order['fluctuation'] = active_order['spike']
-                spiker = True
+                active_order['fluctuation'] = active_order['wave']
+                waver = True
         else:
             # Set fluctuation to minimum
             active_order['fluctuation'] = active_order['distance']
         
         # Output to stdout
-        if spiker:
-            print(defs.now_utc()[1] + "Orders: distance: Using spike data via spikes to set trigger price distance to ", end="")
+        if waver:
+            print(defs.now_utc()[1] + "Orders: distance: Using wave data via waver to set trigger price distance to ", end="")
         else:
-            print(defs.now_utc()[1] + "Orders: distance: Using spike data via fixed to set trigger price distance to ", end="")
+            print(defs.now_utc()[1] + "Orders: distance: Using wave data via fixed to set trigger price distance to ", end="")
         print(str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Return modified data

@@ -47,10 +47,16 @@ use_orderbook['enabled']     = config.orderbook_enabled       # Use orderbook
 use_orderbook['minimum']     = config.orderbook_minimum       # Minimum orderbook percentage
 use_orderbook['maximum']     = config.orderbook_maximum       # Maximum orderbook percentage
 
+# Wave measurement
+use_waves                    = {}
+use_waves['enabled']         = False
+if config.wiggle == "Wave"   : use_waves['enabled'] = True
+use_waves['timeframe']       = config.wave_timeframe
+
 # Spike detection
 use_spikes                   = {}                             # Spikes
 use_spikes['enabled']        = config.spike_enabled           # Use spike detection
-use_spikes['interval']       = config.spike_interval          # Timeframe in ms to measure spikes
+use_spikes['timeframe']      = config.spike_timeframe         # Timeframe in ms to measure spikes
 use_spikes['threshold']      = config.spike_threshold         # Threshold to reach within timeframe as percentage
 
 # Trailing order
@@ -60,13 +66,13 @@ active_order['active']       = False                          # Trailing order a
 active_order['start']        = 0                              # Start price when trailing order began     
 active_order['previous']     = 0                              # Previous price
 active_order['current']      = 0                              # Current price
-active_order['distance']     = config.distance                # Trigger price distance percentage
-active_order['fluctuation']  = config.distance                # Trigger price distance percentage when wiggling
-active_order['spike']        = config.distance                # Trigger price distance percentage when use spikes
+active_order['wiggle']       = config.wiggle                  # Method to use to calculate trigger price distance
+active_order['distance']     = config.distance                # Trigger price distance percentage when set to default
+active_order['fluctuation']  = config.distance                # Trigger price distance percentage when set to wiggle
+active_order['wave']         = config.distance                # Trigger price distance percentage when set to wave
 active_order['orderid']      = 0                              # Orderid
 active_order['trigger']      = 0                              # Trigger price for order
 active_order['trigger_new']  = 0                              # New trigger price when trailing 
-active_order['wiggle']       = config.wiggle                  # Method to use for trigger price distance
 active_order['qty']          = 0                              # Order quantity
 active_order['qty_new']      = 0                              # New order quantity when trailing
 
@@ -74,9 +80,11 @@ active_order['qty_new']      = 0                              # New order quanti
 all_buys                     = {}                             # All buys retreived from database file buy orders
 all_sells                    = {}                             # Sell order linked to database with all buys orders
 
-# Websockets where ticker is always on
-ws_kline                     = config.ws_kline                # Use klines websocket
-ws_orderbook                 = config.ws_orderbook            # Use orderbook websocket
+# Websockets to use
+ws_kline                     = False                          # Initialize ws_kline
+ws_orderbook                 = False                          # Initialize ws_orderbook
+if config.indicators_enabled : ws_kline     = True             # Use klines websocket
+if config.orderbook_enabled  : ws_orderbook = True             # Use orderbook websocket
 
 # Set technical advice variable
 technical_advice             = {}
@@ -120,11 +128,13 @@ def handle_ticker(message):
             prices['time'].pop(0)
             prices['price'].pop(0)
 
-            # Calculate price change for spike detection
+            # Determine if spiking
             if use_spikes['enabled']:
-                result                = defs.spikes(prices, use_spikes)
-                active_order['spike'] = result[0]
-                spiking               = result[1]
+                spiking = defs.waves_spikes(prices, use_spikes, "Spike")[1]
+
+            # Calculate price change when using waves
+            if use_waves['enabled']:
+                active_order['wave'] = defs.waves_spikes(prices, use_waves, "Wave")[0]
 
             # Run trailing if active
             if active_order['active']:
@@ -460,6 +470,10 @@ if prechecks():
     }
 
     print("*** Starting ***\n")
+
+else:
+    print("*** COULD NOT START ***\n")
+    exit()
 
 ### Websockets ###
 

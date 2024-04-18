@@ -245,15 +245,15 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
     return can_buy, message
 
 # Calculate price changes for spike detection 
-def spikes(prices, use_spikes):
+def waves_spikes(prices, use_data, select):
 
     # Initialize variables
     debug   = False
     spiking = False
 
     # Time calculations
-    latest_time = prices['time'][-1]  # Get the latest time
-    span = latest_time - use_spikes['interval']    # timeframe in milliseconds
+    latest_time = prices['time'][-1]             # Get the latest time
+    span = latest_time - use_data['timeframe']   # timeframe in milliseconds
 
     # Find the closest index to the time {timeframe} ago
     closest_index = None
@@ -272,12 +272,13 @@ def spikes(prices, use_spikes):
         price_change_perc = (price_change / prices['price'][closest_index]) * 100
 
     # Output to stdout
-    if abs(price_change_perc) > use_spikes['threshold']:
-        print(defs.now_utc()[1] + "Defs: spikes: *** SPIKE DETECTED ***\n")
-        spiking = True 
+    if select == "Spike":
+        if abs(price_change_perc) > use_data['threshold']:
+            print(defs.now_utc()[1] + "Defs: waves_spikes: *** SPIKE DETECTED ***\n")
+            spiking = True 
 
     if debug or spiking:
-        print(defs.now_utc()[1] + "Defs: spikes: Price change in the last " + str(round((use_spikes['interval'] / 1000), 2)) +  " seconds is " + str(round(price_change_perc, 2)) + "%\n")
+        print(defs.now_utc()[1] + "Defs: waves_spikes: Price change in the last " + str(round((use_data['timeframe'] / 1000), 2)) +  " seconds is " + str(round(price_change_perc, 2)) + "%\n")
 
     # Return price change percentage
     return abs(price_change_perc), spiking
