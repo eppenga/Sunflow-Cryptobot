@@ -3,6 +3,7 @@
 
 ## Features
 - Trailing Buy and Sell
+- Flexible Trigger Distance (multiple methods)
 - Two intervals (default and confirmation)
 - Automatically combines sell orders
 - Technical Analysis (similar to TradingView)
