@@ -150,16 +150,7 @@ def transaction_from_id(orderId):
     return transaction
         
 # New buy order
-def buy(symbol, spot, active_order, all_buys, info):
-
-    # Initialize active_order
-    active_order['side']     = "Buy"
-    active_order['active']   = True
-    active_order['start']    = spot
-    active_order['previous'] = spot
-    active_order['current']  = spot
-    active_order['qty']      = info['minBuyQuote']
-    active_order['trigger']  = defs.precision(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
+def buy(symbol, active_order, all_buys, info):
 
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
@@ -245,17 +236,30 @@ def check_sell(spot, profit, active_order, all_buys, info):
     # Return data
     return all_sells, qty, can_sell, rise_to
 
-# New sell order
-def sell(symbol, spot, active_order, info):
-    
-    # Initialize active_order
-    active_order['side']     = "Sell"
+# Initialize active order for initial buy or sell
+def initialize_active_order(spot, active_order, info, side):
+
+    # Initialize active order
     active_order['active']   = True
     active_order['start']    = spot
     active_order['previous'] = spot
     active_order['current']  = spot
-    active_order['trigger']  = defs.precision(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
 
+    # Check side buy or sell
+    if side == "Buy":
+        active_order['side']     = "Buy"
+        active_order['qty']      = info['minBuyQuote']
+        active_order['trigger']  = defs.precision(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
+    else:
+        active_order['side']     = "Sell"
+        active_order['trigger']  = defs.precision(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
+
+    # Return active_order
+    return active_order
+
+# New sell order
+def sell(symbol, active_order, info):
+    
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
 
