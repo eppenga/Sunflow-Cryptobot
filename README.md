@@ -39,7 +39,7 @@ python sunflow.py
 ```
 
 ### Multiple symbols
-Pro tip, if you want to run multiple instances of Sunflow, create a custom config file per symbol and run every instance in a seperate terminal.
+If you want to run multiple symbols, create a custom config file per symbol (including custom settings) and run every instance of Sunflow in a seperate terminal of the same source code, there is no need to install Sunflow multiple times.
 ```
 python sunflow.py config1
 python sunflow.py config2
