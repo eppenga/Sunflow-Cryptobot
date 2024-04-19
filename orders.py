@@ -289,7 +289,7 @@ def distance(active_order, prices):
     debug = False
 
     # Initialize variables
-    waver           = False    # Used wave to set distance
+    waver            = False   # Use wave to set distance
     scaler           = 3       # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
     number           = 7       # Last {number} of prices will be used
     fluctuation      = 0       # Fluctuation distance of trigger price
