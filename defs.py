@@ -265,7 +265,7 @@ def waves_spikes(prices, use_data, select):
             min_diff = diff
             closest_index = i
 
-    # Calculate the change in close price
+    # Calculate the change in price
     price_change = None
     if closest_index is not None and prices['time'][-1] > span:
         price_change      = prices['price'][-1] - prices['price'][closest_index]
