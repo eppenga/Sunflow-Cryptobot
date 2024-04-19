@@ -8,6 +8,7 @@
 - Automatically combines sell orders
 - Technical Analysis (similar to TradingView)
 - Can also work as gridbot
+- Load custom config via CLI
 - Uses Bybit websockets
 - Error handling including auto reconnect
 
@@ -35,6 +36,14 @@ nano config.py
 ### Run
 ```
 python sunflow.py
+```
+
+### Multiple symbols
+Pro tip, if you want to run multiple instances of Sunflow, create a custom config file per symbol and run every instance in a seperate terminal.
+```
+python sunflow.py config1
+python sunflow.py config2
+...
 ```
 
 ## Disclaimer
