@@ -143,7 +143,7 @@ def transaction_from_id(orderId):
     return transaction
         
 # New buy order
-def buy(symbol, spot, active_order, prices, all_buys, info):
+def buy(symbol, spot, active_order, all_buys, info):
 
     # Initialize active_order
     active_order['side']     = "Buy"
@@ -152,7 +152,7 @@ def buy(symbol, spot, active_order, prices, all_buys, info):
     active_order['previous'] = spot
     active_order['current']  = spot
     active_order['qty']      = info['minBuyQuote']
-    active_order['trigger']  = defs.precision(spot * (1 + (active_order['distance'] / 100)), info['tickSize'])
+    active_order['trigger']  = defs.precision(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
 
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
@@ -239,7 +239,7 @@ def check_sell(spot, profit, active_order, all_buys, info):
     return all_sells, qty, can_sell, rise_to
 
 # New sell order
-def sell(symbol, spot, active_order, prices, info):
+def sell(symbol, spot, active_order, info):
     
     # Initialize active_order
     active_order['side']     = "Sell"
@@ -247,7 +247,7 @@ def sell(symbol, spot, active_order, prices, info):
     active_order['start']    = spot
     active_order['previous'] = spot
     active_order['current']  = spot
-    active_order['trigger']  = defs.precision(spot * (1 - (active_order['distance'] / 100)), info['tickSize'])
+    active_order['trigger']  = defs.precision(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
 
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")

@@ -174,8 +174,10 @@ def handle_ticker(message):
                 active_order['qty'] = active_order['qty_new']
                 # Fill all_sells for the first time
                 all_sells = all_sells_new
+                # Determine distance of trigger price
+                active_order = orders.distance(active_order, prices)
                 # Place the first sell order
-                active_order = orders.sell(symbol, new_spot, active_order, prices, info)
+                active_order = orders.sell(symbol, new_spot, active_order, info)
 
             # Amend existing sell trailing order if required
             if active_order['active'] and active_order['side'] == "Sell":
@@ -322,9 +324,10 @@ def handle_kline(message, interval):
             message = result[1]
             print(defs.now_utc()[1] + "Sunflow: handle_kline: " + message + "\n")
             
-            # Execute buy decission
+            # Determine distance of trigger price and execute buy decission
             if can_buy:
-                result       = orders.buy(symbol, spot, active_order, prices, all_buys, info)
+                active_order = orders.distance(active_order, prices)
+                result       = orders.buy(symbol, spot, active_order, all_buys, info)
                 active_order = result[0]
                 all_buys     = result[1]
 

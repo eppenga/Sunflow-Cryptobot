@@ -68,10 +68,13 @@ def check_order(symbol, active_order, all_buys, all_sells):
         if order:
             defs.log_exchange(order, message)
 
-        # Check if trailing order if filled, and if so close trailing process
+        # Check if trailing order if filled, if so reset counters and close trailing process
         if order['result']['list'] == []:
             print(defs.now_utc()[1] + "Trailing: check_order: Trailing " + active_order['side'] + ": *** Order has been filled! ***\n")
+            # Reset counters
+            stuck_counter  = 0
             spiker_counter = 0
+            # Close trailing process
             result       = close_trail(active_order, all_buys, all_sells)
             active_order = result[0]
             all_buys     = result[1]
