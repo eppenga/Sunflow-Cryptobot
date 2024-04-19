@@ -329,7 +329,7 @@ def distance(active_order, prices):
         print(defs.now_utc()[1] + "Orders: distance: Using EMA to set trigger price distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
     
     # Use spot to set distance
-    elif active_order['wiggle'] == "Spot" or active_order['wiggle'] == "Spike":
+    elif active_order['wiggle'] == "Spot" or active_order['wiggle'] == "Wave":
 
         # Calculate absolute price difference in percentage
         price_difference = abs(((active_order['current'] - active_order['start']) / active_order['start']) * 100)

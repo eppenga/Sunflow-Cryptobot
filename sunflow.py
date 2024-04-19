@@ -453,11 +453,7 @@ def prechecks():
     if not ws_kline and use_orderbook['enabled']:
         goahead = False
         print(defs.now_utc()[1] + "Sunflow: prechecks: Must set ws_orderbook to True when orderbook is enabled")
-    
-    if not use_spikes['enabled'] and active_order['wiggle'] == "Spike":
-        goahead = False
-        print(defs.now_utc()[1] + "Sunflow: prechecks: Must set spike_enabled to True when wiggle = Spike is enabled")
-    
+        
     # Return result
     return goahead
 

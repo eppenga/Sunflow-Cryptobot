@@ -205,13 +205,9 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
 
             # We have a new price
             active_order['previous'] = active_order['current']
-            
-            # Set calculated distance by default to distance
-            active_order['fluctuation'] = active_order['distance']
-            
+                        
             # Determine distance of trigger price
-            if active_order['wiggle']:
-                active_order = orders.distance(active_order, prices)
+            active_order = orders.distance(active_order, prices)
                        
             # Calculate new trigger price
             if active_order['side'] == "Sell":
