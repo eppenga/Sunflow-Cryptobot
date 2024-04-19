@@ -4,14 +4,30 @@
 
 # Load external libraries
 from time import sleep
+from pathlib import Path
 from pybit.unified_trading import WebSocket
 from requests.exceptions import ChunkedEncodingError
 from urllib3.exceptions import ProtocolError
 from http.client import RemoteDisconnected
-import sys, traceback
+import importlib, sys, traceback
+
+# Load default config file or from command line
+if len(sys.argv) > 1:
+    config_file = sys.argv[1]
+else:
+    config_file = "config"
+
+# Check if config file exists
+check_path = Path(config_file + ".py")
+if not check_path.exists():
+    print("Config file not found, aborting...\n")
+    exit()
 
 # Load internal libraries
-import config, defs, preload, indicators, trailing, orders
+import defs, preload, indicators, trailing, orders
+
+# Load config file dynamically
+config = importlib.import_module(config_file)
 
 ### Initialize variables ###
 
@@ -215,7 +231,7 @@ def handle_ticker(message):
             # Spiking, when not buying or selling, let's buy and see what happens :)
             if not active_order['active'] and spiking:
                 print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
-                result       = orders.buy(symbol, spot, active_order, prices, all_buys, info)
+                result       = orders.buy(symbol, spot, active_order, all_buys, info)
                 active_order = result[0]
                 all_buys     = result[1]
 

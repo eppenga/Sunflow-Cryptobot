@@ -5,10 +5,17 @@
 # Load external libraries
 from pybit.unified_trading import WebSocket
 from datetime import datetime, timezone
-#from time import sleep
+import importlib, sys
 
 # Load internal libraries
-import config, defs
+import defs
+
+# Load default config file or from command line
+if len(sys.argv) > 1:
+    config_file = sys.argv[1]
+else:
+    config_file = "config"
+config = importlib.import_module(config_file)
 
 # Initialize variables
 debug = False

@@ -3,12 +3,19 @@
 # Order functions
 
 # Load external libraries
-import math
+import importlib, math, sys
 import pandas as pd
 from pybit.unified_trading import HTTP
 
 # Load internal libraries
-import config, database, defs
+import database, defs
+
+# Load default config file or from command line
+if len(sys.argv) > 1:
+    config_file = sys.argv[1]
+else:
+    config_file = "config"
+config = importlib.import_module(config_file)
 
 # Debug
 debug  = False
@@ -341,7 +348,7 @@ def distance(active_order, prices):
                 print(defs.now_utc()[1] + "Orders: distance: Using spot to set trigger price distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Use fixed from config file to set distance        
-    else:
+    elif active_order['wiggle'] != "Wave":
         active_order['fluctuation'] = active_order['distance']
         print(defs.now_utc()[1] + "Orders: distance: Using fixed data to set trigger distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
 

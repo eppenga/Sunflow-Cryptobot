@@ -4,9 +4,17 @@
 
 # Load external libraries
 from pybit.unified_trading import HTTP
+import importlib, sys, time
 
 # Load internal libraries
-import config, database, defs, orders
+import database, defs, orders
+
+# Load default config file or from command line
+if len(sys.argv) > 1:
+    config_file = sys.argv[1]
+else:
+    config_file = "config"
+config = importlib.import_module(config_file)
 
 # Connect to exchange
 session = HTTP(
@@ -17,6 +25,7 @@ session = HTTP(
 
 # Initialize variables
 debug          = False
+stuck_fresh    = True
 stuck_counter  = 0
 spiker_counter = 0
    
@@ -24,7 +33,7 @@ spiker_counter = 0
 def check_order(symbol, active_order, all_buys, all_sells):
 
     # Declare some variables global
-    global stuck_counter, spiker_counter
+    global stuck_fresh, stuck_counter, spiker_counter
     
     # Initialize variables
     result         = ()
@@ -38,10 +47,14 @@ def check_order(symbol, active_order, all_buys, all_sells):
         if active_order['current'] >= active_order['trigger']:
             do_check_order = True
 
-    # Check any 10th check_order anyway, sometimes orders get stuck *** CHECK *** MAYBE CHECK EVERY MINUTE
-    stuck_counter = stuck_counter + 1
-    if stuck_counter == 10:
+    # Check every minute, sometimes orders get stuck
+    if stuck_fresh:
+        stuck_fresh = False
+        stuck_counter = int(time.time() * 1000)
+    current_time = int(time.time() * 1000)
+    if current_time - stuck_counter > 10000:
         print(defs.now_utc()[1] + "Trailing: check_orders: Doing an additional check on trailing order\n")
+        stuck_fresh    = True
         stuck_counter  = 0
         do_check_order = True
 
@@ -72,6 +85,7 @@ def check_order(symbol, active_order, all_buys, all_sells):
         if order['result']['list'] == []:
             print(defs.now_utc()[1] + "Trailing: check_order: Trailing " + active_order['side'] + ": *** Order has been filled! ***\n")
             # Reset counters
+            stuck_fresh    = True
             stuck_counter  = 0
             spiker_counter = 0
             # Close trailing process

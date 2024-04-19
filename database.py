@@ -3,10 +3,17 @@
 # Do database stuff
 
 # Load external libraries
-import json
+import importlib, json, sys
 
 # Load internal libraries
-import config, defs
+import defs
+
+# Load default config file or from command line
+if len(sys.argv) > 1:
+    config_file = sys.argv[1]
+else:
+    config_file = "config"
+config = importlib.import_module(config_file)
 
 # Initialize variables
 debug = False
@@ -23,7 +30,7 @@ def save(all_buys):
     total_qty   = sum(item['cumExecQty'] for item in all_buys)
     
     # Output to stdout
-    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buy orders and " + str(total_qty) + " in quote currency to file\n")
+    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buy orders and " + str(total_qty) + " executed in quote currency to file\n")
 
 # Load the database with all buys
 def load(dbase_file):

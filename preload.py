@@ -4,10 +4,17 @@
 
 # Load external libraries
 from pybit.unified_trading import HTTP
-import os, time
+import importlib, os, sys, time
 
 # Load internal libraries
-import config, database, defs, orders
+import database, defs, orders
+
+# Load default config file or from command line
+if len(sys.argv) > 1:
+    config_file = sys.argv[1]
+else:
+    config_file = "config"
+config = importlib.import_module(config_file)
 
 # Debug
 debug = False

@@ -8,7 +8,7 @@
 
 # Ignore application files
 *.backup
-config.py
+config*.py
 test*.*
 todo*
 /data
