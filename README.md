@@ -38,7 +38,7 @@ nano config.py
 python sunflow.py
 ```
 
-### Multiple symbols
+### Run multiple symbols
 If you want to run multiple symbols, create a custom config file per symbol (including custom settings) and run every instance of Sunflow in a seperate terminal of the same source code, there is no need to install Sunflow multiple times.
 ```
 python sunflow.py config1
