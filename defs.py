@@ -5,7 +5,7 @@
 # Load external libraries
 from pybit.unified_trading import WebSocket
 from datetime import datetime, timezone
-import importlib, sys
+import importlib, sys, time
 
 # Load internal libraries
 import defs
@@ -335,6 +335,7 @@ def rate_limit(response):
         # Inform of delay
         if delay:
             print(defs.now_utc()[1] + "Defs: rate_limit: *** WARNING: API RATE LIMIT HIT, DELAYING SUNFLOW " + str(delay) + " SECONDS ***\n")
+            time.sleep(delay)
     
     # Clean response data
     data = response[0]

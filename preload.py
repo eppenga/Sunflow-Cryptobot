@@ -4,7 +4,7 @@
 
 # Load external libraries
 from pybit.unified_trading import HTTP
-import importlib, os, sys, time
+import importlib, os, sys
 
 # Load internal libraries
 import database, defs, orders
