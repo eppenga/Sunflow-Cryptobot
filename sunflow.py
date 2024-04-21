@@ -482,8 +482,6 @@ if prechecks():
         'price': klines[interval_1]['close']
     }
 
-    exit()
-
     print("*** Starting ***\n")
 
 else:

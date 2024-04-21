@@ -297,7 +297,7 @@ def rate_limit(response):
     delay  = 0
     status = 0
     limit  = 0
-    debug  = True
+    debug  = False
     skip   = False
 
     # Get Status and Limit
