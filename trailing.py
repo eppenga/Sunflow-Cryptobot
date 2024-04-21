@@ -18,9 +18,10 @@ config = importlib.import_module(config_file)
 
 # Connect to exchange
 session = HTTP(
-    testnet    = False,
-    api_key    = config.api_key,
-    api_secret = config.api_secret
+    testnet                 = False,
+    api_key                 = config.api_key,
+    api_secret              = config.api_secret,
+    return_response_headers = True
 )
 
 # Initialize variables
@@ -77,8 +78,9 @@ def check_order(symbol, active_order, all_buys, all_sells):
         except Exception as e:
             defs.log_error(e)
 
-        # Log data if possible
+        # Check API rate limit and log data if possible
         if order:
+            order = defs.rate_limit(order)
             defs.log_exchange(order, message)
 
         # Check if trailing order if filled, if so reset counters and close trailing process
@@ -293,8 +295,9 @@ def amend_quantity_sell(symbol, active_order, info):
             # Any other error
             error_code = 100
 
-    # Log data if possible
+    # Check API rate limit and log data if possible
     if order:
+        order = defs.rate_limit(order)
         defs.log_exchange(order, message)
 
     # Return error code 
@@ -330,8 +333,9 @@ def amend_trigger_price(symbol, active_order, info):
             # Any other error
             error_code = 100
 
-    # Log data if possible
+    # Check API rate limit and log data if possible
     if order:
+        order = defs.rate_limit(order)
         defs.log_exchange(order, message)
 
     # Return error code 

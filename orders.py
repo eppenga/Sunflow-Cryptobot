@@ -22,9 +22,10 @@ debug  = False
 
 # Connect to exchange
 session = HTTP(
-    testnet    = False,
-    api_key    = config.api_key,
-    api_secret = config.api_secret,
+    testnet                 = False,
+    api_key                 = config.api_key,
+    api_secret              = config.api_secret,
+    return_response_headers = True
 )
 
 # Get orderId from exchange order
@@ -54,8 +55,9 @@ def history(orderId):
     except Exception as e:
         defs.log_error(e)
 
-    # Log data if possible
-    if order:      
+    # Check API rate limit and log data if possible
+    if order:
+        order = defs.rate_limit(order)
         defs.log_exchange(order, message)
       
     # If realtime fails, get it from history
@@ -70,8 +72,9 @@ def history(orderId):
         except Exception as e:
             defs.log_error(e)
 
-        # Log data if possible
+        # Check API rate limit and log data if possible
         if order:
+            order = defs.rate_limit(order)
             defs.log_exchange(order, message)
 
     # If realtime and history fails, throw an error
@@ -125,8 +128,9 @@ def cancel(symbol, orderid):
     except Exception as e:
         defs.log_error(e)
         
-    # Log data if possible
-    if order:      
+    # Check API rate limit and log data if possible
+    if order:
+        order = defs.rate_limit(order)
         defs.log_exchange(order, message)    
 
 # Turn an order from the exchange into a properly formatted transaction after placing or amending an order
@@ -150,7 +154,13 @@ def transaction_from_id(orderId):
     return transaction
         
 # New buy order
-def buy(symbol, active_order, all_buys, info):
+def buy(symbol, spot, active_order, all_buys, prices, info):
+
+    # Initialize active_order
+    active_order = initialize_active_order(spot, active_order, info, "Buy")
+    
+    # Determine distance of trigger price
+    active_order = distance(active_order, prices)
 
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
@@ -172,8 +182,9 @@ def buy(symbol, active_order, all_buys, info):
     except Exception as e:
         defs.log_error(e)
         
-    # Log data if possible
-    if order:      
+    # Check API rate limit and log data if possible
+    if order:
+        order = defs.rate_limit(order)
         defs.log_exchange(order, message)
         
     # Get order info
@@ -258,7 +269,13 @@ def initialize_active_order(spot, active_order, info, side):
     return active_order
 
 # New sell order
-def sell(symbol, active_order, info):
+def sell(symbol, spot, active_order, prices, info):
+    
+    # Initialize active_order
+    active_order = initialize_active_order(spot, active_order, info, "Sell")
+    
+    # Determine distance of trigger price
+    active_order = distance(active_order, prices)
     
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
@@ -280,8 +297,9 @@ def sell(symbol, active_order, info):
     except Exception as e:
         defs.log_error(e)
         
-    # Log data if possible
-    if order:      
+    # Check API rate limit and log data if possible
+    if order:
+        order = defs.rate_limit(order)
         defs.log_exchange(order, message)
     
     # Get order info

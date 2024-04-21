@@ -289,3 +289,55 @@ def waves_spikes(prices, use_data, select):
 
     # Return price change percentage
     return abs(price_change_perc), spiking
+
+# Deal with API rate limit
+def rate_limit(response):
+    
+    # Initialize variables
+    delay  = 0
+    status = 0
+    limit  = 0
+    debug  = True
+    skip   = False
+
+    # Get Status and Limit
+    try:
+        status = float(response[2]['X-Bapi-Limit-Status'])
+        limit  = float(response[2]['X-Bapi-Limit'])
+    except:
+        if debug:
+            print(defs.now_utc()[1] + "Defs: rate_limit: Warning: API Rate Limit info does not exist in data, probably public request\n")
+        skip = True
+
+    # Continue when API Rate Limit is presence
+    if not skip:
+   
+        # Delay logic
+        ratio = (limit - status) / limit
+        if ratio > 0.5:
+            delay = delay + 0.1
+        if ratio > 0.7:
+            delay = delay + 0.3
+        if ratio > 0.8:
+            delay = delay + 0.6
+        if ratio > 0.9:
+            delay = delay + 1
+
+        # Debug
+        if debug:
+            print(defs.now_utc()[1] + "Defs: rate_limit: Status is " + str(status) + " and limit is " + str(limit) + ", therefore delay is set to " + str(delay) + "\n")
+        
+        # Hard exit
+        if ratio > 1:
+            print(defs.now_utc()[1] + "Defs: rate_limit: *** ERROR: API RATE LIMIT EXCEED, STOPPED TO PREVENT PERMANENT BAN! ***\n")
+            exit()
+        
+        # Inform of delay
+        if delay:
+            print(defs.now_utc()[1] + "Defs: rate_limit: *** WARNING: API RATE LIMIT HIT, DELAYING SUNFLOW " + str(delay) + " SECONDS ***\n")
+    
+    # Clean response data
+    data = response[0]
+
+    # Return cleaned response
+    return data

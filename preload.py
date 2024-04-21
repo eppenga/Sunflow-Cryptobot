@@ -20,7 +20,10 @@ config = importlib.import_module(config_file)
 debug = False
 
 # Connect to exchange
-session = HTTP(testnet = False)
+session = HTTP(
+    testnet = False,
+    return_response_headers = True
+)
 
 # Preload ticker
 def get_ticker(symbol):
@@ -40,8 +43,9 @@ def get_ticker(symbol):
     except Exception as e:
         defs.log_error(e)
 
-    # Log data if possible
+    # Check API rate limit and log data if possible
     if pre_ticker:
+        pre_ticker = defs.rate_limit(pre_ticker)
         defs.log_exchange(pre_ticker, message)
    
     # Transform ticker into required format
@@ -82,8 +86,9 @@ def get_klines(symbol, interval, limit):
     except Exception as e:
         defs.log_error(e)
 
-    # Log data if possible
-    if pre_klines:      
+    # Check API rate limit and log data if possible
+    if pre_klines:
+        pre_klines = defs.rate_limit(pre_klines)
         defs.log_exchange(pre_klines, message)
     
     # Transform klines into required format
@@ -132,8 +137,9 @@ def get_info(symbol, spot, multiplier):
     except Exception as e:
         defs.log_error(e)
         
-    # Log data if possible
-    if pre_info:        
+    # Check API rate limit and log data if possible
+    if pre_info:
+        pre_info = defs.rate_limit(pre_info)
         defs.log_exchange(pre_info, message)
      
     # Transform instrument info intro rquired format
