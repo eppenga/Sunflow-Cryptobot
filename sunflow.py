@@ -230,7 +230,7 @@ def handle_ticker(message):
             if not active_order['active'] and spiking:
                 print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
                 active_order = orders.initialize_active_order(new_spot, active_order, info, "Buy")
-                result       = orders.buy(symbol, spot, active_order, all_buys, prices, info)
+                result       = orders.buy(symbol, spot, active_order, all_buys, prices)
                 active_order = result[0]
                 all_buys     = result[1]
 
@@ -341,7 +341,7 @@ def handle_kline(message, interval):
             
             # Determine distance of trigger price and execute buy decission
             if can_buy:
-                result       = orders.buy(symbol, spot, active_order, all_buys, prices, info)
+                result       = orders.buy(symbol, spot, active_order, all_buys, prices)
                 active_order = result[0]
                 all_buys     = result[1]
 

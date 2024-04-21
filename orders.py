@@ -8,7 +8,7 @@ import pandas as pd
 from pybit.unified_trading import HTTP
 
 # Load internal libraries
-import database, defs
+import database, defs, preload
 
 # Load default config file or from command line
 if len(sys.argv) > 1:
@@ -154,7 +154,10 @@ def transaction_from_id(orderId):
     return transaction
         
 # New buy order
-def buy(symbol, spot, active_order, all_buys, prices, info):
+def buy(symbol, spot, active_order, all_buys, prices):
+
+    # Get latest symbol info
+    info = preload.get_info(symbol, spot, config.multiplier)
 
     # Initialize active_order
     active_order = initialize_active_order(spot, active_order, info, "Buy")

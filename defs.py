@@ -5,7 +5,7 @@
 # Load external libraries
 from pybit.unified_trading import WebSocket
 from datetime import datetime, timezone
-import importlib, sys, time
+import importlib, math, sys, time
 
 # Load internal libraries
 import defs
@@ -68,15 +68,21 @@ def update_kline(kline, klines):
     # Return klines
     return klines
 
-# Round value to the nearest stepSize
-def precision(value, step_size=0.1):
+# Round value to the nearest step size
+def precision(value, step_size):
     
     # Logic
-    factor = 1 / step_size
-    value = (value * factor) // 1 / factor  # Using floor division in Python
-    
-    # Return rounded value
-    return value
+    if step_size < 1:
+        decimal_places = -int(math.log10(step_size))
+        factor = 10 ** decimal_places
+    else:
+        factor = 1 / step_size
+
+    # Round down
+    rounded_value = math.floor(value * factor) / factor
+
+    # Return rounded value    
+    return rounded_value
 
 # Check if there are no adjacent orders already 
 def check_spread(all_buys, spot, spread):

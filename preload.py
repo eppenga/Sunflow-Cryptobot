@@ -122,6 +122,9 @@ def get_klines(symbol, interval, limit):
 # Preload instrument info
 def get_info(symbol, spot, multiplier):
 
+    # Debug
+    debug = False
+
     # Initialize info
     info   = {'time': 0, 'symbol': '', 'baseCoin': '', 'quoteCoin': '', 'status': '', 'basePrecision': 0, 'quotePrecision': 0, 'minOrderQty': 0, 'maxOrderQty': 0, 'minOrderAmt': 0, 'maxOrderAmt': 0, 'tickSize': 0} 
 
@@ -170,11 +173,7 @@ def get_info(symbol, spot, multiplier):
 
     # Output to stdout
     print(defs.now_utc()[1] + "Preload: get_info: Instrument info loaded!\n")
-    
-    if debug:
-        print(defs.now_utc()[1] + "Preload: get_info: Instrument info")
-        print(info)
-    
+       
     # Summarize all info and return data
     data                   = {}                            # Declare data variable
     data['time']           = info['time']                  # Time of last instrument update
@@ -191,7 +190,12 @@ def get_info(symbol, spot, multiplier):
     data['tickSize']       = info['tickSize']              # Smallest possible price increment (of base asset) 
     data['minBuyBase']     = info['minBuyBase']            # Minimum buy value in Base Asset (possibly corrected for multiplier!)
     data['minBuyQuote']    = info['minBuyQuote']           # Minimum buy value in Quote Asset (possibly corrected for multiplier!)
-    
+
+    # Debug
+    if debug:
+        print(defs.now_utc()[1] + "Preload: get_info: Instrument info")
+        print(data)
+  
     # Return instrument info
     return data
 
