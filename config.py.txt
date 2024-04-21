@@ -30,7 +30,7 @@ orderbook_minimum  = 40.00        # Minimum orderbook percentage
 orderbook_maximum  = 60.00        # Maximum orderbook percentage
 
 # Wave measurement
-wave_timeframe     = 60000        # Timeframe in ms to measure wave, used when wiggle uses Wave
+wave_timeframe     = 10000        # Timeframe in ms to measure wave, used when wiggle uses Wave
 
 # Spike detection
 spike_enabled      = True         # Use spike detection
