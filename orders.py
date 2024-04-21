@@ -377,10 +377,20 @@ def distance(active_order, prices):
     # Use wave to set distance
     if active_order['wiggle'] == "Wave":
 
+        # Calculate the change in price based on wave
+        price_change      = 0
+        price_change_perc = 0
+        latest_time       = prices['time'][-1]                    # Get the latest price
+        span              = latest_time - config.wave_timeframe   # Timeframe in milliseconds
+        closest_index     = defs.get_closest_index(prices, span)        # Get closest price when timeframe started
+        if closest_index is not None and prices['time'][-1] > span:
+            price_change      = prices['price'][-1] - prices['price'][closest_index]
+            price_change_perc = abs((price_change / prices['price'][closest_index]) * 100)
+
         # Debug
         if debug:
             print(defs.now_utc()[1] + "Orders: distance: debug: Trailing        : " + active_order['side'])
-            print(defs.now_utc()[1] + "Orders: distance: debug: Price difference: " + str(round(price_difference, 4)))
+            print(defs.now_utc()[1] + "Orders: distance: debug: Price change    : " + str(round(price_change_perc, 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Default distance: " + str(round(active_order['distance'], 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Spot distance   : " + str(round(active_order['fluctuation'], 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Wave distance   : " + str(round(active_order['wave'], 4)) +  "\n")
@@ -390,7 +400,7 @@ def distance(active_order, prices):
             # Conditions based on either Buy or Sell
             if active_order['side'] == "Sell":
                 # Ensure not selling at a loss
-                active_order['fluctuation'] = min(active_order['wave'], price_difference + active_order['distance'])
+                active_order['fluctuation'] = min(active_order['wave'], price_change_perc + active_order['distance'])
                 waver = True
             elif active_order['side'] == "Buy":
                 # For Buy orders, price difference is not a concern

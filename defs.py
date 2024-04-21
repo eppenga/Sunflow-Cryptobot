@@ -251,6 +251,22 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
     # Return result
     return can_buy, message
 
+# Calculates the closest index
+def get_closest_index(prices, span):
+    
+    # Find the closest index in the time {timeframe}
+    closest_index = None
+    min_diff = float('inf')
+
+    for i, t in enumerate(prices['time']):
+        diff = abs(t - span)
+        if diff < min_diff:
+            min_diff = diff
+            closest_index = i
+
+    # Return closest index
+    return closest_index
+
 # Calculate price changes for spike detection 
 def waves_spikes(prices, use_data, select):
 
@@ -262,18 +278,12 @@ def waves_spikes(prices, use_data, select):
     latest_time = prices['time'][-1]             # Get the latest time
     span = latest_time - use_data['timeframe']   # timeframe in milliseconds
 
-    # Find the closest index to the time {timeframe} ago
-    closest_index = None
-    min_diff = float('inf')
-
-    for i, t in enumerate(prices['time']):
-        diff = abs(t - span)
-        if diff < min_diff:
-            min_diff = diff
-            closest_index = i
+    # Get the closest index in the time {timeframe}
+    closest_index = get_closest_index(prices, span)
 
     # Calculate the change in price
-    price_change = None
+    price_change      = 0
+    price_change_perc = 0
     if closest_index is not None and prices['time'][-1] > span:
         price_change      = prices['price'][-1] - prices['price'][closest_index]
         price_change_perc = (price_change / prices['price'][closest_index]) * 100
