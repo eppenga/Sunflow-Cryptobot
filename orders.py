@@ -318,14 +318,14 @@ def sell(symbol, spot, active_order, prices, info):
 def distance(active_order, prices):
 
     # Debug
-    debug = False
+    debug = True
 
     # Initialize variables
     waver            = False   # Use wave to set distance
     scaler           = 3       # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
     number           = 7       # Last {number} of prices will be used
     fluctuation      = 0       # Fluctuation distance of trigger price
-    price_difference = 0       # Price difference between start and current price in percentage
+    price_distance   = 0       # Price distance between start and current price in percentage
     
     # By default fluctuation equals distance
     active_order['fluctuation'] = active_order['distance']
@@ -352,11 +352,11 @@ def distance(active_order, prices):
     # Use spot to set distance
     elif active_order['wiggle'] == "Spot" or active_order['wiggle'] == "Wave":
 
-        # Calculate absolute price difference in percentage
-        price_difference = abs(((active_order['current'] - active_order['start']) / active_order['start']) * 100)
+        # Calculate price distance in percentage
+        price_distance = abs(((active_order['current'] - active_order['start']) / active_order['start']) * 100)
 
         # Calculate trigger price distance percentage
-        fluctuation = (1 / math.pow(10, 1/1.2)) * math.pow(price_difference, 1/1.2) + active_order['distance']
+        fluctuation = (1 / math.pow(10, 1/1.2)) * math.pow(abs(price_distance), 1/1.2) + active_order['distance']
 
         # Debug
         if debug:
@@ -383,26 +383,19 @@ def distance(active_order, prices):
         # Debug
         if debug:
             print(defs.now_utc()[1] + "Orders: distance: debug: Trailing        : " + active_order['side'])
-            print(defs.now_utc()[1] + "Orders: distance: debug: Price difference: " + str(round(price_difference, 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Default distance: " + str(round(active_order['distance'], 4)))
+            print(defs.now_utc()[1] + "Orders: distance: debug: Price distance  : " + str(round(price_distance, 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Spot distance   : " + str(round(active_order['fluctuation'], 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Wave distance   : " + str(round(active_order['wave'], 4)) +  "\n")
 
-        # Check if the spike exceeds the minimum fixed trigger price distance
-        if active_order['wave'] > active_order['distance']:
-            # Conditions based on either Buy or Sell
-            if active_order['side'] == "Sell":
-                # Ensure not selling at a loss
-                active_order['fluctuation'] = min(active_order['wave'], price_difference + active_order['distance'])
-                waver = True
-            elif active_order['side'] == "Buy":
-                # For Buy orders, price difference is not a concern
-                active_order['fluctuation'] = active_order['wave']
-                waver = True
-        else:
-            # Set fluctuation to minimum
+        # Set fluctuation
+        if active_order['wave'] < active_order['distance']:
             active_order['fluctuation'] = active_order['distance']
-        
+        else:
+            # Prevent selling at a loss
+            active_order['fluctuation'] = min(active_order['wave'], price_distance + active_order['distance'])
+            waver = True
+                
         # Output to stdout
         if waver:
             print(defs.now_utc()[1] + "Orders: distance: Using wave data via waver to set trigger price distance to ", end="")

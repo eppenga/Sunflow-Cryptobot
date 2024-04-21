@@ -304,7 +304,7 @@ def waves_spikes(prices, use_data, select):
         print(defs.now_utc()[1] + "Defs: waves_spikes: Price change in the last " + str(round((use_data['timeframe'] / 1000), 2)) +  " seconds is " + str(round(price_change_perc, 2)) + "%\n")
 
     # Return price change percentage
-    return price_change_perc, spiking
+    return abs(price_change_perc), spiking
 
 # Deal with API rate limit
 def rate_limit(response):
