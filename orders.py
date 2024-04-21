@@ -318,7 +318,7 @@ def sell(symbol, spot, active_order, prices, info):
 def distance(active_order, prices):
 
     # Debug
-    debug = True
+    debug = False
 
     # Initialize variables
     waver            = False   # Use wave to set distance
