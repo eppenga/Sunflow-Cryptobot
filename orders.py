@@ -318,7 +318,7 @@ def sell(symbol, spot, active_order, prices, info):
 def distance(active_order, prices):
 
     # Debug
-    debug = False
+    debug = True
 
     # Initialize variables
     waver            = False   # Use wave to set distance
@@ -393,8 +393,12 @@ def distance(active_order, prices):
             active_order['fluctuation'] = active_order['distance']
         else:
             # Prevent selling at a loss
-            active_order['fluctuation'] = min(active_order['wave'], price_distance + active_order['distance'])
-            waver = True
+            if active_order['side'] == "Sell":
+                active_order['fluctuation'] = min(active_order['wave'], price_distance + active_order['distance'])
+                waver = True
+            else:
+                active_order['fluctuation'] = min(active_order['wave'], active_order['distance'])
+                waver = True
                 
         # Output to stdout
         if waver:
