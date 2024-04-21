@@ -122,7 +122,7 @@ def now_utc():
     current_time = datetime.now(timezone.utc)
     milliseconds = round(current_time.microsecond / 10000) / 100
     timestamp_0 = current_time.strftime('%Y-%m-%d %H:%M:%S') + f'.{int(milliseconds * 100):02d}'
-    timestamp_1 = current_time.strftime('%Y-%m-%d %H:%M:%S') + f'.{int(milliseconds * 100):02d}' + " | "
+    timestamp_1 = current_time.strftime('%Y-%m-%d %H:%M:%S') + f'.{int(milliseconds * 100):02d}' + " | " + config.symbol + ": "
     timestamp_2 = str(milliseconds)
     timestamp_3 = str(milliseconds) + " | "
     
