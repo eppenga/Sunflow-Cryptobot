@@ -394,10 +394,14 @@ def distance(active_order, prices):
         else:
             # Prevent selling at a loss
             if active_order['side'] == "Sell":
-                active_order['fluctuation'] = min(active_order['wave'], price_distance + active_order['distance'])
-                waver = True
+                if active_order['wave'] < (price_distance + active_order['distance']):
+                    active_order['fluctuation'] = active_order['wave']
+                    waver = True
+                else:
+                    active_order['fluctuation'] = price_distance + active_order['distance']
+                    waver = True
             else:
-                active_order['fluctuation'] = min(active_order['wave'], active_order['distance'])
+                active_order['fluctuation'] = active_order['wave']
                 waver = True
                 
         # Output to stdout
