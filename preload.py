@@ -250,7 +250,6 @@ def check_orders(transactions):
         if "Filled" in exchange_transaction['orderStatus']:
             exchange_transaction['status'] = "Closed"
             all_buys.append(exchange_transaction)
-            #time.sleep(0.2)
         
     # Save refreshed database
     database.save(all_buys)
