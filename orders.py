@@ -79,7 +79,7 @@ def history(orderId):
 
     # If realtime and history fails, throw an error
     if order['result']['list'] == []:
-        message = defs.now_utc()[1] + "Orders: history: Trying to load non-existing error, something is corrupt!"
+        message = defs.now_utc()[1] + "Orders: history: Trying to load non-existing order, something is corrupt!"
         defs.log_error()
 
     if debug:
@@ -388,23 +388,48 @@ def distance(active_order, prices):
             print(defs.now_utc()[1] + "Orders: distance: debug: Spot distance   : " + str(round(active_order['fluctuation'], 4)))
             print(defs.now_utc()[1] + "Orders: distance: debug: Wave distance   : " + str(round(active_order['wave'], 4)) +  "\n")
 
-        # Set fluctuation
-        if active_order['wave'] < active_order['distance']:
+
+        ''' Ride the waves of the symbol, complicated stuff hope I get it right '''
+       
+        # Selling
+        if active_order['side'] == "Sell":
+
+            # Set the wave for selling
+            active_order['fluctuation'] = active_order['wave']
+
+            # Prevent selling at a loss
+            profitable = price_distance + active_order['distance']
+            if active_order['wave'] > profitable:                           # Wave can cause potential loss, set wave to maximum distance
+                active_order['fluctuation'] = profitable
+                waver = True
+                
+            # Check direction of the wave
+            if active_order['wave'] < active_order['distance']:             # Wave is in the wrong direction, keep wave at least at minimum distance
+                active_order['fluctuation'] = active_order['distance']
+                waver = True
+            
+        
+        # Buying
+        if active_order['side'] == "Buy":
+            
+            # Reverse wave for buying logic
+            active_order['fluctuation'] = active_order['wave'] * -1
+            
+            # Check direction of the wave
+            if active_order['wave'] < active_order['distance']:             # Wave is in the wrong direction, keep at least at minimum distance
+                active_order['fluctuation'] = active_order['distance']
+                waver = True
+
+
+        # Always keep wave at minimum distance
+        if abs(active_order['wave']) < active_order['distance']:
             active_order['fluctuation'] = active_order['distance']
-        else:
+            waver = False
 
-            # Selling
-            if active_order['side'] == "Sell":
-
-                # Prevent selling at a loss
-                if active_order['wave'] < (price_distance + active_order['distance']):
-                    active_order['fluctuation'] = active_order['wave']
-                waver = True
-
-            # Buying
-            else:
-                active_order['fluctuation'] = active_order['wave']
-                waver = True
+        # Double check, not really efficient, but it works
+        if active_order['fluctuation'] < active_order['distance']:
+            active_order['fluctuation'] = active_order['distance']
+            waver = False
                 
         # Output to stdout
         if waver:
