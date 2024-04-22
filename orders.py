@@ -413,7 +413,10 @@ def distance(active_order, prices):
         if active_order['side'] == "Buy":
             
             # Reverse wave for buying logic
-            active_order['fluctuation'] = active_order['wave'] * -1
+            active_order['wave'] = active_order['wave'] * -1
+
+            # Set the wave for buying
+            active_order['fluctuation'] = active_order['wave']
             
             # Check direction of the wave
             if active_order['wave'] < active_order['distance']:             # Wave is in the wrong direction, keep at least at minimum distance
