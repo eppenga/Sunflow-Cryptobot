@@ -41,10 +41,10 @@ python sunflow.py
 ```
 
 ### Run multiple symbols
-If you want to run multiple symbols, create a custom config file per symbol (including full custom settings if you wish) and run every instance of Sunflow in a seperate terminal, there is no need to install Sunflow multiple times. Data files are created with the name of the symbol to keep everything seperated.
+If you want to run multiple symbols, create a custom config file per symbol (including full custom settings if you wish) and run every instance of Sunflow in a seperate terminal, there is no need to install Sunflow multiple times. Data files are created with the name of the config file to keep everything seperated. By doing so, you can even run multiple bots of the same symbol via one API key, handy for testing. 
 ```
-python sunflow.py -h config1.py
-python sunflow.py -h config2.py
+python sunflow.py -c {optional path/}config1.py
+python sunflow.py -c {optional path/}config2.py
 ...
 ```
 
