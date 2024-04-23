@@ -7,20 +7,23 @@ from pathlib import Path
 import importlib, json, sys
 
 # Load internal libraries
-import defs
+import argparse, defs
 
-# Load default config file or from command line
-if len(sys.argv) > 1:
-    config_file = Path(sys.argv[1])
-else:
-    config_file = Path("config.py")
+# Parse command line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--config', default='config.py')
+args = parser.parse_args()
 
-# Ensure the config file has a .py extension
-if not config_file.suffix:
-    config_file = config_file.with_suffix('.py')
+# Resolve config file path
+config_path = Path(args.config).resolve()
+if not config_path.exists():
+    print(f"Config file not found at {config_path}, aborting...\n")
+    sys.exit()
 
-# Load config file dynamically
-config = importlib.import_module(config_file)
+# Dynamically load the config module
+sys.path.append(str(config_path.parent))
+config_module_name = config_path.stem
+config = importlib.import_module(config_module_name)
 
 # Initialize variables
 debug = False

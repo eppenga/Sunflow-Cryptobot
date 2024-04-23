@@ -9,28 +9,26 @@ from pybit.unified_trading import WebSocket
 from requests.exceptions import ChunkedEncodingError
 from urllib3.exceptions import ProtocolError
 from http.client import RemoteDisconnected
-import importlib, sys, traceback
+import argparse, importlib, sys, traceback
 
 # Load internal libraries
 import defs, preload, indicators, trailing, orders
 
-# Load default config file or from command line
-if len(sys.argv) > 1:
-    config_file = Path(sys.argv[1])
-else:
-    config_file = Path("config.py")
+# Parse command line arguments
+parser = argparse.ArgumentParser(description="Run the Sunflow Cryptobot with a specified config.")
+parser.add_argument('-c', '--config', default='config.py', help='Specify the config file (with .py extension).')
+args = parser.parse_args()
 
-# Ensure the config file has a .py extension
-if not config_file.suffix:
-    config_file = config_file.with_suffix('.py')
+# Resolve config file path
+config_path = Path(args.config).resolve()
+if not config_path.exists():
+    print(f"Config file not found at {config_path}, aborting...\n")
+    sys.exit()
 
-# Check if config file exists
-if not config_file.exists():
-    print("Config file not found, aborting...\n")
-    exit()
-
-# Load config file dynamically
-config = importlib.import_module(config_file)
+# Dynamically load the config module
+sys.path.append(str(config_path.parent))
+config_module_name = config_path.stem
+config = importlib.import_module(config_module_name)
 
 ### Initialize variables ###
 
@@ -488,8 +486,6 @@ if prechecks():
     print("*** Starting ***\n")
 
 else:
-    
-    # Abort sunflow
     print("*** COULD NOT START ***\n")
     exit()
 
