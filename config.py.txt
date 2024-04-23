@@ -43,9 +43,17 @@ api_secret         = "123456"                                   # API Secret
 
 # ONLY FOR ADVANCED USERS
 
+# Load external libraries
+from pathlib import Path
+
+# Get current filename without .py
+config_path        = Path(__file__)
+config_file        = config_path.stem + "_"
+if config_file     == "config_": config_file = ""
+
 # Data storage
 data_folder        = "data/"                                    # Where is data stored
-data_suffix        = data_folder + symbol + "_"                 # Format of data and log files
+data_suffix        = data_folder + config_file                  # Format of data and log files
 dbase_file         = data_suffix + "buy_orders.json"            # Database file buy orders
 exchange_file      = data_suffix + "exchange.log"               # Exchange log file
 error_file         = data_suffix + "errors.log"                 # Error log file
