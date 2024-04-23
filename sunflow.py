@@ -488,6 +488,8 @@ if prechecks():
     print("*** Starting ***\n")
 
 else:
+    
+    # Abort sunflow
     print("*** COULD NOT START ***\n")
     exit()
 

@@ -328,11 +328,12 @@ def distance(active_order, prices):
     debug = True
 
     # Initialize variables
-    waver            = False   # Use wave to set distance
-    scaler           = 3       # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
-    number           = 7       # Last {number} of prices will be used
-    fluctuation      = 0       # Fluctuation distance of trigger price
-    price_distance   = 0       # Price distance between start and current price in percentage
+    waver               = False   # Use wave to set distance
+    scaler              = 3       # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
+    number              = 7       # Last {number} of prices will be used
+    fluctuation         = 0       # Fluctuation distance of trigger price
+    price_distance      = 0       # Price distance between start and current price in percentage
+    fluc_price_distance = 0       # Price distance used in calculations
     
     # By default fluctuation equals distance
     active_order['fluctuation'] = active_order['distance']
@@ -360,10 +361,20 @@ def distance(active_order, prices):
     elif active_order['wiggle'] == "Spot" or active_order['wiggle'] == "Wave":
 
         # Calculate price distance in percentage
-        price_distance = abs(((active_order['current'] - active_order['start']) / active_order['start']) * 100)
+        price_distance = ((active_order['current'] - active_order['start']) / active_order['start']) * 100
+
+        # Reverse fluc_price_distance based on buy or sell
+        if active_order['side'] == "Sell":
+            fluc_price_distance = price_distance
+            if price_distance < 0:
+                fluc_price_distance = 0
+        elif active_order['side'] == "Buy":
+            fluc_price_distance = price_distance * -1
+            if price_distance > 0:
+                fluc_price_distance = 0               
 
         # Calculate trigger price distance percentage
-        fluctuation = (1 / math.pow(10, 1/1.2)) * math.pow(abs(price_distance), 1/1.2) + active_order['distance']
+        fluctuation = (1 / math.pow(10, 1/1.2)) * math.pow(fluc_price_distance, 1/1.2) + active_order['distance']
 
         # Debug
         if debug:
@@ -396,7 +407,7 @@ def distance(active_order, prices):
             print(defs.now_utc()[1] + "Orders: distance: debug: Wave distance   : " + str(round(active_order['wave'], 4)) +  "\n")
 
 
-        ''' Ride the waves of the symbol, complicated stuff hope I get it right '''
+        ''' Ride the waves of the symbol, complicated stuff, hope I get it right '''
        
         # Selling
         if active_order['side'] == "Sell":
