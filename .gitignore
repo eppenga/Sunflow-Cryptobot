@@ -13,6 +13,7 @@ test*.*
 todo*
 /data
 /backup
+/symbols
 
 # Ignore python
 /__pycache__

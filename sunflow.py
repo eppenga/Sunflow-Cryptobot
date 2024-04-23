@@ -11,20 +11,23 @@ from urllib3.exceptions import ProtocolError
 from http.client import RemoteDisconnected
 import importlib, sys, traceback
 
-# Load default config file or from command line
-if len(sys.argv) > 1:
-    config_file = sys.argv[1]
-else:
-    config_file = "config"
-
-# Check if config file exists
-check_path = Path(config_file + ".py")
-if not check_path.exists():
-    print("Config file not found, aborting...\n")
-    exit()
-
 # Load internal libraries
 import defs, preload, indicators, trailing, orders
+
+# Load default config file or from command line
+if len(sys.argv) > 1:
+    config_file = Path(sys.argv[1])
+else:
+    config_file = Path("config.py")
+
+# Ensure the config file has a .py extension
+if not config_file.suffix:
+    config_file = config_file.with_suffix('.py')
+
+# Check if config file exists
+if not config_file.exists():
+    print("Config file not found, aborting...\n")
+    exit()
 
 # Load config file dynamically
 config = importlib.import_module(config_file)

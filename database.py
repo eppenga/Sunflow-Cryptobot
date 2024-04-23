@@ -3,6 +3,7 @@
 # Do database stuff
 
 # Load external libraries
+from pathlib import Path
 import importlib, json, sys
 
 # Load internal libraries
@@ -10,9 +11,15 @@ import defs
 
 # Load default config file or from command line
 if len(sys.argv) > 1:
-    config_file = sys.argv[1]
+    config_file = Path(sys.argv[1])
 else:
-    config_file = "config"
+    config_file = Path("config.py")
+
+# Ensure the config file has a .py extension
+if not config_file.suffix:
+    config_file = config_file.with_suffix('.py')
+
+# Load config file dynamically
 config = importlib.import_module(config_file)
 
 # Initialize variables
