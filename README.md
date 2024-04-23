@@ -43,8 +43,8 @@ python sunflow.py
 ### Run multiple symbols
 If you want to run multiple symbols, create a custom config file per symbol (including full custom settings if you wish) and run every instance of Sunflow in a seperate terminal, there is no need to install Sunflow multiple times. Data files are created with the name of the symbol to keep everything seperated.
 ```
-python sunflow.py -h config1.py
-python sunflow.py -h config2.py
+python sunflow.py -c config1.py
+python sunflow.py -c config2.py
 ...
 ```
 
