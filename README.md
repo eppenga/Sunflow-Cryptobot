@@ -48,6 +48,9 @@ python sunflow.py config2
 ...
 ```
 
+![Sunflow easily running with four symbols on a Raspberry Pi 4](https://github.com/eppenga/Sunflow-Cryptobot/assets/4440994/cebd15e1-0190-4a49-8aa9-c555884274d4)
+_Sunflow easily running with four symbols on a Raspberry Pi 4, hardware requirements are minimal_
+
 ## Disclaimer
 I give no warranty and accept no responsibility or liability for the accuracy or the completeness of the information and materials contained in this project. Under no circumstances will I be held responsible or liable in any way for any claims, damages, losses, expenses, costs or liabilities whatsoever (including, without limitation, any direct or indirect damages for loss of profits, business interruption or loss of information) resulting from or arising directly or indirectly from your use of or inability to use this code or any code linked to it, or from your reliance on the information and material on this code, even if I have been advised of the possibility of such damages in advance.
 
