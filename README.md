@@ -6,7 +6,7 @@ _Please note: Sunflow needs API Version 5 of the "unified trading account" of By
 ## Features
 - Trailing Buy and Sell
 - Flexible Trigger Distance (multiple methods)
-- Two intervals (default and confirmation)
+- Three intervals (default and two confirmation)
 - Automatically combines sell orders
 - Technical Analysis (similar to TradingView)
 - Can also work as gridbot
