@@ -211,41 +211,57 @@ def report_result(result):
     return pafa
 
 # Determines buy decission and outputs to stdout
-def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval):
+def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals):
             
     # Debug
     debug = False
 
     # Initialize variables
-    can_buy = False
-
-    # Get the intervals
-    intervals = list(technical_advice.keys())
+    do_buy    = {}
+    do_buy[1] = False
+    do_buy[2] = False
+    do_buy[3] = False
+    do_buy[4] = False
+    do_buy[5] = False    
+    can_buy   = False
 
     # Create message for stdout
-    if use_indicators['enabled']:
+    message = "Buy matrix (" + str(interval) + "m): "
+
+    # Report indicators
+    if use_indicators['enabled']:    
         if intervals[1] != 0:
-            message = "Buy matrix (" + str(interval) + "m): "
-            message += str(intervals[0]) + "m: " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
-            message += report_result(technical_advice[intervals[0]]['result']) + ", "
+            if technical_advice[intervals[1]]['result']:
+                do_buy[1] = True
             message += str(intervals[1]) + "m: " + str(round(technical_advice[intervals[1]]['value'], 2)) + " "
             message += report_result(technical_advice[intervals[1]]['result']) + ", "
-            if intervals[2] != 0:
-                message += str(intervals[2]) + "m: " + str(round(technical_advice[intervals[2]]['value'], 2)) + " "
-                message += report_result(technical_advice[intervals[1]]['result']) + ", "                
-        else:
-            message = "Buy matrix: "
-            message += str(intervals[0]) + "m: " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
-            message += report_result(technical_advice[intervals[0]]['result']) + ", "
+        if intervals[2] != 0:
+            if technical_advice[intervals[2]]['result']:
+                do_buy[2] = True
+            message += str(intervals[2]) + "m: " + str(round(technical_advice[intervals[2]]['value'], 2)) + " "
+            message += report_result(technical_advice[intervals[2]]['result']) + ", "
+        if intervals[3] != 0:
+            if technical_advice[intervals[3]]['result']:
+                do_buy[3] = True
+            message += str(intervals[3]) + "m: " + str(round(technical_advice[intervals[3]]['value'], 2)) + " "
+            message += report_result(technical_advice[intervals[3]]['result']) + ", "                
+
+    # Report spread
     if use_spread['enabled']:
+        if spread_advice['result']:
+            do_buy[4] = True
         message += "Spread: " + str(spread_advice['nearest']) + "% "
         message += report_result(spread_advice['result']) + ", "
     
+    # Report orderbook
     if use_orderbook['enabled']:
+        if orderbook_advice['result']:
+            do_buy[5] = True
         message += "Orderbook: " + str(orderbook_advice['value']) + "% "
         message += report_result(orderbook_advice['result']) + ", "
 
-    if (technical_advice[intervals[0]]['result']) and technical_advice[intervals[1]]['result'] and technical_advice[intervals[2]]['result'] and (spread_advice['result']) and (orderbook_advice['result']):
+    # Determine buy decission
+    if do_buy[1] and do_buy[2] and do_buy[3] and do_buy[4] and do_buy[5]:
         can_buy = True
         message += "BUY!"
     else:
@@ -267,7 +283,7 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
         
         print("Orderbook advice:")
         print(orderbook_advice, "\n")
-    
+
     # Return result
     return can_buy, message
 

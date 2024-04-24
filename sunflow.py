@@ -36,9 +36,10 @@ config = importlib.import_module(config_module_name)
 debug                        = config.debug                   # Debug
 symbol                       = config.symbol                  # Symbol bot used for trading
 klines                       = {}                             # Klines for symbol
-interval_1                   = config.interval_1              # Klines timeframe interval 1
-interval_2                   = config.interval_2              # Klines timeframe interval 2
-interval_3                   = config.interval_3              # Klines timeframe interval 3
+intervals                    = {}                             # Klines intervals
+intervals[1]                 = config.interval_1              # Klines timeframe interval 1
+intervals[2]                 = config.interval_2              # Klines timeframe interval 2
+intervals[3]                 = config.interval_3              # Klines timeframe interval 3
 limit                        = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
 ticker                       = {}                             # Ticker data, including lastPrice and time
 info                         = {}                             # Instrument info on symbol
@@ -108,9 +109,9 @@ if config.orderbook_enabled  : ws_orderbook = True            # Use orderbook we
 
 # Set technical advice variable
 technical_advice             = {}
-technical_advice[interval_1] = {'result': True, 'value': 0, 'level': 'Neutral'}
-technical_advice[interval_2] = {'result': True, 'value': 0, 'level': 'Neutral'}
-technical_advice[interval_3] = {'result': True, 'value': 0, 'level': 'Neutral'}
+if intervals[1] != 0         : technical_advice[intervals[1]] = {'result': True, 'value': 0, 'level': 'Neutral'}
+if intervals[2] != 0         : technical_advice[intervals[2]] = {'result': True, 'value': 0, 'level': 'Neutral'}
+if intervals[3] != 0         : technical_advice[intervals[3]] = {'result': True, 'value': 0, 'level': 'Neutral'}
 
 ### Functions ###
 
@@ -251,13 +252,13 @@ def handle_ticker(message):
         traceback.print_tb(e.__traceback__)
 
 def handle_kline_1(message):
-    handle_kline(message, interval_1)
+    handle_kline(message, intervals[1])
 
 def handle_kline_2(message):
-    handle_kline(message, interval_2)
+    handle_kline(message, intervals[2])
 
 def handle_kline_3(message):
-    handle_kline(message, interval_3)
+    handle_kline(message, intervals[3])
 
 # Handle messages to keep klines up to date
 def handle_kline(message, interval):
@@ -342,7 +343,7 @@ def handle_kline(message, interval):
                 orderbook_advice['result'] = True
             
             # Get buy decission and report
-            result  = defs.decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval)
+            result  = defs.decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals)
             can_buy = result[0]
             message = result[1]
             print(defs.now_utc()[1] + "Sunflow: handle_kline: " + message + "\n")
@@ -456,7 +457,7 @@ def prechecks():
         goahead = False
         print(defs.now_utc()[1] + "Sunflow: prechecks: Must set ws_orderbook to True when orderbook is enabled")
     
-    if interval_3 != 0 and interval_2 == 0:
+    if intervals[3] != 0 and intervals[2] == 0:
         goahead = False
         print(defs.now_utc()[1] + "Sunflow: prechecks: Interval 2 must be set if you use interval 3")
         
@@ -473,9 +474,9 @@ if prechecks():
     print("*** Sunflow Cryptobot ***")
     print("*************************\n")
     print("Symbol    : " + symbol)
-    print("Interval 1: " + str(interval_1) + "m")
-    print("Interval 2: " + str(interval_2) + "m")
-    print("Interval 3: " + str(interval_3) + "m")
+    print("Interval 1: " + str(intervals[1]) + "m")
+    print("Interval 2: " + str(intervals[2]) + "m")
+    print("Interval 3: " + str(intervals[3]) + "m")
     print("Limit     : " + str(limit))
     print()
     
@@ -483,17 +484,17 @@ if prechecks():
     print("*** Preloading ***\n")
 
     preload.check_files()
-    klines[interval_1] = preload.get_klines(symbol, interval_1, limit)
-    if interval_2 !=0  : klines[interval_2] = preload.get_klines(symbol, interval_2, limit)
-    if interval_3 !=0  : klines[interval_3] = preload.get_klines(symbol, interval_3, limit)
-    ticker             = preload.get_ticker(symbol)
-    spot               = ticker['lastPrice']
-    info               = preload.get_info(symbol, spot, multiplier)
-    all_buys           = preload.get_buys(config.dbase_file) 
-    all_buys           = preload.check_orders(all_buys)
-    prices             = {
-        'time': klines[interval_1]['time'],
-        'price': klines[interval_1]['close']
+    if intervals[1] !=0  : klines[intervals[1]] = preload.get_klines(symbol, intervals[1], limit)
+    if intervals[2] !=0  : klines[intervals[2]] = preload.get_klines(symbol, intervals[2], limit)
+    if intervals[3] !=0  : klines[intervals[3]] = preload.get_klines(symbol, intervals[3], limit)
+    ticker               = preload.get_ticker(symbol)
+    spot                 = ticker['lastPrice']
+    info                 = preload.get_info(symbol, spot, multiplier)
+    all_buys             = preload.get_buys(config.dbase_file) 
+    all_buys             = preload.check_orders(all_buys)
+    prices               = {
+        'time' : klines[intervals[1]]['time'],
+        'price': klines[intervals[1]]['close']
     }
 
     print("*** Starting ***\n")
@@ -514,13 +515,13 @@ def subscribe_streams(ws):
 
     # At request get klines from websocket
     if ws_kline:
-        ws.kline_stream(interval=interval_1, symbol=symbol, callback=handle_kline_1)
+        ws.kline_stream(interval=intervals[1], symbol=symbol, callback=handle_kline_1)
         # Use second interval as confirmation
-        if interval_2 != 0:
-            ws.kline_stream(interval=interval_2, symbol=symbol, callback=handle_kline_2)
+        if intervals[2] != 0:
+            ws.kline_stream(interval=intervals[2], symbol=symbol, callback=handle_kline_2)
         # Use third interval as confirmation
-        if interval_3 != 0:
-            ws.kline_stream(interval=interval_3, symbol=symbol, callback=handle_kline_3)
+        if intervals[3] != 0:
+            ws.kline_stream(interval=intervals[3], symbol=symbol, callback=handle_kline_3)
 
     # At request get orderbook from websocket
     if ws_orderbook:
