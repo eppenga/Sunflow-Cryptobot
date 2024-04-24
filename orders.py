@@ -328,7 +328,7 @@ def sell(symbol, spot, active_order, prices, info):
 def distance(active_order, prices):
 
     # Debug
-    debug = False
+    debug = True
 
     # Initialize variables
     waver               = False   # Use wave to set distance
@@ -381,7 +381,7 @@ def distance(active_order, prices):
 
         # Debug
         if debug:
-            print(defs.now_utc()[1] + "Orders: distance: Calculated fluctuation " + str(round(fluctuation, 4)) + "%\n")
+            print(defs.now_utc()[1] + "Orders: distance: Calculated fluctuation " + str(round(fluctuation, 4)) + "\n")
 
         # Set fluctuation
         if fluctuation < active_order['distance']:
