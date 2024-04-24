@@ -21,7 +21,7 @@ spread_distance    = 0.20         # Minimum spread in percentages
 
 # Technical indicators
 indicators_enabled = True         # Use technical indicators
-indicators_minimum = -0.50        # Minimum advice value
+indicators_minimum = -0.25        # Minimum advice value
 indicators_maximum = +0.50        # Maximum advice value
 
 # Orderbook
