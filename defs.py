@@ -218,7 +218,6 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
 
     # Initialize variables
     can_buy = False
-    message = "Buy matrix (" + str(interval) + "m): "
 
     # Get the intervals
     intervals = list(technical_advice.keys())
@@ -226,12 +225,14 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
     # Create message for stdout
     if use_indicators['enabled']:
         if intervals[1] != 0:
-            message += "TA-1 " + str(intervals[0]) + "m: " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
+            message = "Buy matrix (" + str(interval) + "m): "
+            message += "TA-1 (" + str(intervals[0]) + "m): " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
             message += report_result(technical_advice[intervals[0]]['result']) + ", "
-            message += "TA-2 " + str(intervals[1]) + "m: " + str(round(technical_advice[intervals[1]]['value'], 2)) + " "
+            message += "TA-2 (" + str(intervals[1]) + "m): " + str(round(technical_advice[intervals[1]]['value'], 2)) + " "
             message += report_result(technical_advice[intervals[1]]['result']) + ", "
         else:
-            message += "TA " + str(intervals[0]) + "m: " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
+            message = "Buy matrix: "
+            message += "TA (" + str(intervals[0]) + "m): " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
             message += report_result(technical_advice[intervals[0]]['result']) + ", "
     if use_spread['enabled']:
         message += "Spread: " + str(spread_advice['nearest']) + "% "
