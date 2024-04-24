@@ -226,13 +226,16 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
     if use_indicators['enabled']:
         if intervals[1] != 0:
             message = "Buy matrix (" + str(interval) + "m): "
-            message += "TA-1 (" + str(intervals[0]) + "m): " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
+            message += str(intervals[0]) + "m: " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
             message += report_result(technical_advice[intervals[0]]['result']) + ", "
-            message += "TA-2 (" + str(intervals[1]) + "m): " + str(round(technical_advice[intervals[1]]['value'], 2)) + " "
+            message += str(intervals[1]) + "m: " + str(round(technical_advice[intervals[1]]['value'], 2)) + " "
             message += report_result(technical_advice[intervals[1]]['result']) + ", "
+            if intervals[2] != 0:
+                message += str(intervals[2]) + "m: " + str(round(technical_advice[intervals[2]]['value'], 2)) + " "
+                message += report_result(technical_advice[intervals[1]]['result']) + ", "                
         else:
             message = "Buy matrix: "
-            message += "TA (" + str(intervals[0]) + "m): " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
+            message += str(intervals[0]) + "m: " + str(round(technical_advice[intervals[0]]['value'], 2)) + " "
             message += report_result(technical_advice[intervals[0]]['result']) + ", "
     if use_spread['enabled']:
         message += "Spread: " + str(spread_advice['nearest']) + "% "
@@ -242,7 +245,7 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
         message += "Orderbook: " + str(orderbook_advice['value']) + "% "
         message += report_result(orderbook_advice['result']) + ", "
 
-    if (technical_advice[intervals[0]]['result']) and technical_advice[intervals[1]]['result'] and (spread_advice['result']) and (orderbook_advice['result']):
+    if (technical_advice[intervals[0]]['result']) and technical_advice[intervals[1]]['result'] and technical_advice[intervals[2]]['result'] and (spread_advice['result']) and (orderbook_advice['result']):
         can_buy = True
         message += "BUY!"
     else:

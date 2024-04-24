@@ -38,6 +38,7 @@ symbol                       = config.symbol                  # Symbol bot used 
 klines                       = {}                             # Klines for symbol
 interval_1                   = config.interval_1              # Klines timeframe interval 1
 interval_2                   = config.interval_2              # Klines timeframe interval 2
+interval_3                   = config.interval_3              # Klines timeframe interval 3
 limit                        = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
 ticker                       = {}                             # Ticker data, including lastPrice and time
 info                         = {}                             # Instrument info on symbol
@@ -107,6 +108,7 @@ if config.orderbook_enabled  : ws_orderbook = True            # Use orderbook we
 technical_advice             = {}
 technical_advice[interval_1] = {'result': True, 'value': 0, 'level': 'Neutral'}
 technical_advice[interval_2] = {'result': True, 'value': 0, 'level': 'Neutral'}
+technical_advice[interval_3] = {'result': True, 'value': 0, 'level': 'Neutral'}
 
 ### Functions ###
 
@@ -251,6 +253,9 @@ def handle_kline_1(message):
 
 def handle_kline_2(message):
     handle_kline(message, interval_2)
+
+def handle_kline_3(message):
+    handle_kline(message, interval_3)
 
 # Handle messages to keep klines up to date
 def handle_kline(message, interval):
@@ -448,6 +453,10 @@ def prechecks():
     if not ws_kline and use_orderbook['enabled']:
         goahead = False
         print(defs.now_utc()[1] + "Sunflow: prechecks: Must set ws_orderbook to True when orderbook is enabled")
+    
+    if interval_3 != 0 and interval_2 == 0:
+        goahead = False
+        print(defs.now_utc()[1] + "Sunflow: prechecks: Interval 2 must be set if you use interval 3")
         
     # Return result
     return goahead
@@ -464,6 +473,7 @@ if prechecks():
     print("Symbol    : " + symbol)
     print("Interval 1: " + str(interval_1) + "m")
     print("Interval 2: " + str(interval_2) + "m")
+    print("Interval 3: " + str(interval_3) + "m")
     print("Limit     : " + str(limit))
     print()
     
@@ -471,8 +481,9 @@ if prechecks():
     print("*** Preloading ***\n")
 
     preload.check_files()
-    klines[interval_1] = preload.get_klines(symbol, 1, limit)
-    klines[interval_2] = preload.get_klines(symbol, 3, limit)
+    klines[interval_1] = preload.get_klines(symbol, interval_1, limit)
+    klines[interval_2] = preload.get_klines(symbol, interval_2, limit)
+    klines[interval_3] = preload.get_klines(symbol, interval_3, limit)
     ticker             = preload.get_ticker(symbol)
     spot               = ticker['lastPrice']
     info               = preload.get_info(symbol, spot, multiplier)
@@ -505,6 +516,9 @@ def subscribe_streams(ws):
         # Use second interval as confirmation
         if interval_2 != 0:
             ws.kline_stream(interval=interval_2, symbol=symbol, callback=handle_kline_2)
+        # Use third interval as confirmation
+        if interval_3 != 0:
+            ws.kline_stream(interval=interval_3, symbol=symbol, callback=handle_kline_3)
 
     # At request get orderbook from websocket
     if ws_orderbook:

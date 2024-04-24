@@ -7,7 +7,8 @@
 # Default values
 symbol             = "OPUSDT"     # Symbol bot used for trading
 interval_1         = 1            # Klines timeframe default interval
-interval_2         = 3            # Klines timeframe confirmation interval, set to 0 if you only want to use default interval
+interval_2         = 3            # Klines timeframe first confirmation interval, set to 0 if you do not want to use this
+interval_3         = 5            # Klines timeframe second confirmation interval, set to 0 if you do not want to use this
 limit              = 250          # Number of klines downloaded, used for calculcating technical indicators
 profit             = 0.40         # Minimum profit percentage
 distance           = 0.10         # Trigger price distance percentage when Fixed is used by wiggle
