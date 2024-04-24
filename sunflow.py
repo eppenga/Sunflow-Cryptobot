@@ -482,8 +482,8 @@ if prechecks():
 
     preload.check_files()
     klines[interval_1] = preload.get_klines(symbol, interval_1, limit)
-    if interval_2 !=0: klines[interval_2] = preload.get_klines(symbol, interval_2, limit)
-    if interval_3 !=0: klines[interval_3] = preload.get_klines(symbol, interval_3, limit)
+    if interval_2 !=0  : klines[interval_2] = preload.get_klines(symbol, interval_2, limit)
+    if interval_3 !=0  : klines[interval_3] = preload.get_klines(symbol, interval_3, limit)
     ticker             = preload.get_ticker(symbol)
     spot               = ticker['lastPrice']
     info               = preload.get_info(symbol, spot, multiplier)
