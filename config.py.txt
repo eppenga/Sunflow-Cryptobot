@@ -31,7 +31,8 @@ orderbook_minimum  = 40.00        # Minimum orderbook percentage
 orderbook_maximum  = 60.00        # Maximum orderbook percentage
 
 # Wave measurement
-wave_timeframe     = 10000        # Timeframe in ms to measure wave, used when wiggle uses Wave
+wave_timeframe     = 10000        # Timeframe in ms to measure wave, used when wiggle is set to Wave
+wave_multiplier    = 1            # Multiply wave percentage by this multiplier
 
 # Spike detection
 spike_enabled      = True         # Use spike detection
@@ -50,7 +51,7 @@ from pathlib import Path
 # Get current filename without .py
 config_path        = Path(__file__)
 config_file        = config_path.stem + "_"
-if config_file     == "config_": config_file = ""
+if config_file    == "config_": config_file = ""
 
 # Data storage
 data_folder        = "data/"                                    # Where is data stored

@@ -66,16 +66,18 @@ use_orderbook['minimum']     = config.orderbook_minimum       # Minimum orderboo
 use_orderbook['maximum']     = config.orderbook_maximum       # Maximum orderbook percentage
 
 # Wave measurement
-use_waves                    = {}
-use_waves['enabled']         = False
-if config.wiggle == "Wave"   : use_waves['enabled'] = True
-use_waves['timeframe']       = config.wave_timeframe
+use_waves                    = {}                            # Waves
+use_waves['enabled']         = False                         # Use waves in trigger price distance calculation
+if config.wiggle == "Wave"   : use_waves['enabled'] = True   # Automatically set to true
+use_waves['timeframe']       = config.wave_timeframe         # Timeframe in ms to measure wave, used when wiggle is set to Wave
+use_waves['multiplier']      = config.wave_multiplier        # Multiply wave percentage by this multiplier
 
 # Spike detection
 use_spikes                   = {}                             # Spikes
 use_spikes['enabled']        = config.spike_enabled           # Use spike detection
 use_spikes['timeframe']      = config.spike_timeframe         # Timeframe in ms to measure spikes
 use_spikes['threshold']      = config.spike_threshold         # Threshold to reach within timeframe as percentage
+use_spikes['multiplier']     = 1                              # Multiply spike percentage by this multiplier (and to keep compatible with waves)
 
 # Trailing order
 active_order                 = {}                             # Trailing order data

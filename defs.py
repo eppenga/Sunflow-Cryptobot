@@ -308,6 +308,10 @@ def waves_spikes(prices, use_data, select):
         price_change      = prices['price'][-1] - prices['price'][closest_index]
         price_change_perc = (price_change / prices['price'][closest_index]) * 100
 
+    # Apply wave multiplier
+    if select == "Wave":
+        price_change_perc = price_change_perc * use_data['multiplier']
+
     # Output to stdout
     if select == "Spike":
         if abs(price_change_perc) > use_data['threshold']:
