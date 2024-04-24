@@ -100,13 +100,13 @@ all_sells                    = {}                             # Sell order linke
 # Websockets to use
 ws_kline                     = False                          # Initialize ws_kline
 ws_orderbook                 = False                          # Initialize ws_orderbook
-if config.indicators_enabled : ws_kline     = True             # Use klines websocket
-if config.orderbook_enabled  : ws_orderbook = True             # Use orderbook websocket
+if config.indicators_enabled : ws_kline     = True            # Use klines websocket
+if config.orderbook_enabled  : ws_orderbook = True            # Use orderbook websocket
 
 # Set technical advice variable
 technical_advice             = {}
-technical_advice[interval_1] = {'result': False, 'value': 0, 'level': 'Neutral'}
-technical_advice[interval_2] = {'result': False, 'value': 0, 'level': 'Neutral'}
+technical_advice[interval_1] = {'result': True, 'value': 0, 'level': 'Neutral'}
+technical_advice[interval_2] = {'result': True, 'value': 0, 'level': 'Neutral'}
 
 ### Functions ###
 
