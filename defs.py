@@ -228,23 +228,29 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
     # Create message for stdout
     message = "Buy matrix (" + str(interval) + "m): "
 
-    # Report indicators
+    # Report and check indicators
     if use_indicators['enabled']:    
         if intervals[1] != 0:
             if technical_advice[intervals[1]]['result']:
                 do_buy[1] = True
             message += str(intervals[1]) + "m: " + str(round(technical_advice[intervals[1]]['value'], 2)) + " "
             message += report_result(technical_advice[intervals[1]]['result']) + ", "
+        else:
+            do_buy[1] = True
         if intervals[2] != 0:
             if technical_advice[intervals[2]]['result']:
                 do_buy[2] = True
             message += str(intervals[2]) + "m: " + str(round(technical_advice[intervals[2]]['value'], 2)) + " "
             message += report_result(technical_advice[intervals[2]]['result']) + ", "
+        else:
+            do_buy[2] = True
         if intervals[3] != 0:
             if technical_advice[intervals[3]]['result']:
                 do_buy[3] = True
             message += str(intervals[3]) + "m: " + str(round(technical_advice[intervals[3]]['value'], 2)) + " "
             message += report_result(technical_advice[intervals[3]]['result']) + ", "                
+        else:
+            do_buy[3] = True
 
     # Report spread
     if use_spread['enabled']:
@@ -252,6 +258,8 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
             do_buy[4] = True
         message += "Spread: " + str(spread_advice['nearest']) + "% "
         message += report_result(spread_advice['result']) + ", "
+    else:
+        do_buy[4] = True
     
     # Report orderbook
     if use_orderbook['enabled']:
@@ -259,6 +267,8 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
             do_buy[5] = True
         message += "Orderbook: " + str(orderbook_advice['value']) + "% "
         message += report_result(orderbook_advice['result']) + ", "
+    else:
+        do_buy[5] = True
 
     # Determine buy decission
     if do_buy[1] and do_buy[2] and do_buy[3] and do_buy[4] and do_buy[5]:
