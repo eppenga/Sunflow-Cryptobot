@@ -402,3 +402,23 @@ def rate_limit(response):
 
     # Return cleaned response
     return data
+
+# Smart rounding
+def smart_round(number):
+
+    # Initialize variables
+    str_num    = format(number, '.15g')
+    period_pos = str_num.find('.')
+
+    # If there is no decimal part, return the number as it is
+    if period_pos == -1:
+        return number
+
+    # Otherwise, find the first occurrence of a long series of zeros or nines after the decimal
+    post_decimal = str_num[period_pos+1:]
+    for i, digit in enumerate(post_decimal):
+        if post_decimal[i:].startswith('000') or post_decimal[i:].startswith('999'):
+            return round(number, i)
+    
+    # If all fails, return number as is
+    return number
