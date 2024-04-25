@@ -38,7 +38,6 @@ def save(all_buys):
     # Get number of orders 
     order_count = len(all_buys)
     total_qty   = sum(item['cumExecQty'] for item in all_buys)
-    total_qty   = defs.smart_round(total_qty)
     
     # Output to stdout
     print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buy orders and " + str(total_qty) + " executed in quote currency to file\n")
