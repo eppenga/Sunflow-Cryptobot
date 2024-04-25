@@ -226,7 +226,7 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
     can_buy   = False
 
     # Create message for stdout
-    message = str(interval) + "m Update: "
+    message = "Update: " + str(interval) + "m: "
 
     # Report and check indicators
     if use_indicators['enabled']:    
