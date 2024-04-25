@@ -182,7 +182,7 @@ def handle_ticker(message):
             if active_order['active']:
                 trigger_distance = abs(new_spot - active_order['trigger'])
                 trigger_distance = defs.precision(trigger_distance, info['tickSize'])
-                print(", distance to trigger price is " + str(trigger_distance) + " " + info['quoteCoin'])
+                print(", distance is " + str(trigger_distance) + " " + info['quoteCoin'], end="")
             if not active_order['active']:
                 if rise_to:
                     print(", needs to rise " + rise_to + ", NO SELL", end="")
