@@ -419,6 +419,6 @@ def smart_round(number):
     for i, digit in enumerate(post_decimal):
         if post_decimal[i:].startswith('000') or post_decimal[i:].startswith('999'):
             return round(number, i)
-    
+        
     # If all fails, return number as is
     return number
