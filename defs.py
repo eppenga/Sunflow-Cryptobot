@@ -226,7 +226,7 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
     can_buy   = False
 
     # Create message for stdout
-    message = "Buy matrix (" + str(interval) + "m): "
+    message = str(interval) + "m Update: "
 
     # Report and check indicators
     if use_indicators['enabled']:    
