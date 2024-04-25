@@ -176,11 +176,13 @@ def handle_ticker(message):
             # Output to stdout
             print(defs.now_utc()[1] + "Sunflow: handle_ticker: Price changed from " + str(spot) + " to " + str(new_spot) + " " + info['quoteCoin'], end="")
             if new_spot > spot:
-                print('\u2191')
+                print(' \u2191', end="")
             else:
-                print('\u2193')
+                print(' \u2193', end="")
             if active_order['active']:
-                print(", distance to trigger price is " + str(abs(new_spot - active_order['trigger'])) + " " + info['quoteCoin'])
+                trigger_distance = abs(new_spot - active_order['trigger'])
+                trigger_distance = defs.precision(trigger_distance, info['tickSize'])
+                print(", distance to trigger price is " + str(trigger_distance) + " " + info['quoteCoin'])
             if not active_order['active']:
                 if rise_to:
                     print(", needs to rise " + rise_to + ", NO SELL", end="")
