@@ -90,7 +90,7 @@ def history(orderId):
     # If realtime and history fails, throw an error
     if order['result']['list'] == []:
         message = defs.now_utc()[1] + "Orders: history: Trying to load non-existing order, something is corrupt!"
-        defs.log_error()
+        defs.log_error(message)
 
     if debug:
         print(defs.now_utc()[1] + "Orders: OrderId: Order history")

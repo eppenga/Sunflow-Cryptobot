@@ -6,7 +6,7 @@
 from pathlib import Path
 from pybit.unified_trading import WebSocket
 from datetime import datetime, timezone
-import argparse, importlib, math, sys, time
+import argparse, importlib, math, re, sys, time
 
 # Load internal libraries
 import defs
@@ -402,3 +402,22 @@ def rate_limit(response):
 
     # Return cleaned response
     return data
+
+# Do a smart round because we are lazy :)
+def smart_round(number):
+
+    # Initialize variables
+    num_str = f"{number:.20f}"
+    
+    # Search for the first occurrence of at least three consecutive zeros
+    match = re.search(r'0{3,}', num_str)
+    
+    # Rounding logic
+    if match:
+        zero_start = match.start()
+        rounded_number = round(number, zero_start - 2)
+    else:
+        rounded_number = number
+    
+    return rounded_number
+
