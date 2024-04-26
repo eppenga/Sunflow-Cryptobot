@@ -221,7 +221,7 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
 
     # Get the intervals
     intervals = list(technical_advice.keys())
-
+    
     # Create message for stdout
     if use_indicators['enabled']:
         if intervals[1] != 0:
