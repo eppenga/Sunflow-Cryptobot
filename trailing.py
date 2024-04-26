@@ -244,7 +244,7 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
                 # Determine what to do based on error code of amend result
                 if amend_code == 0:
                     # Everything went fine, we can continue trailing
-                    print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Trigger price adjusted from " + str(active_order['trigger']) + " " + info['quoteCoin'], end=" ")
+                    print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Adjusted trigger price from " + str(active_order['trigger']), end=" ")
                     print("to " + str(active_order['trigger_new']) + " " + info['quoteCoin'] + "\n")
                     active_order['trigger'] = active_order['trigger_new']
                     all_buys                = all_buys_new
@@ -284,7 +284,7 @@ def amend_quantity_sell(symbol, active_order, info):
     exception  = ""
 
     # Output to stdout
-    print(defs.now_utc()[1] + "Trailing: amend_quantity_sell: Trying to adjust quantity from " + str(active_order['qty']) + " " + info['baseCoin'] + " to " +  str(active_order['qty_new']) + " " + info['baseCoin'] + "\n")
+    print(defs.now_utc()[1] + "Trailing: amend_quantity_sell: Trying to adjust quantity from " + str(active_order['qty']) + " to " +  str(active_order['qty_new']) + " " + info['baseCoin'] + "\n")
 
     # Ammend order
     message = defs.now_utc()[1] + "Trailing: amend_sell: session: amend_order\n"
@@ -322,7 +322,7 @@ def amend_trigger_price(symbol, active_order, info):
     exception  = ""
     
     # Output to stdout    
-    print(defs.now_utc()[1] + "Trailing: amend_trigger_price: Trying to adjusted trigger price from " + str(active_order['trigger']) + " " + info['quoteCoin'] + " to " +  str(active_order['trigger_new']) + " " + info['quoteCoin'] + "\n")
+    print(defs.now_utc()[1] + "Trailing: amend_trigger_price: Trying to adjusted trigger price from " + str(active_order['trigger']) + " to " +  str(active_order['trigger_new']) + " " + info['quoteCoin'] + "\n")
     
     # Amend order
     message = defs.now_utc()[1] + "Trailing: amend_trigger_price: session: amend_order\n"
