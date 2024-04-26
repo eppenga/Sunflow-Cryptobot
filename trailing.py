@@ -204,7 +204,7 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
     # Order still exists, we can do trailing buy or sell
     if active_order['active']:
                      
-        # If price moved in the correct direction, we can do trailing
+        # If price moved in the correct direction, we can do trailing *** CHECK *** POSSIBLY NOT NECESSARY!
         if active_order['side'] == "Sell":
             if active_order['current'] > active_order['previous']:
                 do_trailing = True
