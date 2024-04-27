@@ -421,3 +421,22 @@ def smart_round(number):
     
     return rounded_number
 
+# Report ticker info to stdout
+def ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info):
+
+    print(defs.now_utc()[1] + "Sunflow: handle_ticker: Price changed from " + str(spot) + " to " + str(new_spot) + " " + info['quoteCoin'], end="")
+    if new_spot > spot:
+        print(' \u2191', end="")
+    else:
+        print(' \u2193', end="")
+    if active_order['active']:
+        trigger_distance = abs(new_spot - active_order['trigger'])
+        trigger_distance = defs.precision(trigger_distance, info['tickSize'])
+        print(", distance is " + str(trigger_distance) + " " + info['quoteCoin'], end="")
+    if not active_order['active']:
+        if rise_to:
+            print(", needs to rise " + rise_to + ", NO SELL", end="")
+        else:
+            if len(all_buys) > 0:
+                print(", SELL", end="")
+    print("\n")

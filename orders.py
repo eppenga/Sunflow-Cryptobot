@@ -28,7 +28,7 @@ config_module_name = config_path.stem
 config = importlib.import_module(config_module_name)
 
 # Debug
-debug  = False
+debug = False
 
 # Connect to exchange
 session = HTTP(
@@ -166,6 +166,9 @@ def transaction_from_id(orderId):
 # New buy order
 def buy(symbol, spot, active_order, all_buys, prices):
 
+    # Output to stdout
+    print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
+
     # Get latest symbol info
     info = preload.get_info(symbol, spot, config.multiplier)
 
@@ -174,9 +177,6 @@ def buy(symbol, spot, active_order, all_buys, prices):
     
     # Determine distance of trigger price
     active_order = distance(active_order, prices)
-
-    # Output to stdout
-    print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
 
     # Place Buy order
     message = defs.now_utc()[1] + "Orders: buy: session: place_order\n"
@@ -283,16 +283,16 @@ def initialize_active_order(spot, active_order, info, side):
 
 # New sell order
 def sell(symbol, spot, active_order, prices, info):
-    
+
+    # Output to stdout
+    print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
+
     # Initialize active_order
     active_order = initialize_active_order(spot, active_order, info, "Sell")
     
     # Determine distance of trigger price
     active_order = distance(active_order, prices)
     
-    # Output to stdout
-    print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
-
     # Place sell order
     message = defs.now_utc()[1] + "Orders: sell: session: place_order\n"
     print(message)
@@ -420,12 +420,12 @@ def distance(active_order, prices):
 
             # Prevent selling at a loss
             profitable = price_distance + active_order['distance']
-            if active_order['wave'] > profitable:                           # Wave can cause potential loss, set wave to maximum distance
+            if active_order['wave'] > profitable:
                 active_order['fluctuation'] = profitable
                 waver = True
                 
             # Check direction of the wave
-            if active_order['wave'] < active_order['distance']:             # Wave is in the wrong direction, keep wave at least at minimum distance
+            if active_order['wave'] < active_order['distance']:
                 active_order['fluctuation'] = active_order['distance']
                 waver = True
             
@@ -440,7 +440,7 @@ def distance(active_order, prices):
             active_order['fluctuation'] = active_order['wave']
             
             # Check direction of the wave
-            if active_order['wave'] < active_order['distance']:             # Wave is in the wrong direction, keep at least at minimum distance
+            if active_order['wave'] < active_order['distance']:
                 active_order['fluctuation'] = active_order['distance']
                 waver = True
 

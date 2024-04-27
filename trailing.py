@@ -190,7 +190,6 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
     amend_code  = 0
     amend_error = ""
     do_amend    = False     # We can amend a trailing order
-    do_trailing = False     # We can do trailing buy or sell
 
     # Mention trailing
     if debug:
@@ -203,65 +202,54 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
 
     # Order still exists, we can do trailing buy or sell
     if active_order['active']:
-                     
-        # If price moved in the correct direction, we can do trailing
+       
+        # We have a new price
+        active_order['previous'] = active_order['current']
+                    
+        # Determine distance of trigger price
+        active_order = orders.distance(active_order, prices)
+                    
+        # Calculate new trigger price
         if active_order['side'] == "Sell":
-            if active_order['current'] > active_order['previous']:
-                do_trailing = True
+            active_order['trigger_new'] = defs.precision(active_order['current'] * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
         else:
-            if active_order['current'] < active_order['previous']:
-                do_trailing = True
-        
-        # Price has moved, adjusting trigger price when possible
-        if do_trailing:
+            active_order['trigger_new'] = defs.precision(active_order['current'] * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
 
-            # We have a new price
-            active_order['previous'] = active_order['current']
-                        
-            # Determine distance of trigger price
-            active_order = orders.distance(active_order, prices)
-                       
-            # Calculate new trigger price
-            if active_order['side'] == "Sell":
-                active_order['trigger_new'] = defs.precision(active_order['current'] * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
-            else:
-                active_order['trigger_new'] = defs.precision(active_order['current'] * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
+        # Check if we can amend trigger price
+        if active_order['side'] == "Sell":
+            if active_order['trigger_new'] > active_order['trigger']:
+                do_amend = True
+        else:
+            if active_order['trigger_new'] < active_order['trigger']:
+                do_amend = True
 
-            # Check if we can amend trigger price
-            if active_order['side'] == "Sell":
-                if active_order['trigger_new'] > active_order['trigger']:
-                    do_amend = True
-            else:
-                if active_order['trigger_new'] < active_order['trigger']:
-                    do_amend = True
+        # Amend trigger price
+        if do_amend:
+            result      = amend_trigger_price(symbol, active_order, info)
+            amend_code  = result[0]
+            amend_error = result[1]
 
-            # Amend trigger price
-            if do_amend:
-                result      = amend_trigger_price(symbol, active_order, info)
-                amend_code  = result[0]
-                amend_error = result[1]
-
-                # Determine what to do based on error code of amend result
-                if amend_code == 0:
-                    # Everything went fine, we can continue trailing
-                    print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Adjusted trigger price from " + str(active_order['trigger']), end=" ")
-                    print("to " + str(active_order['trigger_new']) + " " + info['quoteCoin'] + "\n")
-                    active_order['trigger'] = active_order['trigger_new']
-                    all_buys                = all_buys_new
-                if amend_code == 1:
-                    # Order slipped, close trailing process
-                    print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
-                    result       = close_trail(active_order, all_buys, all_sells)
-                    active_order = result[0]
-                    all_buys     = result[1]
-                    all_sells    = result[2]
-                    # Revert old situation
-                    all_buys_new = all_buys
-                if amend_code == 100:
-                    # Critical error, let's log it and revert
-                    all_buys_new = all_buys
-                    print(defs.now_utc()[1] + "Trailing: trail: Critical error, logging to file\n")
-                    defs.log_error(amend_error)
+            # Determine what to do based on error code of amend result
+            if amend_code == 0:
+                # Everything went fine, we can continue trailing
+                print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Adjusted trigger price from " + str(active_order['trigger']), end=" ")
+                print("to " + str(active_order['trigger_new']) + " " + info['quoteCoin'] + "\n")
+                active_order['trigger'] = active_order['trigger_new']
+                all_buys                = all_buys_new
+            if amend_code == 1:
+                # Order slipped, close trailing process
+                print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
+                result       = close_trail(active_order, all_buys, all_sells)
+                active_order = result[0]
+                all_buys     = result[1]
+                all_sells    = result[2]
+                # Revert old situation
+                all_buys_new = all_buys
+            if amend_code == 100:
+                # Critical error, let's log it and revert
+                all_buys_new = all_buys
+                print(defs.now_utc()[1] + "Trailing: trail: Critical error, logging to file\n")
+                defs.log_error(amend_error)
 
     # Reset all_buys
     all_buys = all_buys_new

@@ -9,6 +9,7 @@
 # Ignore application files
 *.backup
 config*.py
+output.txt
 test*.*
 todo*
 /data

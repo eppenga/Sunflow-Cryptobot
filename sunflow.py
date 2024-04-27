@@ -174,22 +174,7 @@ def handle_ticker(message):
             rise_to                 = result[3]
 
             # Output to stdout
-            print(defs.now_utc()[1] + "Sunflow: handle_ticker: Price changed from " + str(spot) + " to " + str(new_spot) + " " + info['quoteCoin'], end="")
-            if new_spot > spot:
-                print(' \u2191', end="")
-            else:
-                print(' \u2193', end="")
-            if active_order['active']:
-                trigger_distance = abs(new_spot - active_order['trigger'])
-                trigger_distance = defs.precision(trigger_distance, info['tickSize'])
-                print(", distance is " + str(trigger_distance) + " " + info['quoteCoin'], end="")
-            if not active_order['active']:
-                if rise_to:
-                    print(", needs to rise " + rise_to + ", NO SELL", end="")
-                else:
-                    if len(all_buys) > 0:
-                        print(", SELL", end="")
-            print("\n")
+            defs.ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info)
             
             # If trailing buy is already running while we can sell
             if active_order['active'] and active_order['side'] == "Buy" and can_sell:
@@ -239,7 +224,7 @@ def handle_ticker(message):
 
                 # Reset all sells
                 #all_sells = all_sells_new
-
+               
             # Spiking, when not buying or selling, let's buy and see what happens :) *** CHECK *** Might want to change this to downwards spikes (negative pricechange)
             if not active_order['active'] and spiking:
                 print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
@@ -315,8 +300,10 @@ def handle_kline(message, interval):
         
         # Only initiate buy and do complex calculations when not already trailing
         if not active_order['active']:
+
             
-            # Check TECHNICAL INDICATORS for buy decission
+            '''' Check TECHNICAL INDICATORS for buy decission '''
+            
             if use_indicators['enabled']:
                 technical_indicators                = indicators.calculate(klines[interval], spot)
                 result                              = indicators.advice(technical_indicators)
@@ -331,8 +318,10 @@ def handle_kline(message, interval):
             else:
                 # If indicators are not enabled, always true
                 technical_advice[interval]['result'] = True
+
             
-            # Check SPREAD for buy decission
+            ''' Check SPREAD for buy decission '''
+            
             if use_spread['enabled']:
                 result                   = defs.check_spread(all_buys, spot, use_spread['distance'])
                 spread_advice['result']  = result[0]
@@ -341,7 +330,9 @@ def handle_kline(message, interval):
                 # If spread is not enabled, always true
                 spread_advice['result'] = True
 
-            # Check ORDERBOOK for buy decission *** CHECK *** To be implemented
+
+            ''' Check ORDERBOOK for buy decission ''' # *** CHECK *** To be implemented
+            
             if use_orderbook['enabled']:
                 # Put orderbook logic here
                 orderbook_advice['value']  = 0
