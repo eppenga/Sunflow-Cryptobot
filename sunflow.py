@@ -224,7 +224,7 @@ def handle_ticker(message):
 
                 # Reset all sells
                 #all_sells = all_sells_new
-               
+
             # Spiking, when not buying or selling, let's buy and see what happens :) *** CHECK *** Might want to change this to downwards spikes (negative pricechange)
             if not active_order['active'] and spiking:
                 print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
