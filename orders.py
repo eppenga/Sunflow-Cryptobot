@@ -381,7 +381,7 @@ def distance(active_order, prices):
 
         # Debug
         if debug:
-            print(defs.now_utc()[1] + "Orders: distance: Calculated fluctuation " + str(round(fluctuation, 4)) + "%\n")
+            print(defs.now_utc()[1] + "Orders: distance: debug: Calculated fluctuation " + str(round(fluctuation, 4)) + "%\n")
 
         # Set fluctuation
         if fluctuation < active_order['distance']:
@@ -423,7 +423,7 @@ def distance(active_order, prices):
             if active_order['wave'] > profitable:
                 active_order['fluctuation'] = profitable
                 waver = True
-                
+                           
             # Check direction of the wave
             if active_order['wave'] < active_order['distance']:
                 active_order['fluctuation'] = active_order['distance']
