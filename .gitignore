@@ -9,12 +9,12 @@
 # Ignore application files
 *.backup
 config*.py
-*output.txt
 test*.*
 todo*
 /data
 /backup
 /symbols
+/outputs
 
 # Ignore python
 /__pycache__
