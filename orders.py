@@ -331,7 +331,6 @@ def distance(active_order, prices):
     debug = False
 
     # Initialize variables
-    waver               = False   # Use wave to set distance
     scaler              = 3       # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
     number              = 7       # Last {number} of prices will be used
     fluctuation         = 0       # Fluctuation distance of trigger price
@@ -422,19 +421,22 @@ def distance(active_order, prices):
             profitable = price_distance + active_order['distance']
             if active_order['wave'] > profitable:
                 active_order['fluctuation'] = profitable
-                waver = True
                            
             # Check direction of the wave
             if active_order['wave'] < active_order['distance']:
-                active_order['fluctuation'] = active_order['distance']
-                waver = True
+                if price_distance > active_order['distance']:
+                    if active_order['wave'] > 0:
+                        active_order['fluctuation'] = active_order['wave']
+                else:
+                    active_order['fluctuation'] = active_order['distance']
             
         
         # Buying
         if active_order['side'] == "Buy":
             
-            # Reverse wave for buying logic
+            # Reverse wave and price difference for buying logic
             active_order['wave'] = active_order['wave'] * -1
+            price_distance       = price_distance * -1
 
             # Set the wave for buying
             active_order['fluctuation'] = active_order['wave']
@@ -442,24 +444,26 @@ def distance(active_order, prices):
             # Check direction of the wave
             if active_order['wave'] < active_order['distance']:
                 active_order['fluctuation'] = active_order['distance']
-                waver = True
+
+            # Check direction of the wave
+            if active_order['wave'] < active_order['distance']:
+                if price_distance > active_order['distance']:
+                    if active_order['wave'] > 0:
+                        active_order['fluctuation'] = active_order['wave']
+                else:
+                    active_order['fluctuation'] = active_order['distance']
 
 
         # Always keep wave at minimum distance
         if abs(active_order['wave']) < active_order['distance']:
             active_order['fluctuation'] = active_order['distance']
-            waver = False
 
         # Double check, not really efficient, but it works
         if active_order['fluctuation'] < active_order['distance']:
             active_order['fluctuation'] = active_order['distance']
-            waver = False
                 
         # Output to stdout
-        if waver:
-            print(defs.now_utc()[1] + "Orders: distance: Using wave data via waver to set trigger price distance to ", end="")
-        else:
-            print(defs.now_utc()[1] + "Orders: distance: Using wave data via fixed to set trigger price distance to ", end="")
+        print(defs.now_utc()[1] + "Orders: distance: Using wave data via fixed to set trigger price distance to ", end="")
         print(str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Return modified data

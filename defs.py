@@ -133,10 +133,11 @@ def now_utc():
     milliseconds = round(current_time.microsecond / 10000) / 100
     timestamp_0 = current_time.strftime('%Y-%m-%d %H:%M:%S') + f'.{int(milliseconds * 100):02d}'
     timestamp_1 = current_time.strftime('%Y-%m-%d %H:%M:%S') + f'.{int(milliseconds * 100):02d}' + " | " + config.symbol + ": "
-    timestamp_2 = str(milliseconds)
+    timestamp_2 = milliseconds
     timestamp_3 = str(milliseconds) + " | "
+    timestamp_4 = int(time.time() * 1000)
     
-    return timestamp_0, timestamp_1, timestamp_2, timestamp_3
+    return timestamp_0, timestamp_1, timestamp_2, timestamp_3, timestamp_4
 
 # Log all responses from exchange
 def log_exchange(response, message):
@@ -424,11 +425,12 @@ def smart_round(number):
 # Report ticker info to stdout
 def ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info):
 
-    print(defs.now_utc()[1] + "Sunflow: handle_ticker: Price changed from " + str(spot) + " to " + str(new_spot) + " " + info['quoteCoin'], end="")
+    print(defs.now_utc()[1] + "Sunflow: handle_ticker: Price went ", end="")
     if new_spot > spot:
-        print(' \u2191', end="")
+        print("up", end="")
     else:
-        print(' \u2193', end="")
+        print("down", end="")
+    print(" from " + str(spot) + " to " + str(new_spot) + " " + info['quoteCoin'], end="")
     if active_order['active']:
         trigger_distance = abs(new_spot - active_order['trigger'])
         trigger_distance = defs.precision(trigger_distance, info['tickSize'])

@@ -39,6 +39,10 @@ spike_enabled      = True         # Use spike detection
 spike_timeframe    = 10000        # Timeframe in ms to measure spike
 spike_threshold    = 1.00         # Threshold in percentage to reach within timeframe
 
+# Buy delay
+delay_enabled      = False        # Use delay after buy
+delay_timeframe    = 60000        # Timeframe in ms to delay buy
+
 # Exchange keys (ALWAYS KEEP THESE SECRET)
 api_key            = "123456"                                   # API Key
 api_secret         = "123456"                                   # API Secret

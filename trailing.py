@@ -5,7 +5,7 @@
 # Load external libraries
 from pathlib import Path
 from pybit.unified_trading import HTTP
-import importlib, sys, time
+import importlib, sys
 
 # Load internal libraries
 import argparse, database, defs, orders
@@ -41,7 +41,7 @@ stuck_counter  = 0
 spiker_counter = 0
    
 # Check if we can do trailing buy or sell
-def check_order(symbol, active_order, all_buys, all_sells):
+def check_order(symbol, active_order, all_buys, all_sells, use_delay):
 
     # Declare some variables global
     global stuck_fresh, stuck_counter, spiker_counter
@@ -61,8 +61,8 @@ def check_order(symbol, active_order, all_buys, all_sells):
     # Check every minute, sometimes orders get stuck
     if stuck_fresh:
         stuck_fresh = False
-        stuck_counter = int(time.time() * 1000)
-    current_time = int(time.time() * 1000)
+        stuck_counter = defs.now_utc()[4]
+    current_time = defs.now_utc()[4]
     if current_time - stuck_counter > 10000:
         print(defs.now_utc()[1] + "Trailing: check_orders: Doing an additional check on trailing order\n")
         stuck_fresh    = True
@@ -105,13 +105,18 @@ def check_order(symbol, active_order, all_buys, all_sells):
             active_order = result[0]
             all_buys     = result[1]
             all_sells    = result[2]
+            # Handle buy delay
+            if active_order['side'] == "Sell":
+                if use_delay['enabled']:
+                    use_delay['start'] = defs.now_utc()[4]
+                    use_delay['end']   = use_delay['start'] + use_delay['timeframe']
         else:
             result       = check_spiker(active_order, order, all_buys)
             active_order = result[0]
             all_buys     = result[1]
 
     # Return modified data
-    return active_order, all_buys
+    return active_order, all_buys, use_delay
 
 # Checks if the trailing error spiked
 def check_spiker(active_order, order, all_buys):
@@ -183,7 +188,7 @@ def close_trail(active_order, all_buys, all_sells):
     return active_order, all_buys, all_sells
 
 # Trailing buy or sell
-def trail(symbol, active_order, info, all_buys, all_sells, prices):
+def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
 
     # Initialize variables
     result      = ()
@@ -196,9 +201,10 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
         print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Checking if we can do trailing")
 
     # Check if the order still exists
-    result       = check_order(symbol, active_order, all_buys, all_sells)
+    result       = check_order(symbol, active_order, all_buys, all_sells, use_delay)
     active_order = result[0]
     all_buys_new = result[1]
+    use_delay    = result[2]
 
     # Order still exists, we can do trailing buy or sell
     if active_order['active']:
@@ -261,7 +267,7 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices):
         print(defs.now_utc()[1] + "Trailing: trail: Debug output of error code: " + amend_error + "\n")
         
     # Return modified data
-    return active_order, all_buys
+    return active_order, all_buys, use_delay
    
 # Change the quantity of the current trailing sell
 def amend_quantity_sell(symbol, active_order, info):

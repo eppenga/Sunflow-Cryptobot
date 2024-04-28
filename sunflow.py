@@ -80,6 +80,13 @@ use_spikes['timeframe']      = config.spike_timeframe         # Timeframe in ms 
 use_spikes['threshold']      = config.spike_threshold         # Threshold to reach within timeframe as percentage
 use_spikes['multiplier']     = 1                              # Multiply spike percentage by this multiplier (and to keep compatible with waves)
 
+# Delay
+use_delay                    = {}
+use_delay['enabled']         = config.delay_enabled           # Use delay after buy
+use_delay['timeframe']       = config.delay_timeframe         # Timeframe in ms to delay buy
+use_delay['start']           = 0                              # Miliseconds since epoch when delay started
+use_delay['end']             = 0                              # Miliseconds since epoch when delay ends
+
 # Trailing order
 active_order                 = {}                             # Trailing order data
 active_order['side']         = ""                             # Trailing buy
@@ -122,7 +129,7 @@ def handle_ticker(message):
     try:
    
         # Declare some variables global
-        global spot, ticker, active_order, all_buys, all_sells, prices
+        global spot, ticker, active_order, all_buys, all_sells, prices, use_delay
 
         # Initialize variables
         result      = ()
@@ -162,9 +169,10 @@ def handle_ticker(message):
             if active_order['active']:
                 active_order['current'] = new_spot
                 active_order['status']  = 'Trailing'
-                result       = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices)
+                result       = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay)
                 active_order = result[0]
                 all_buys     = result[1]
+                use_delay    = result[2]
 
             # Check if and how much we can sell
             result                  = orders.check_sell(new_spot, profit, active_order, all_buys, info)
@@ -263,12 +271,15 @@ def handle_kline(message, interval):
         global klines, active_order, all_buys, technical_advice
 
         # Initialize variables
-        can_buy              = False
-        kline                = {}
-        spread_advice        = {} 
-        orderbook_advice     = {}
-        technical_indicators = {}
-        result               = ()
+        can_buy                = False
+        initiate_buy           = {}
+        initiate_buy['delay']  = False
+        initiate_buy['order']  = False
+        kline                  = {}
+        spread_advice          = {} 
+        orderbook_advice       = {}
+        technical_indicators   = {}
+        result                 = ()
      
         # Show incoming message
         if debug:
@@ -291,15 +302,25 @@ def handle_kline(message, interval):
             klines_count = len(klines[interval]['close'])
             if klines_count != limit:
                 klines[interval] = preload.get_klines(symbol, interval, limit)
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: Added new kline with interval "  + str(interval) + "m onto existing " + str(klines_count) + " klines\n")
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: Added new "  + str(interval) + "m interval onto existing " + str(klines_count) + " klines\n")
             klines[interval] = defs.new_kline(kline, klines[interval])
       
         else:            
             # Remove the first kline and replace with fresh kline
             klines[interval] = defs.update_kline(kline, klines[interval])
         
+        # Only initiate buy when there is no delay
+        if use_delay['enabled']:
+            if defs.now_utc()[4] < use_delay['end']:
+                print(defs.now_utc()[1] + "Sunflow: handle_kline: Buy delay is currently enabled, pausing for " + str(use_delay['end'] - defs.now_utc()[4]) + "ms \n")
+                initiate_buy['delay'] = True
+        
         # Only initiate buy and do complex calculations when not already trailing
-        if not active_order['active']:
+        if active_order['active']:
+            initiate_buy['order'] = True
+        
+        # Only initiate buy and do complex calculations when not already trailing
+        if not initiate_buy['delay'] and not initiate_buy['order']:
 
             
             '''' Check TECHNICAL INDICATORS for buy decission '''
@@ -495,6 +516,12 @@ if prechecks():
         'time' : klines[intervals[1]]['time'],
         'price': klines[intervals[1]]['close']
     }
+
+    # Delay buy for starting
+    if use_delay['enabled']:
+        use_delay['start'] = defs.now_utc()[4]
+        use_delay['end']   = use_delay['start'] + intervals[1] * 60 * 1000
+        print(defs.now_utc()[1] + "Sunflow: prechecks: Delaying buy cycle on startup with " + str(intervals[1] * 60 * 1000) + "ms (1 interval)\n")
 
     print("*** Starting ***\n")
 

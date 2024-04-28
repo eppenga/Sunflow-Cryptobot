@@ -22,7 +22,7 @@ def calculate(klines, spot):
     
     if debug:
         print(defs.now_utc()[1] + "Indicators: calculate: Calculating indicators")
-        start_time = int(time.time() * 1000)
+        start_time = defs.now_utc()[4]
         
     # Indicators: Calculate various Oscillators
     df['RSI']         = ta.rsi(df['close'], length=14)
@@ -197,7 +197,7 @@ def calculate(klines, spot):
     if debug:
         print(defs.now_utc()[1] + "Indicators: calculate: Advice calculated:")
         print(indicators)
-        end_time = int(time.time() * 1000)
+        end_time = defs.now_utc()[4]
         print(defs.now_utc()[1] + "Pandas_ta spent " + (str(end_time - start_time)) + " ms calculating indicators and advice\n")
     
     # Return technicals
