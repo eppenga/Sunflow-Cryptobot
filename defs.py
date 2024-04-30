@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 import argparse, importlib, math, re, sys, time
 
 # Load internal libraries
-import defs
+import defs, indicators
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
@@ -212,7 +212,7 @@ def report_result(result):
     return pafa
 
 # Determines buy decission and outputs to stdout
-def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals):
+def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals):
             
     # Debug
     debug = False
@@ -225,31 +225,33 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
     do_buy[4] = False
     do_buy[5] = False    
     can_buy   = False
-
-    # Create message for stdout
-    message = "Update " + str(interval) + "m: "
+    message   = ""
+   
+    # Regular update or grid bot style
+    if interval != 0:
+        message = "Update " + str(interval) + "m: "
 
     # Report and check indicators
     if use_indicators['enabled']:    
         if intervals[1] != 0:
-            if technical_advice[intervals[1]]['result']:
+            if indicators_advice[intervals[1]]['result']:
                 do_buy[1] = True
-            message += str(intervals[1]) + "m: " + str(round(technical_advice[intervals[1]]['value'], 2)) + " "
-            message += report_result(technical_advice[intervals[1]]['result']) + ", "
+            message += str(intervals[1]) + "m: " + str(round(indicators_advice[intervals[1]]['value'], 2)) + " "
+            message += report_result(indicators_advice[intervals[1]]['result']) + ", "
         else:
             do_buy[1] = True
         if intervals[2] != 0:
-            if technical_advice[intervals[2]]['result']:
+            if indicators_advice[intervals[2]]['result']:
                 do_buy[2] = True
-            message += str(intervals[2]) + "m: " + str(round(technical_advice[intervals[2]]['value'], 2)) + " "
-            message += report_result(technical_advice[intervals[2]]['result']) + ", "
+            message += str(intervals[2]) + "m: " + str(round(indicators_advice[intervals[2]]['value'], 2)) + " "
+            message += report_result(indicators_advice[intervals[2]]['result']) + ", "
         else:
             do_buy[2] = True
         if intervals[3] != 0:
-            if technical_advice[intervals[3]]['result']:
+            if indicators_advice[intervals[3]]['result']:
                 do_buy[3] = True
-            message += str(intervals[3]) + "m: " + str(round(technical_advice[intervals[3]]['value'], 2)) + " "
-            message += report_result(technical_advice[intervals[3]]['result']) + ", "                
+            message += str(intervals[3]) + "m: " + str(round(indicators_advice[intervals[3]]['value'], 2)) + " "
+            message += report_result(indicators_advice[intervals[3]]['result']) + ", "                
         else:
             do_buy[3] = True
 
@@ -286,8 +288,8 @@ def decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orde
         print("Intervals:")
         print(intervals, "\n")
 
-        print("Technical advice:")
-        print(technical_advice, "\n")
+        print("Indicator advice:")
+        print(indicators_advice, "\n")
         
         print("Spread advice:")
         print(spread_advice, "\n")
@@ -442,3 +444,56 @@ def ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info):
             if len(all_buys) > 0:
                 print(", SELL", end="")
     print("\n")
+
+# Give an advice via the buy matrix
+def advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval):
+    
+    # Initialize variables
+    spread_advice          = {}
+    orderbook_advice       = {}
+    technical_indicators   = {}
+    result                 = ()
+
+        
+    '''' Check TECHNICAL INDICATORS for buy decission '''
+    
+    if use_indicators['enabled']:
+        technical_indicators                 = indicators.calculate(klines[interval], spot)
+        result                               = indicators.advice(technical_indicators)
+        indicators_advice[interval]['value'] = result[0]
+        indicators_advice[interval]['level'] = result[1]
+
+        # Check if indicator advice is within range
+        if (indicators_advice[interval]['value'] >= use_indicators['minimum']) and (indicators_advice[interval]['value'] <= use_indicators['maximum']):
+            indicators_advice[interval]['result'] = True
+        else:
+            indicators_advice[interval]['result'] = False
+    else:
+        # If indicators are not enabled, always true
+        indicators_advice[interval]['result'] = True
+
+    
+    ''' Check SPREAD for buy decission '''
+    
+    if use_spread['enabled']:
+        result                   = defs.check_spread(all_buys, spot, use_spread['distance'])
+        spread_advice['result']  = result[0]
+        spread_advice['nearest'] = round(result[1], 2)
+    else:
+        # If spread is not enabled, always true
+        spread_advice['result'] = True
+
+
+    ''' Check ORDERBOOK for buy decission ''' # *** CHECK *** To be implemented
+    
+    if use_orderbook['enabled']:
+        # Put orderbook logic here
+        orderbook_advice['value']  = 0
+        orderbook_advice['result'] = True
+    else:
+        # If orderbook is not enabled, always true
+        orderbook_advice['result'] = True
+
+
+    # Return all data
+    return indicators_advice, spread_advice, orderbook_advice

@@ -51,34 +51,34 @@ prices                       = {}                             # Last {limit} pri
 
 # Minimum spread between historical buy orders
 use_spread                   = {}                             # Spread
-use_spread['enabled']        = config.spread_enabled          # Use spread
+use_spread['enabled']        = config.spread_enabled          # Use spread as buy trigger
 use_spread['distance']       = config.spread_distance         # Minimum spread in percentages
 
 # Technical indicators
 use_indicators               = {}                             # Technical indicators
-use_indicators['enabled']    = config.indicators_enabled      # Use technical indicators
+use_indicators['enabled']    = config.indicators_enabled      # Use technical indicators as buy trigger
 use_indicators['minimum']    = config.indicators_minimum      # Minimum advice value
 use_indicators['maximum']    = config.indicators_maximum      # Maximum advice value
 
 # Orderbook
 use_orderbook                = {}                             # Orderbook
-use_orderbook['enabled']     = config.orderbook_enabled       # Use orderbook
+use_orderbook['enabled']     = config.orderbook_enabled       # Use orderbook as buy trigger
 use_orderbook['minimum']     = config.orderbook_minimum       # Minimum orderbook percentage
 use_orderbook['maximum']     = config.orderbook_maximum       # Maximum orderbook percentage
 
-# Wave measurement
-use_waves                    = {}                            # Waves
-use_waves['enabled']         = False                         # Use waves in trigger price distance calculation
-if config.wiggle == "Wave"   : use_waves['enabled'] = True   # Automatically set to true
-use_waves['timeframe']       = config.wave_timeframe         # Timeframe in ms to measure wave, used when wiggle is set to Wave
-use_waves['multiplier']      = config.wave_multiplier        # Multiply wave percentage by this multiplier
-
 # Spike detection
 use_spikes                   = {}                             # Spikes
-use_spikes['enabled']        = config.spike_enabled           # Use spike detection
+use_spikes['enabled']        = config.spike_enabled           # Use spike detection as buy trigger
 use_spikes['timeframe']      = config.spike_timeframe         # Timeframe in ms to measure spikes
 use_spikes['threshold']      = config.spike_threshold         # Threshold to reach within timeframe as percentage
 use_spikes['multiplier']     = 1                              # Multiply spike percentage by this multiplier (and to keep compatible with waves)
+
+# Wave measurement
+use_waves                    = {}                             # Waves
+use_waves['enabled']         = False                          # Use waves in trigger price distance calculation
+if config.wiggle == "Wave"   : use_waves['enabled'] = True    # Automatically set to true
+use_waves['timeframe']       = config.wave_timeframe          # Timeframe in ms to measure wave, used when wiggle is set to Wave
+use_waves['multiplier']      = config.wave_multiplier         # Multiply wave percentage by this multiplier
 
 # Delay
 use_delay                    = {}
@@ -114,11 +114,17 @@ ws_orderbook                 = False                          # Initialize ws_or
 if config.indicators_enabled : ws_kline     = True            # Use klines websocket
 if config.orderbook_enabled  : ws_orderbook = True            # Use orderbook websocket
 
-# Set technical advice variable
-technical_advice             = {}
-if intervals[1] != 0         : technical_advice[intervals[1]] = {'result': True, 'value': 0, 'level': 'Neutral'}
-if intervals[2] != 0         : technical_advice[intervals[2]] = {'result': True, 'value': 0, 'level': 'Neutral'}
-if intervals[3] != 0         : technical_advice[intervals[3]] = {'result': True, 'value': 0, 'level': 'Neutral'}
+# Initialize indicator advice variable
+if not config.indicators_enabled:                             # Set intervals to zero if indicators are disabled
+    intervals[1] = 0
+    intervals[2] = 0
+    intervals[3] = 0
+
+# Initialize indicators advice variable
+indicators_advice               = {}
+indicators_advice[intervals[1]] = {'result': True, 'value': 0, 'level': 'Neutral'}
+indicators_advice[intervals[2]] = {'result': True, 'value': 0, 'level': 'Neutral'}
+indicators_advice[intervals[3]] = {'result': True, 'value': 0, 'level': 'Neutral'}
 
 ### Functions ###
 
@@ -129,15 +135,15 @@ def handle_ticker(message):
     try:
    
         # Declare some variables global
-        global spot, ticker, active_order, all_buys, all_sells, prices, use_delay
+        global spot, ticker, active_order, all_buys, all_sells, prices, use_delay, indicators_advice
 
         # Initialize variables
-        result      = ()
-        ticker      = {}
-        spiking     = False
-        amend_code  = 0
-        amend_error = ""
-
+        ticker                 = {}
+        spiking                = False
+        amend_code             = 0
+        amend_error            = ""
+        result                 = ()
+        
         # Debug show incoming message
         if debug:
             print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Incoming ticker ***")
@@ -233,6 +239,10 @@ def handle_ticker(message):
                 # Reset all sells
                 #all_sells = all_sells_new
 
+            # Work as a true gridbot when only spread is used
+            if use_spread['enabled'] and not use_indicators['enabled'] and not use_orderbook['enabled']:
+                buy_matrix(intervals[1])
+
             # Spiking, when not buying or selling, let's buy and see what happens :) *** CHECK *** Might want to change this to downwards spikes (negative pricechange)
             if not active_order['active'] and spiking:
                 print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
@@ -268,18 +278,10 @@ def handle_kline(message, interval):
     try:
 
         # Declare some variables global
-        global klines, active_order, all_buys, technical_advice
+        global klines, active_order, all_buys, indicators_advice
 
-        # Initialize variables
-        can_buy                = False
-        initiate_buy           = {}
-        initiate_buy['delay']  = False
-        initiate_buy['order']  = False
-        kline                  = {}
-        spread_advice          = {} 
-        orderbook_advice       = {}
-        technical_indicators   = {}
-        result                 = ()
+        # Initialize kline
+        kline = {}
      
         # Show incoming message
         if debug:
@@ -309,70 +311,8 @@ def handle_kline(message, interval):
             # Remove the first kline and replace with fresh kline
             klines[interval] = defs.update_kline(kline, klines[interval])
         
-        # Only initiate buy when there is no delay
-        if use_delay['enabled']:
-            if defs.now_utc()[4] < use_delay['end']:
-                print(defs.now_utc()[1] + "Sunflow: handle_kline: Buy delay is currently enabled, pausing for " + str(use_delay['end'] - defs.now_utc()[4]) + "ms \n")
-                initiate_buy['delay'] = True
-        
-        # Only initiate buy and do complex calculations when not already trailing
-        if active_order['active']:
-            initiate_buy['order'] = True
-        
-        # Only initiate buy and do complex calculations when not already trailing
-        if not initiate_buy['delay'] and not initiate_buy['order']:
-
-            
-            '''' Check TECHNICAL INDICATORS for buy decission '''
-            
-            if use_indicators['enabled']:
-                technical_indicators                = indicators.calculate(klines[interval], spot)
-                result                              = indicators.advice(technical_indicators)
-                technical_advice[interval]['value'] = result[0]
-                technical_advice[interval]['level'] = result[1]
-
-                # Check if technical advice is within range
-                if (technical_advice[interval]['value'] >= use_indicators['minimum']) and (technical_advice[interval]['value'] <= use_indicators['maximum']):
-                    technical_advice[interval]['result'] = True
-                else:
-                    technical_advice[interval]['result'] = False
-            else:
-                # If indicators are not enabled, always true
-                technical_advice[interval]['result'] = True
-
-            
-            ''' Check SPREAD for buy decission '''
-            
-            if use_spread['enabled']:
-                result                   = defs.check_spread(all_buys, spot, use_spread['distance'])
-                spread_advice['result']  = result[0]
-                spread_advice['nearest'] = round(result[1], 2)
-            else:
-                # If spread is not enabled, always true
-                spread_advice['result'] = True
-
-
-            ''' Check ORDERBOOK for buy decission ''' # *** CHECK *** To be implemented
-            
-            if use_orderbook['enabled']:
-                # Put orderbook logic here
-                orderbook_advice['value']  = 0
-                orderbook_advice['result'] = True
-            else:
-                # If orderbook is not enabled, always true
-                orderbook_advice['result'] = True
-            
-            # Get buy decission and report
-            result  = defs.decide_buy(technical_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals)
-            can_buy = result[0]
-            message = result[1]
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: " + message + "\n")
-            
-            # Determine distance of trigger price and execute buy decission
-            if can_buy:
-                result       = orders.buy(symbol, spot, active_order, all_buys, prices)
-                active_order = result[0]
-                all_buys     = result[1]
+        # Run buy matrix
+        buy_matrix(interval)
 
     # Report error
     except Exception as e:
@@ -381,6 +321,51 @@ def handle_kline(message, interval):
         print(defs.now_utc()[1] + f"An error occurred in {filename} on line {line}: {e}")
         print("Full traceback:")
         traceback.print_tb(e.__traceback__)
+
+def buy_matrix(interval):
+
+    # Declare some variables global
+    global active_order, all_buys, indicators_advice
+
+    # Initialize variables
+    can_buy                = False
+    spread_advice          = {}
+    orderbook_advice       = {}
+    initiate_buy           = {}
+    initiate_buy['delay']  = False
+    initiate_buy['order']  = False
+    result                 = ()    
+   
+    # Only initiate buy when there is no delay
+    if use_delay['enabled']:
+        if defs.now_utc()[4] < use_delay['end']:
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: Buy delay is currently enabled, pausing for " + str(use_delay['end'] - defs.now_utc()[4]) + "ms \n")
+            initiate_buy['delay'] = True
+    
+    # Only initiate buy and do complex calculations when not already trailing
+    if active_order['active']:
+        initiate_buy['order'] = True
+    
+    # Only initiate buy and do complex calculations when not already trailing
+    if not initiate_buy['delay'] and not initiate_buy['order']:
+        
+        # Get buy advice
+        result            = defs.advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval)
+        indicators_advice = result[0]
+        spread_advice     = result[1]
+        orderbook_advice  = result[2]
+                    
+        # Get buy decission and report
+        result  = defs.decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals)
+        can_buy = result[0]
+        message = result[1]
+        print(defs.now_utc()[1] + "Sunflow: buy_matrix: " + message + "\n")
+        
+        # Determine distance of trigger price and execute buy decission
+        if can_buy:
+            result       = orders.buy(symbol, spot, active_order, all_buys, prices)
+            active_order = result[0]
+            all_buys     = result[1]
     
 # Handle messages to keep orderbook up to date
 def handle_orderbook(message):
@@ -461,26 +446,14 @@ def prechecks():
     goahead = True
     
     # Do checks
-    if not ws_kline and not ws_orderbook:
-        goahead = False     
-        print(defs.now_utc()[1] + "Sunflow: prechecks: ws_klines and ws_orderbook can't both be False")
-    
-    if not use_spread['enabled'] and not use_indicators['enabled']:
-        goahead = False
-        print(defs.now_utc()[1] + "Sunflow: prechecks: Indicators and Spread can't both be False")
-        
-    if not ws_kline and use_indicators['enabled']:
-        goahead = False
-        print(defs.now_utc()[1] + "Sunflow: prechecks: Must set ws_kline to True when indicators are enabled")
-
-    if not ws_kline and use_orderbook['enabled']:
-        goahead = False
-        print(defs.now_utc()[1] + "Sunflow: prechecks: Must set ws_orderbook to True when orderbook is enabled")
-    
     if intervals[3] != 0 and intervals[2] == 0:
         goahead = False
-        print(defs.now_utc()[1] + "Sunflow: prechecks: Interval 2 must be set if you use interval 3")
+        print(defs.now_utc()[1] + "Sunflow: prechecks: Interval 2 must be set if you use interval 3 for confirmation")
         
+    if not use_spread['enabled'] and not use_indicators['enabled']:
+        goahead = False
+        print(defs.now_utc()[1] + "Sunflow: prechecks: Need at least either Technical Indicators enabled or Spread to determine buy action")
+    
     # Return result
     return goahead
 
@@ -506,16 +479,13 @@ if prechecks():
     preload.check_files()
     if intervals[1] !=0  : klines[intervals[1]] = preload.get_klines(symbol, intervals[1], limit)
     if intervals[2] !=0  : klines[intervals[2]] = preload.get_klines(symbol, intervals[2], limit)
-    if intervals[3] !=0  : klines[intervals[3]] = preload.get_klines(symbol, intervals[3], limit)
+    if intervals[3] !=0  : klines[intervals[3]] = preload.get_klines(symbol, intervals[3], limit) # **** CHECK *** Eigenlijk ook technical indicators preloaden zie buy matrix!
     ticker               = preload.get_ticker(symbol)
     spot                 = ticker['lastPrice']
     info                 = preload.get_info(symbol, spot, multiplier)
     all_buys             = preload.get_buys(config.dbase_file) 
     all_buys             = preload.check_orders(all_buys)
-    prices               = {
-        'time' : klines[intervals[1]]['time'],
-        'price': klines[intervals[1]]['close']
-    }
+    prices               = preload.get_prices(symbol, limit)
 
     # Delay buy for starting
     if use_delay['enabled']:

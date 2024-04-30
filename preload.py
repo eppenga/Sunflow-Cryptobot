@@ -129,6 +129,25 @@ def get_klines(symbol, interval, limit):
     # return klines
     return klines
 
+# Preload prices
+def get_prices(symbol, limit):
+    
+    # Debug
+    debug = False
+    
+    # Initialize prices
+    prices = {}
+
+    # Get kline with the lowest interval (1 minute)
+    kline_prices = get_klines(symbol, 1, limit)
+    prices       = {
+        'time' : kline_prices['time'],
+        'price': kline_prices['close']
+    }
+
+    # Return prices
+    return prices
+
 # Preload instrument info
 def get_info(symbol, spot, multiplier):
 

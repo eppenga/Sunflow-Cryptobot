@@ -17,16 +17,16 @@ depth              = 0.10         # Depth in percentages used to calculate marke
 multiplier         = 1.00         # Multiply minimum order quantity by this
 
 # Spread between orders
-spread_enabled     = True         # Use spread
+spread_enabled     = True         # Use spread as buy indicator
 spread_distance    = 0.20         # Minimum spread in percentages
 
 # Technical indicators
-indicators_enabled = True         # Use technical indicators
+indicators_enabled = True         # Use technical indicators as buy indicator
 indicators_minimum = -0.25        # Minimum advice value
 indicators_maximum = +0.50        # Maximum advice value
 
 # Orderbook
-orderbook_enabled  = False        # Use technical indicators
+orderbook_enabled  = False        # Use technical indicators as buy indicator
 orderbook_minimum  = 40.00        # Minimum orderbook percentage
 orderbook_maximum  = 60.00        # Maximum orderbook percentage
 
