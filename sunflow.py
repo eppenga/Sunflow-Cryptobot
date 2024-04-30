@@ -83,6 +83,7 @@ use_waves['multiplier']      = config.wave_multiplier         # Multiply wave pe
 # Delay
 use_delay                    = {}
 use_delay['enabled']         = config.delay_enabled           # Use delay after buy
+use_delay['application']     = True                           # Use delay when Sunflow starts
 use_delay['timeframe']       = config.delay_timeframe         # Timeframe in ms to delay buy
 use_delay['start']           = 0                              # Miliseconds since epoch when delay started
 use_delay['end']             = 0                              # Miliseconds since epoch when delay ends
@@ -488,10 +489,10 @@ if prechecks():
     prices               = preload.get_prices(symbol, limit)
 
     # Delay buy for starting
-    if use_delay['enabled']:
+    if use_delay['application']:
         use_delay['start'] = defs.now_utc()[4]
-        use_delay['end']   = use_delay['start'] + intervals[1] * 60 * 1000
-        print(defs.now_utc()[1] + "Sunflow: prechecks: Delaying buy cycle on startup with " + str(intervals[1] * 60 * 1000) + "ms (1 interval)\n")
+        use_delay['end']   = use_delay['start'] + use_delay['timeframe']
+        print(defs.now_utc()[1] + "Sunflow: prechecks: Delaying buy cycle on startup with " + str(use_delay['timeframe']) + "ms\n")
 
     print("*** Starting ***\n")
 

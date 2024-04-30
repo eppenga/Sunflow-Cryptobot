@@ -360,11 +360,13 @@ def waves_spikes(prices, use_data, select):
 # Deal with API rate limit
 def rate_limit(response):
     
+    # Debug
+    debug = False
+    
     # Initialize variables
     delay  = 0
     status = 0
     limit  = 0
-    debug  = False
     skip   = False
 
     # Get Status and Limit
@@ -392,7 +394,7 @@ def rate_limit(response):
 
         # Debug
         if debug:
-            print(defs.now_utc()[1] + "Defs: rate_limit: Status is " + str(status) + " and limit is " + str(limit) + ", therefore delay is set to " + str(delay) + "\n")
+            print(defs.now_utc()[1] + "Defs: rate_limit: Status is " + str(status) + " and limit is " + str(limit) + ", therefore API delay is set to " + str(round(delay, 1)) + " seconds\n")
         
         # Hard exit
         if ratio > 1:
