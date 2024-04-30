@@ -241,7 +241,7 @@ def handle_ticker(message):
 
             # Work as a true gridbot when only spread is used
             if use_spread['enabled'] and not use_indicators['enabled'] and not use_orderbook['enabled']:
-                buy_matrix(intervals[1])
+                buy_matrix(new_spot, intervals[1])
 
             # Spiking, when not buying or selling, let's buy and see what happens :) *** CHECK *** Might want to change this to downwards spikes (negative pricechange)
             if not active_order['active'] and spiking:
@@ -312,7 +312,7 @@ def handle_kline(message, interval):
             klines[interval] = defs.update_kline(kline, klines[interval])
         
         # Run buy matrix
-        buy_matrix(interval)
+        buy_matrix(spot, interval)
 
     # Report error
     except Exception as e:
@@ -322,7 +322,7 @@ def handle_kline(message, interval):
         print("Full traceback:")
         traceback.print_tb(e.__traceback__)
 
-def buy_matrix(interval):
+def buy_matrix(spot, interval):
 
     # Declare some variables global
     global active_order, all_buys, indicators_advice
