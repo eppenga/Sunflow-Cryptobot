@@ -254,6 +254,10 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
             message += report_result(indicators_advice[intervals[3]]['result']) + ", "                
         else:
             do_buy[3] = True
+    else:
+        do_buy[1] = True
+        do_buy[2] = True
+        do_buy[3] = True
 
     # Report spread
     if use_spread['enabled']:
