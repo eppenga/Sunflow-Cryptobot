@@ -208,7 +208,9 @@ def buy(symbol, spot, active_order, all_buys, prices):
     
     # Set the status
     transaction['status'] = "Open"
-    print(defs.now_utc()[1] + "Orders: buy: Initial buy order placed for " + str(active_order['qty']) + " " + info['quoteCoin'] + " with trigger price " + str(active_order['trigger']) + " " + info['quoteCoin'] + "\n")
+    message = f"New buy order for {active_order['qty']} {info['quoteCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
+    print(defs.now_utc()[1] + "Orders: buy: " + message + "\n")
+    defs.notify(message + f" for {symbol}")
     
     # Store the transaction in the database buys file
     all_buys = database.register_buy(transaction, all_buys)
@@ -318,8 +320,10 @@ def sell(symbol, spot, active_order, prices, info):
     # Get order info
     active_order['orderid'] = int(order['result']['orderId'])
     
-    # Output to stdout
-    print(defs.now_utc()[1] + "Orders: sell: Initial sell order placed for " + str(active_order['qty']) + " " + info['baseCoin'] + " with trigger price " + str(active_order['trigger']) + " " + info['quoteCoin'] + "\n")
+    # Output to stdout and Apprise
+    message = f"New sell order for {active_order['qty']} {info['baseCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
+    print(defs.now_utc()[1] + message + "\n")
+    defs.notify(message + f" for {symbol}")
     
     # Return data
     return active_order

@@ -6,8 +6,7 @@
 from pathlib import Path
 from pybit.unified_trading import WebSocket
 from datetime import datetime, timezone
-import argparse, importlib, math, re, sys, time
-import apprise
+import apprise, argparse, importlib, math, re, sys, time
 
 # Load internal libraries
 import defs, indicators
@@ -28,13 +27,10 @@ sys.path.append(str(config_path.parent))
 config_module_name = config_path.stem
 config = importlib.import_module(config_module_name)
 
-# Initialize variables
-debug = False
-
 # Create an Apprise instance
 apobj = apprise.Apprise()
 
-# Add all of the notification urls.
+# Add all of the notification urls for Apprise
 for url in config.notify_urls:
     apobj.add(url)
 
@@ -512,11 +508,14 @@ def advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spo
     # Return all data
     return indicators_advice, spread_advice, orderbook_advice
 
+# Send out a notification via Apprise
 def notify(msg):
 
+    # Check if enabled
     if not config.notify_enabled:
         return
 
+    # Do logic
     apobj.notify(
         body=msg,
         title='Sunflow Cryptobot',
