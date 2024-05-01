@@ -197,6 +197,8 @@ def handle_ticker(message):
                 # Remove from all_buys database
                 # set active_order["side"] to Sell
 
+                defs.notify(f"Sell order for {symbol} while Buying!")
+
             # Initiate first sell
             if not active_order['active'] and can_sell:
                 # There is no old quantity on first sell
@@ -206,6 +208,8 @@ def handle_ticker(message):
                 # Place the first sell order
                 active_order = orders.sell(symbol, new_spot, active_order, prices, info)
 
+                defs.notify(f"First sell order for {symbol}")
+                
             # Amend existing sell trailing order if required
             if active_order['active'] and active_order['side'] == "Sell":
 
@@ -221,6 +225,9 @@ def handle_ticker(message):
                         print(defs.now_utc()[1] + "Sunflow: handle_ticker: Adjusted quantity from " + str(active_order['qty']) + " " + info['baseCoin'] + " to " +  str(active_order['qty_new']) + " " + info['quoteCoin'] + "\n")
                         active_order['qty'] = active_order['qty_new']
                         all_sells           = all_sells_new
+
+                        defs.notify(f"Adjusted quantity from {active_order['qty']} {info['baseCoin']} to {active_order['qty_new']} {info['quoteCoin']}")
+
                     if amend_code == 1:
                         # Order slipped, close trailing process
                         print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
@@ -230,11 +237,16 @@ def handle_ticker(message):
                         all_sells    = result[2]
                         # Revert old situation
                         all_sells_new = all_sells
+
+                        defs.notify(f"Trailing order slipped, we keep buys database as is and stop trailing for {symbol}")
+
                     if amend_code == 100:
                         # Critical error, let's log it and revert
                         all_sells_new = all_sells
                         print(defs.now_utc()[1] + "Trailing: trail: Critical error, logging to file\n")
                         defs.log_error(amend_error)
+
+                        defs.notify(f"While Trailing a critical error occurred for {symbol}")
 
                 # Reset all sells
                 #all_sells = all_sells_new
@@ -360,13 +372,15 @@ def buy_matrix(spot, interval):
         can_buy = result[0]
         message = result[1]
         print(defs.now_utc()[1] + "Sunflow: buy_matrix: " + message + "\n")
-        
+
         # Determine distance of trigger price and execute buy decission
         if can_buy:
             result       = orders.buy(symbol, spot, active_order, all_buys, prices)
             active_order = result[0]
             all_buys     = result[1]
-    
+
+            defs.notify(f"Buy order for {symbol} {message}")
+
 # Handle messages to keep orderbook up to date
 def handle_orderbook(message):
 
@@ -494,6 +508,8 @@ if prechecks():
         print(defs.now_utc()[1] + "Sunflow: prechecks: Delaying buy cycle on startup with " + str(use_delay['timeframe']) + "ms\n")
 
     print("*** Starting ***\n")
+
+    defs.notify(f"Started a bot for {symbol}")
 
 else:
     print("*** COULD NOT START ***\n")

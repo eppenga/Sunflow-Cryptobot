@@ -67,3 +67,7 @@ error_file         = data_suffix + "errors.log"                 # Error log file
 # Debug
 debug              = False                                      # Turn debug on or off
 error_level        = 1                                          # Error level 0 is extended, 1 is normal
+
+# Notify
+notify_enabled     = False                                      # Notify using Apprise
+notify_urls        = ["tgram://bot_token/chat_id"]              # List of Apprise URLs to notify. See https://github.com/caronc/apprise
