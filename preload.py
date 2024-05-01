@@ -201,7 +201,8 @@ def get_info(symbol, spot, multiplier):
     info['minBuyQuote'] = defs.precision(minimumOrder * spot * multiplier, info['quotePrecision'])
 
     # Output to stdout
-    print(defs.now_utc()[1] + "Preload: get_info: Instrument info loaded!\n")
+    if debug:
+        print(defs.now_utc()[1] + "Preload: get_info: Instrument info loaded!\n")
        
     # Summarize all info and return data
     data                   = {}                            # Declare data variable

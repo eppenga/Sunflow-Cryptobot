@@ -468,3 +468,77 @@ def distance(active_order, prices):
 
     # Return modified data
     return active_order
+
+# Rebalances the database vs exchange
+def rebalance(all_buys, info):
+
+    # Debug
+    debug = True
+
+    # Initialize variables
+    wallet         = ()
+    equity_wallet  = 0
+    equity_dbase   = 0
+    dbase_changed = False
+
+    # Report to stdout
+    if debug:
+        print(defs.now_utc()[1] + "Orders: balance_wallet: Trying to rebalance buys database with exchange data\n")
+
+    # Get all buys
+    all_buys = preload.get_buys(config.dbase_file)
+
+    # Get wallet
+    message = defs.now_utc()[1] + "Orders: rebalance: session: get_wallet_balance\n"
+    print(message)
+    try:
+        wallet = session.get_wallet_balance(
+            accountType = "UNIFIED",
+            coin        = info['baseCoin']
+        )
+    except Exception as e:
+        defs.log_error(e)
+        
+    # Check API rate limit and log data if possible
+    if wallet:
+        wallet = defs.rate_limit(wallet)
+        defs.log_exchange(wallet, message)
+
+    # Get equity from wallet
+    equity_wallet = float(wallet['result']['list'][0]['coin'][0]['equity'])
+
+    # Get equity from all buys
+    equity_dbase  = float(sum(order['cumExecQty'] for order in all_buys))
+
+    # Report
+    if debug:
+        print(defs.now_utc()[1] + "Orders: balance_wallet: Before rebalance equity on exchange: " + str(equity_wallet) + " " + info['baseCoin'])
+        print(defs.now_utc()[1] + "Orders: balance_wallet: Before rebalance equity in database: " + str(equity_dbase) + " " + info['baseCoin'])
+
+    # Selling more than we have
+    while equity_dbase > equity_wallet:
+        
+        # Database changed
+        dbase_changed = True
+        
+        # Find the item with the lowest avgPrice
+        lowest_avg_price_item = min(all_buys, key=lambda x: x['avgPrice'])
+
+        # Remove this item from the list
+        all_buys.remove(lowest_avg_price_item)
+        
+        # Recalculate all buys
+        equity_dbase = sum(order['cumExecQty'] for order in all_buys)    
+
+    # Report
+    if debug:
+        print(defs.now_utc()[1] + "Orders: balance_wallet: After rebalance equity on exchange: " + str(equity_wallet) + " " + info['baseCoin'])
+        print(defs.now_utc()[1] + "Orders: balance_wallet: After rebalance equity in database: " + str(equity_dbase) + " " + info['baseCoin'] + "\n")
+
+    # Save new database
+    if dbase_changed:
+        print(defs.now_utc()[1] + "Orders: balance_wallet: Rebalanced buys database with exchange data\n")
+        database.save(all_buys)
+
+    # Return all buys
+    return all_buys

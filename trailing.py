@@ -41,7 +41,7 @@ stuck_counter  = 0
 spiker_counter = 0
    
 # Check if we can do trailing buy or sell
-def check_order(symbol, active_order, all_buys, all_sells, use_delay):
+def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
 
     # Declare some variables global
     global stuck_fresh, stuck_counter, spiker_counter
@@ -101,7 +101,7 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay):
             stuck_counter  = 0
             spiker_counter = 0
             # Close trailing process
-            result       = close_trail(active_order, all_buys, all_sells)
+            result       = close_trail(active_order, all_buys, all_sells, info)
             active_order = result[0]
             all_buys     = result[1]
             all_sells    = result[2]
@@ -155,7 +155,7 @@ def check_spiker(active_order, order, all_buys):
     return active_order, all_buys
 
 # Trailing order does not exist anymore, close it
-def close_trail(active_order, all_buys, all_sells):
+def close_trail(active_order, all_buys, all_sells, info):
 
     # Debug
     debug = False
@@ -174,15 +174,22 @@ def close_trail(active_order, all_buys, all_sells):
     if transaction['side'] == "Buy":
         all_buys = database.register_buy(transaction, all_buys)
     
-    # Order was sold, create new all buys database and clear all sells
+    # Order was sold, create new all buys database, rebalance database and clear all sells
     if transaction['side'] == "Sell":
 
+        # Output to stdout for debug
         if debug:
             print("All sell orders at close_trail")
             print(all_sells)
             print()
         
+        # Create new all buys database
         all_buys = database.register_sell(all_buys, all_sells)
+        
+        # Rebalance new database
+        all_buys = orders.rebalance(all_buys, info)
+        
+        # Clear all sells
         all_sells = []
     
     return active_order, all_buys, all_sells
@@ -201,7 +208,7 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
         print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Checking if we can do trailing")
 
     # Check if the order still exists
-    result       = check_order(symbol, active_order, all_buys, all_sells, use_delay)
+    result       = check_order(symbol, active_order, all_buys, all_sells, use_delay, info)
     active_order = result[0]
     all_buys_new = result[1]
     use_delay    = result[2]
@@ -245,7 +252,7 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
             if amend_code == 1:
                 # Order slipped, close trailing process
                 print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
-                result       = close_trail(active_order, all_buys, all_sells)
+                result       = close_trail(active_order, all_buys, all_sells, info)
                 active_order = result[0]
                 all_buys     = result[1]
                 all_sells    = result[2]

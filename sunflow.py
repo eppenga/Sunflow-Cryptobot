@@ -224,7 +224,7 @@ def handle_ticker(message):
                     if amend_code == 1:
                         # Order slipped, close trailing process
                         print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
-                        result       = trailing.close_trail(active_order, all_buys, all_sells)
+                        result       = trailing.close_trail(active_order, all_buys, all_sells, info)
                         active_order = result[0]
                         all_buys     = result[1]
                         all_sells    = result[2]

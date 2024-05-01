@@ -41,7 +41,7 @@ def save(all_buys):
     total_qty   = defs.smart_round(total_qty)
     
     # Output to stdout
-    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buy orders and " + str(total_qty) + " executed in quote currency to file\n")
+    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buy orders and " + str(total_qty) + " executed in base currency to file\n")
 
 # Load the database with all buys
 def load(dbase_file):
