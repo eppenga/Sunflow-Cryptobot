@@ -473,12 +473,14 @@ def distance(active_order, prices):
 def rebalance(all_buys, info):
 
     # Debug
-    debug = True
+    debug = False
 
     # Initialize variables
     wallet         = ()
     equity_wallet  = 0
     equity_dbase   = 0
+    equity_remind  = 0
+    equity_lost    = 0
     dbase_changed = False
 
     # Report to stdout
@@ -509,6 +511,7 @@ def rebalance(all_buys, info):
 
     # Get equity from all buys
     equity_dbase  = float(sum(order['cumExecQty'] for order in all_buys))
+    equity_remind = equity_dbase
 
     # Report
     if debug:
@@ -537,7 +540,8 @@ def rebalance(all_buys, info):
 
     # Save new database
     if dbase_changed:
-        print(defs.now_utc()[1] + "Orders: balance_wallet: Rebalanced buys database with exchange data\n")
+        equity_lost = equity_remind - equity_dbase
+        print(defs.now_utc()[1] + "Orders: balance_wallet: Rebalanced buys database with exchange data and lost " + str(equity_lost) + " " + info['baseCoin'] + "\n")
         database.save(all_buys)
 
     # Return all buys
