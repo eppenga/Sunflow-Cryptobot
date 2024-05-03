@@ -464,6 +464,8 @@ def distance(active_order, prices):
                     active_order['fluctuation'] = active_order['distance']
 
 
+        ''' Let's remove these fail safes for now 
+
         # Always keep wave at minimum distance
         if abs(active_order['wave']) < active_order['distance']:
             active_order['fluctuation'] = active_order['distance']
@@ -475,6 +477,8 @@ def distance(active_order, prices):
         # Output to stdout
         print(defs.now_utc()[1] + "Orders: distance: Using wave data via fixed to set trigger price distance to ", end="")
         print(str(round(active_order['fluctuation'], 4)) + "%\n")
+
+        '''
 
     # Return modified data
     return active_order
