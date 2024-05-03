@@ -98,7 +98,7 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
             
             # Output to stdout and Apprise
             print(defs.now_utc()[1] + "Trailing: check_order: Trailing " + active_order['side'].lower() + ": *** Order has been filled! ***\n")
-            defs.notify(f"{active_order['side']} order has been filled for {symbol}", 1)
+            defs.notify(f"{active_order['side']} order closed for {active_order['qty']} {info['baseCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']} for {symbol}", 1)
             
             # Reset counters
             stuck_fresh    = True
@@ -262,7 +262,7 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
             if amend_code == 1:
                 # Order slipped, close trailing process
                 print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
-                defs.notify(f"Order slipped, we keep buys database as is and stop trailing for {symbol}", 1)
+                defs.notify(f"{active_order['side']} order slipped, we keep buys database as is and stop trailing for {symbol}", 1)
                 result       = close_trail(active_order, all_buys, all_sells, info)
                 active_order = result[0]
                 all_buys     = result[1]

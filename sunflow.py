@@ -232,7 +232,7 @@ def handle_ticker(message):
                     if amend_code == 1:
                         # Order slipped, close trailing process
                         print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
-                        defs.notify(f"Order slipped, we keep buys database as is and stop trailing for {symbol}", 1)
+                        defs.notify(f"Sell order slipped, we keep buys database as is and stop trailing for {symbol}", 1)
                         result       = trailing.close_trail(active_order, all_buys, all_sells, info)
                         active_order = result[0]
                         all_buys     = result[1]
@@ -547,7 +547,7 @@ def main():
         except (RemoteDisconnected, ProtocolError, ChunkedEncodingError) as e:
             message = f"Sunflow: main: Exchange connection lost. Reconnecting due to: {e}"
             print(defs.now_utc()[1] + message + "\n")
-            defs.notify(message + f" for {symbol}", 0)
+            defs.notify(message + f" for {symbol}", 1)
             sleep(5)
             ws = connect_websocket()
             subscribe_streams(ws)

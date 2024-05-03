@@ -198,7 +198,7 @@ def log_error(exception):
     if halt_execution:
         print(defs.now_utc()[1] + "Defs: error: *** Termination program, error to severe! ***\n")
         print(exception)
-        defs.notify("Terminating Sunflow, error to severe!", 0)
+        defs.notify("Terminating Sunflow, error to severe!", 1)
         exit()
 
 # Outputs a (Pass) or (Fail)
@@ -516,7 +516,7 @@ def notify(message, level):
     if not config.notify_enabled:
         return
 
-    # Normal messaging
+    # Messaging suitable for level
     if level >= config.notify_level:
         apobj.notify(
             body  = message,

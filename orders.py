@@ -133,7 +133,7 @@ def cancel(symbol, orderid):
         order = session.cancel_order(
             category = "spot",
             symbol   = symbol,
-            orderId  = orderid
+            orderId  = str(orderid)
         )
     except Exception as e:
         defs.log_error(e)
@@ -215,7 +215,7 @@ def buy(symbol, spot, active_order, all_buys, prices):
     
     # Set the status
     transaction['status'] = "Open"
-    message = f"Buy order for {active_order['qty']} {info['quoteCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
+    message = f"Buy order opened for {active_order['qty']} {info['quoteCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
     print(defs.now_utc()[1] + "Orders: buy: " + message + "\n")
     defs.notify(message + f" for {symbol}", 1)
     
@@ -327,7 +327,7 @@ def sell(symbol, spot, active_order, prices, info):
     active_order['orderid'] = int(order['result']['orderId'])
     
     # Output to stdout and Apprise
-    message = f"Sell order for {active_order['qty']} {info['baseCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
+    message = f"Sell order opened for {active_order['qty']} {info['baseCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
     print(defs.now_utc()[1] + message + "\n")
     defs.notify(message + f" for {symbol}", 1)
     
