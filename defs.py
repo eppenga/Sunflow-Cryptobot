@@ -517,17 +517,8 @@ def notify(message, level):
         return
 
     # Normal messaging
-    if level >= 1:
+    if level >= config.notify_level:
         apobj.notify(
             body  = message,
             title = "Sunflow Cryptobot"
         )
-        return
-
-    # Extensive messaging
-    if level == 0:
-        apobj.notify(
-            body  = message,
-            title = "Sunflow Cryptobot"
-        )
-        return
