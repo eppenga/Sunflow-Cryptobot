@@ -64,10 +64,7 @@ def load(dbase_file):
 
 # Remove an order from the all buys database file
 def remove(orderid, all_buys):
-    
-    # Debug
-    debug = False
-    
+      
     # Initialize variables
     all_buys_new = []
     found_order   = False

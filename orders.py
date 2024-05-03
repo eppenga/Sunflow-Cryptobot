@@ -169,19 +169,23 @@ def buy(symbol, spot, active_order, all_buys, prices):
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
 
-    # Set order side
-    active_order['side'] = "Buy"
-
     # Get latest symbol info
     info = preload.get_info(symbol, spot, config.multiplier)
+
+    # Initialize active_order
+    active_order['side']     = "Buy"
+    active_order['active']   = True
+    active_order['start']    = spot
+    active_order['previous'] = spot
+    active_order['current']  = spot
 
     # Determine distance of trigger price
     active_order = distance(active_order, prices)
 
     # Initialize active_order
-    active_order = initialize_active_order(spot, active_order, info)  
+    active_order = initialize_trigger(spot, active_order, info)  
 
-    # Place Buy order
+    # Place buy order
     message = defs.now_utc()[1] + "Orders: buy: session: place_order\n"
     print(message)
     order = {}
@@ -266,13 +270,7 @@ def check_sell(spot, profit, active_order, all_buys, info):
     return all_sells, qty, can_sell, rise_to
 
 # Initialize active order for initial buy or sell
-def initialize_active_order(spot, active_order, info):
-
-    # Initialize active order
-    active_order['active']   = True
-    active_order['start']    = spot
-    active_order['previous'] = spot
-    active_order['current']  = spot
+def initialize_trigger(spot, active_order, info):
 
     # Check side buy or sell
     if active_order['side'] == "Buy":
@@ -290,14 +288,18 @@ def sell(symbol, spot, active_order, prices, info):
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
 
-    # Set order side
+    # Initialize active_order
     active_order['side'] = "Sell"
-
+    active_order['active']   = True
+    active_order['start']    = spot
+    active_order['previous'] = spot
+    active_order['current']  = spot
+  
     # Determine distance of trigger price
     active_order = distance(active_order, prices)
 
     # Initialize active_order
-    active_order = initialize_active_order(spot, active_order, info)
+    active_order = initialize_trigger(spot, active_order, info)
        
     # Place sell order
     message = defs.now_utc()[1] + "Orders: sell: session: place_order\n"

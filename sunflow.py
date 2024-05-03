@@ -12,7 +12,7 @@ from http.client import RemoteDisconnected
 import argparse, importlib, sys, traceback
 
 # Load internal libraries
-import defs, preload, trailing, orders
+import database, defs, preload, trailing, orders
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="Run the Sunflow Cryptobot with a specified config.")
@@ -194,15 +194,14 @@ def handle_ticker(message):
             if active_order['active'] and active_order['side'] == "Buy" and can_sell:
                 
                 # Output to stdout and Apprise
-                print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Warning loosing money, we can sell while we are buying! ***\n")
-                defs.notify(f"Warning: loosing money, selling order for {symbol} while Buying!", 1)
+                print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Warning loosing money, we can sell while we are buying, canceling buy order! ***\n")
+                defs.notify(f"Warning: loosing money, we can sell while we are buying for {symbol}, canceling buy order!", 1)
                 
-                # *** CHECK *** To be implemented, this is still left to do:
-                # Cancel trailing buy order 
-                # Remove from all_buys database
-                # set active_order["side"] to Sell
+                # *** CHECK *** Needs testing: Cancel trailing buy, remove from all_buys database
+                active_order['active'] = False
+                orders.cancel(symbol, active_order['orderid'])
+                database.remove(active_order['orderid'], all_buys)
                 
-
             # Initiate first sell
             if not active_order['active'] and can_sell:
                 # There is no old quantity on first sell
