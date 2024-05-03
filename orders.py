@@ -169,14 +169,17 @@ def buy(symbol, spot, active_order, all_buys, prices):
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
 
+    # Set order side
+    active_order['side'] = "Buy"
+
     # Get latest symbol info
     info = preload.get_info(symbol, spot, config.multiplier)
 
-    # Initialize active_order
-    active_order = initialize_active_order(spot, active_order, info, "Buy")
-    
     # Determine distance of trigger price
     active_order = distance(active_order, prices)
+
+    # Initialize active_order
+    active_order = initialize_active_order(spot, active_order, info)  
 
     # Place Buy order
     message = defs.now_utc()[1] + "Orders: buy: session: place_order\n"
@@ -208,9 +211,9 @@ def buy(symbol, spot, active_order, all_buys, prices):
     
     # Set the status
     transaction['status'] = "Open"
-    message = f"New buy order for {active_order['qty']} {info['quoteCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
+    message = f"Buy order for {active_order['qty']} {info['quoteCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
     print(defs.now_utc()[1] + "Orders: buy: " + message + "\n")
-    defs.notify(message + f" for {symbol}")
+    defs.notify(message + f" for {symbol}", 1)
     
     # Store the transaction in the database buys file
     all_buys = database.register_buy(transaction, all_buys)
@@ -263,7 +266,7 @@ def check_sell(spot, profit, active_order, all_buys, info):
     return all_sells, qty, can_sell, rise_to
 
 # Initialize active order for initial buy or sell
-def initialize_active_order(spot, active_order, info, side):
+def initialize_active_order(spot, active_order, info):
 
     # Initialize active order
     active_order['active']   = True
@@ -272,12 +275,10 @@ def initialize_active_order(spot, active_order, info, side):
     active_order['current']  = spot
 
     # Check side buy or sell
-    if side == "Buy":
-        active_order['side']     = "Buy"
+    if active_order['side'] == "Buy":
         active_order['qty']      = info['minBuyQuote']
         active_order['trigger']  = defs.precision(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
     else:
-        active_order['side']     = "Sell"
         active_order['trigger']  = defs.precision(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
 
     # Return active_order
@@ -289,12 +290,15 @@ def sell(symbol, spot, active_order, prices, info):
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
 
-    # Initialize active_order
-    active_order = initialize_active_order(spot, active_order, info, "Sell")
-    
+    # Set order side
+    active_order['side'] = "Sell"
+
     # Determine distance of trigger price
     active_order = distance(active_order, prices)
-    
+
+    # Initialize active_order
+    active_order = initialize_active_order(spot, active_order, info)
+       
     # Place sell order
     message = defs.now_utc()[1] + "Orders: sell: session: place_order\n"
     print(message)
@@ -321,9 +325,9 @@ def sell(symbol, spot, active_order, prices, info):
     active_order['orderid'] = int(order['result']['orderId'])
     
     # Output to stdout and Apprise
-    message = f"New sell order for {active_order['qty']} {info['baseCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
+    message = f"Sell order for {active_order['qty']} {info['baseCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
     print(defs.now_utc()[1] + message + "\n")
-    defs.notify(message + f" for {symbol}")
+    defs.notify(message + f" for {symbol}", 1)
     
     # Return data
     return active_order

@@ -195,7 +195,7 @@ def handle_ticker(message):
                 
                 # Output to stdout and Apprise
                 print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Warning loosing money, we can sell while we are buying! ***\n")
-                defs.notify(f"Warning: loosing money, selling order for {symbol} while Buying!")
+                defs.notify(f"Warning: loosing money, selling order for {symbol} while Buying!", 1)
                 
                 # *** CHECK *** To be implemented, this is still left to do:
                 # Cancel trailing buy order 
@@ -224,16 +224,16 @@ def handle_ticker(message):
                     # Determine what to do based on error code of amend result
                     if amend_code == 0:
                         # Everything went fine, we can continue trailing
-                        message = f"Adjusted quantity from {active_order['qty']} to {active_order['qty_new']} {info['baseCoin']}"
+                        message = f"Adjusted quantity from {active_order['qty']} to {active_order['qty_new']} {info['baseCoin']} in {active_order['side'].lower()} order"
                         print(defs.now_utc()[1] + "Sunflow: handle_ticker: " + message + "\n")
-                        defs.notify(message + f" for {symbol}")
+                        defs.notify(message + f" for {symbol}", 0)
                         active_order['qty'] = active_order['qty_new']
                         all_sells           = all_sells_new
 
                     if amend_code == 1:
                         # Order slipped, close trailing process
                         print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
-                        defs.notify(f"Trailing order slipped, we keep buys database as is and stop trailing for {symbol}")
+                        defs.notify(f"Order slipped, we keep buys database as is and stop trailing for {symbol}", 1)
                         result       = trailing.close_trail(active_order, all_buys, all_sells, info)
                         active_order = result[0]
                         all_buys     = result[1]
@@ -245,7 +245,7 @@ def handle_ticker(message):
                         # Critical error, let's log it and revert
                         all_sells_new = all_sells
                         print(defs.now_utc()[1] + "Trailing: trail: Critical error, logging to file\n")
-                        defs.notify(f"While trailing a critical error occurred for {symbol}")
+                        defs.notify(f"While trailing a critical error occurred for {symbol}", 1)
                         defs.log_error(amend_error)
 
                 # Reset all sells
@@ -258,7 +258,6 @@ def handle_ticker(message):
             # Spiking, when not buying or selling, let's buy and see what happens :) *** CHECK *** Might want to change this to downwards spikes (negative pricechange)
             if not active_order['active'] and spiking:
                 print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
-                active_order = orders.initialize_active_order(new_spot, active_order, info, "Buy")
                 result       = orders.buy(symbol, spot, active_order, all_buys, prices)
                 active_order = result[0]
                 all_buys     = result[1]
@@ -479,9 +478,12 @@ if prechecks():
     print("*** Sunflow Cryptobot ***")
     print("*************************\n")
     print("Symbol    : " + symbol)
-    print("Interval 1: " + str(intervals[1]) + "m")
-    print("Interval 2: " + str(intervals[2]) + "m")
-    print("Interval 3: " + str(intervals[3]) + "m")
+    if use_indicators['enabled']:
+        print("Interval 1: " + str(intervals[1]) + "m")
+        print("Interval 2: " + str(intervals[2]) + "m")
+        print("Interval 3: " + str(intervals[3]) + "m")
+    if use_spread['enabled']:
+        print("Spread    : " + str(use_spread['distance']) + "%")
     print("Limit     : " + str(limit))
     print()
     
@@ -506,7 +508,7 @@ if prechecks():
         print(defs.now_utc()[1] + "Sunflow: prechecks: Delaying buy cycle on startup with " + str(use_delay['timeframe']) + "ms\n")
 
     print("*** Starting ***\n")
-    defs.notify(f"Started Sunflow Cryptobot for {symbol}")
+    defs.notify(f"Started Sunflow Cryptobot for {symbol}", 1)
 
 else:
     print("*** COULD NOT START ***\n")

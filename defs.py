@@ -509,14 +509,24 @@ def advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spo
     return indicators_advice, spread_advice, orderbook_advice
 
 # Send out a notification via Apprise
-def notify(msg):
+def notify(message, level):
 
     # Check if enabled
     if not config.notify_enabled:
         return
 
-    # Do logic
-    apobj.notify(
-        body=msg,
-        title='Sunflow Cryptobot',
-    )
+    # Normal messaging
+    if level >= 1:
+        apobj.notify(
+            body  = message,
+            title = "Sunflow Cryptobot"
+        )
+        return
+
+    # Extensive messaging
+    if level == 0:
+        apobj.notify(
+            body  = message,
+            title = "Sunflow Cryptobot"
+        )
+        return

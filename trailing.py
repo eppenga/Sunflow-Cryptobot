@@ -98,7 +98,7 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
             
             # Output to stdout and Apprise
             print(defs.now_utc()[1] + "Trailing: check_order: Trailing " + active_order['side'].lower() + ": *** Order has been filled! ***\n")
-            defs.notify(f"Trailing {active_order['side'].lower()} order has been filled for {symbol}")
+            defs.notify(f"{active_order['side']} order has been filled for {symbol}", 1)
             
             # Reset counters
             stuck_fresh    = True
@@ -251,16 +251,16 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
             # Determine what to do based on error code of amend result
             if amend_code == 0:
                 # Everything went fine, we can continue trailing
-                message = f"Adjusted trigger price from {active_order['trigger']} to {active_order['trigger_new']} {info['quoteCoin']}"
+                message = f"Adjusted trigger price from {active_order['trigger']} to {active_order['trigger_new']} {info['quoteCoin']} in {active_order['side'].lower()} order"
                 print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": " + message + "\n")
-                defs.notify(message + f" for {symbol}")
+                defs.notify(message + f" for {symbol}", 0)
                 active_order['trigger'] = active_order['trigger_new']
                 all_buys                = all_buys_new
 
             if amend_code == 1:
                 # Order slipped, close trailing process
                 print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
-                defs.notify(f"Trailing order slipped, we keep buys database as is and stop trailing for {symbol}")
+                defs.notify(f"Order slipped, we keep buys database as is and stop trailing for {symbol}", 1)
                 result       = close_trail(active_order, all_buys, all_sells, info)
                 active_order = result[0]
                 all_buys     = result[1]
@@ -272,7 +272,7 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
                 # Critical error, let's log it and revert
                 all_buys_new = all_buys
                 print(defs.now_utc()[1] + "Trailing: trail: Critical error, logging to file\n")
-                defs.notify(f"While trailing a critical error occurred for {symbol}")
+                defs.notify(f"While trailing a critical error occurred for {symbol}", 1)
                 defs.log_error(amend_error)
 
     # Reset all_buys
