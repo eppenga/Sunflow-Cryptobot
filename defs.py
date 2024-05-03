@@ -198,6 +198,7 @@ def log_error(exception):
     if halt_execution:
         print(defs.now_utc()[1] + "Defs: error: *** Termination program, error to severe! ***\n")
         print(exception)
+        defs.notify("Terminating Sunflow, error to severe!", 0)
         exit()
 
 # Outputs a (Pass) or (Fail)

@@ -182,7 +182,7 @@ def buy(symbol, spot, active_order, all_buys, prices):
     # Determine distance of trigger price
     active_order = distance(active_order, prices)
 
-    # Initialize active_order
+    # Initialize trigger price
     active_order = initialize_trigger(spot, active_order, info)  
 
     # Place buy order
@@ -274,10 +274,10 @@ def initialize_trigger(spot, active_order, info):
 
     # Check side buy or sell
     if active_order['side'] == "Buy":
-        active_order['qty']      = info['minBuyQuote']
-        active_order['trigger']  = defs.precision(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
+        active_order['qty']     = info['minBuyQuote']
+        active_order['trigger'] = defs.precision(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
     else:
-        active_order['trigger']  = defs.precision(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
+        active_order['trigger'] = defs.precision(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
 
     # Return active_order
     return active_order
@@ -289,7 +289,7 @@ def sell(symbol, spot, active_order, prices, info):
     print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
 
     # Initialize active_order
-    active_order['side'] = "Sell"
+    active_order['side']     = "Sell"
     active_order['active']   = True
     active_order['start']    = spot
     active_order['previous'] = spot
@@ -298,9 +298,9 @@ def sell(symbol, spot, active_order, prices, info):
     # Determine distance of trigger price
     active_order = distance(active_order, prices)
 
-    # Initialize active_order
+    # Initialize trigger price
     active_order = initialize_trigger(spot, active_order, info)
-       
+
     # Place sell order
     message = defs.now_utc()[1] + "Orders: sell: session: place_order\n"
     print(message)

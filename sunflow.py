@@ -545,7 +545,9 @@ def main():
         try:
             sleep(1)
         except (RemoteDisconnected, ProtocolError, ChunkedEncodingError) as e:
-            print(defs.now_utc()[1] + f"Sunflow: main: Connection lost. Reconnecting due to: {e}")
+            message = f"Sunflow: main: Exchange connection lost. Reconnecting due to: {e}"
+            print(defs.now_utc()[1] + message + "\n")
+            defs.notify(message + f" for {symbol}", 0)
             sleep(5)
             ws = connect_websocket()
             subscribe_streams(ws)

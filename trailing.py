@@ -116,6 +116,8 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
                 if use_delay['enabled']:
                     use_delay['start'] = defs.now_utc()[4]
                     use_delay['end']   = use_delay['start'] + use_delay['timeframe']
+
+        # Check if symbol is spiking
         else:
             result       = check_spiker(active_order, order, all_buys)
             active_order = result[0]
