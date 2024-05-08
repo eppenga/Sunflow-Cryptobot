@@ -199,8 +199,23 @@ def handle_ticker(message):
                 
                 # *** CHECK *** Needs testing: Cancel trailing buy, remove from all_buys database
                 active_order['active'] = False
-                orders.cancel(symbol, active_order['orderid'])
-                database.remove(active_order['orderid'], all_buys)
+                result     = orders.cancel(symbol, active_order['orderid'])
+                error_code = result[0]
+                
+                if error_code == 0:
+                    # Situation normal, just remove the order
+                    database.remove(active_order['orderid'], all_buys)
+
+                if error_code == 1:
+                    # Trailing buy was bought
+                    result       = trailing.close_trail(active_order, all_buys, all_sells, info)
+                    active_order = result[0]
+                    all_buys     = result[1]
+                    all_sells    = result[2]
+                    
+                if error_code == 100:
+                    # Something went very wrong 
+                    defs.log_error(result[1])
                 
             # Initiate first sell
             if not active_order['active'] and can_sell:

@@ -125,6 +125,10 @@ def decode(order):
 # Cancel an order at the exchange
 def cancel(symbol, orderid):
     
+    # Initialize
+    error_code = 0
+    exception  = ""
+    
     # Cancel order
     message = defs.now_utc()[1] + "Orders: cancel: session: cancel_order\n"
     print(message)
@@ -136,12 +140,21 @@ def cancel(symbol, orderid):
             orderId  = str(orderid)
         )
     except Exception as e:
-        defs.log_error(e)
+        exception = str(e)
+        if "(ErrCode: 170213)" in exception:
+            # Order does not exist
+            error_code = 1
+        else:
+            # Any other error
+            error_code = 100        
         
     # Check API rate limit and log data if possible
     if order:
         order = defs.rate_limit(order)
-        defs.log_exchange(order, message)    
+        defs.log_exchange(order, message)
+        
+    # Return error code
+    return error_code, exception    
 
 # Turn an order from the exchange into a properly formatted transaction after placing or amending an order
 def transaction_from_order(order):
@@ -341,8 +354,8 @@ def distance(active_order, prices):
     debug = False
 
     # Initialize variables
-    scaler              = 3       # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
-    number              = 7       # Last {number} of prices will be used
+    scaler              = 4       # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
+    number              = 10      # Last {number} of prices will be used
     fluctuation         = 0       # Fluctuation distance of trigger price
     price_distance      = 0       # Price distance between start and current price in percentage
     fluc_price_distance = 0       # Price distance used in calculations

@@ -119,7 +119,7 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
 
         # Check if symbol is spiking
         else:
-            result       = check_spiker(active_order, order, all_buys)
+            result       = check_spiker(symbol, active_order, order, all_buys)
             active_order = result[0]
             all_buys     = result[1]
 
@@ -127,7 +127,7 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
     return active_order, all_buys, use_delay
 
 # Checks if the trailing error spiked
-def check_spiker(active_order, order, all_buys):
+def check_spiker(symbol, active_order, order, all_buys):
 
     # Declare some variables global
     global spiker_counter
@@ -139,25 +139,25 @@ def check_spiker(active_order, order, all_buys):
         if transaction['triggerPrice'] > active_order['current']:
             spiker_counter = spiker_counter + 1
             # It spiked when selling
-            if check_spiker == 3:
+            if spiker_counter == 3:
                 print(defs.now_utc()[1] + "Trailing: check_order: " + active_order['side'] + ": *** It spiked, yakes! ***\n")
                 # Reset trailing sell
                 active_order['active'] = False
                 # Remove order from exchange
-                orders.cancel(active_order['orderid'])
+                orders.cancel(symbol, active_order['orderid'])
     else:
         # Did it spike and was forgotten when buying
         if transaction['triggerPrice'] < active_order['current']:
             spiker_counter = spiker_counter + 1
             # It spiked when buying
-            if check_spiker == 3:
+            if spiker_counter == 3:
                 print(defs.now_utc()[1] + "Trailing: check_order: " + active_order['side'] + ": *** It spiked, yakes! ***\n")
                 # Reset trailing buy
                 active_order['active'] = False
                 # Remove order from all buys
                 database.remove(active_order['orderid'])                        
                 # Remove order from exchange
-                all_buys = orders.cancel(active_order['orderid'], all_buys)                                
+                orders.cancel(symbol, active_order['orderid'])                                
         
     # Return data
     return active_order, all_buys
