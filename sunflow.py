@@ -430,13 +430,13 @@ def handle_orderbook(message):
         total_quantity_within_depth = total_buy_within_depth + total_sell_within_depth
 
         # Calculate percentages
-        buy_percentage = (total_buy_within_depth / total_quantity_within_depth) * 100 if total_quantity_within_depth > 0 else 0
+        buy_percentage  = (total_buy_within_depth / total_quantity_within_depth) * 100 if total_quantity_within_depth > 0 else 0
         sell_percentage = (total_sell_within_depth / total_quantity_within_depth) * 100 if total_quantity_within_depth > 0 else 0
 
         # Output the stdout
         if debug:        
             print(defs.now_utc()[1] + "Sunflow: handle_orderbook: Orderbook")
-            print(f"Spot price         : {spot}")
+            print(f"Spot price        : {spot}")
             print(f"Lower depth       : {spot - depth}")
             print(f"Upper depth       : {spot + depth}\n")
 
