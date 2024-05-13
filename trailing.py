@@ -35,10 +35,10 @@ session = HTTP(
 )
 
 # Initialize variables
-debug          = False
-stuck_fresh    = True
-stuck_counter  = 0
-spiker_counter = 0
+stuck_fresh      = True
+stuck_counter    = 0
+spiker_counter   = 0
+def_trail_active = False
    
 # Check if we can do trailing buy or sell
 def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
@@ -249,15 +249,28 @@ def close_trail(active_order, all_buys, all_sells, info):
 # Trailing buy or sell
 def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
 
-    # Initialize variables
-    result      = ()
-    amend_code  = 0
-    amend_error = ""
-    do_amend    = False     # We can amend a trailing order
+    # Debug
+    debug = False
 
-    # Mention trailing
+    # Define global variables
+    global def_trail_active
+
+    # Check if trailing is not already executed and if so wait for next tick
+    if def_trail_active:
+        #if debug:
+        print(defs.now_utc()[1] + "Trailing: trail: function is busy, waiting to end\n")
+        return active_order, all_buys, use_delay
+
+    # Initialize variables
+    result           = ()
+    amend_code       = 0
+    amend_error      = ""
+    do_amend         = False
+    def_trail_active = True
+
+    # Output trailing to stdout
     if debug:
-        print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Checking if we can do trailing")
+        print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Checking if we can do trailing\n")
 
     # Check if the order still exists
     result       = check_order(symbol, active_order, all_buys, all_sells, use_delay, info)
@@ -321,14 +334,15 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
                 defs.notify(f"While trailing a critical error occurred for {symbol}", 1)
                 defs.log_error(amend_error)
 
-    # Reset all_buys
-    all_buys = all_buys_new
+    # Reset all_buys and allow function to be run again
+    all_buys         = all_buys_new
+    def_trail_active = False
 
     # Debug output active_order and error
     if debug:
-        print(defs.now_utc()[1] + "Trailing: trail: Debug output of active_order:")
-        print(str(active_order) + "\n")
-        print(defs.now_utc()[1] + "Trailing: trail: Debug output of error code: " + amend_error + "\n")
+        print(defs.now_utc()[1] + "Trailing: trail: Debug output of active_order:\n" + str(active_order) + "\n")
+        if amend_error:
+            print(defs.now_utc()[1] + "Trailing: trail: Debug output of error code:\n" + amend_error + "\n")
         
     # Return modified data
     return active_order, all_buys, use_delay

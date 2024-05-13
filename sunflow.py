@@ -152,36 +152,43 @@ def handle_ticker(message):
             print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Incoming ticker ***")
             print(str(message) + "\n")
 
-        # Get ticker
+        # Get ticker update
         ticker['time']      = int(message['ts'])
         ticker['lastPrice'] = float(message['data']['lastPrice'])
+
+        # Popup new price
+        prices['time'].append(ticker['time'])
+        prices['price'].append(ticker['lastPrice'])
+        prices['time'].pop(0)
+        prices['price'].pop(0)
+
+        # Calculate wave, also used in trailing when distance set to wave
+        if use_waves['enabled']:
+            active_order['wave'] = defs.waves_spikes(prices, use_waves, "Wave")[0]
+
+        # Determine if spiking
+        if use_spikes['enabled']:
+            spiking = defs.waves_spikes(prices, use_spikes, "Spike")[1]
+
+        # Spiking, when not buying or selling, let's buy and see what happens :) *** CHECK *** Might want to change this to downwards spikes (negative pricechange)
+        if not active_order['active'] and spiking:
+            print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
+            result       = orders.buy(symbol, spot, active_order, all_buys, prices)
+            active_order = result[0]
+            all_buys     = result[1]
+            
+        # Run trailing if active
+        if active_order['active']:
+            active_order['current'] = ticker['lastPrice']
+            active_order['status']  = 'Trailing'
+            result       = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay)
+            active_order = result[0]
+            all_buys     = result[1]
+            use_delay    = result[2]
 
         # Has price changed, then run all kinds of actions
         if spot != ticker['lastPrice']:
             new_spot = ticker['lastPrice']
-
-            # Add last price to prices list and remove first
-            prices['time'].append(ticker['time'])
-            prices['price'].append(ticker['lastPrice'])
-            prices['time'].pop(0)
-            prices['price'].pop(0)
-
-            # Determine if spiking
-            if use_spikes['enabled']:
-                spiking = defs.waves_spikes(prices, use_spikes, "Spike")[1]
-
-            # Calculate price change when using waves
-            if use_waves['enabled']:
-                active_order['wave'] = defs.waves_spikes(prices, use_waves, "Wave")[0]
-
-            # Run trailing if active
-            if active_order['active']:
-                active_order['current'] = new_spot
-                active_order['status']  = 'Trailing'
-                result       = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay)
-                active_order = result[0]
-                all_buys     = result[1]
-                use_delay    = result[2]
 
             # Check if and how much we can sell
             result                  = orders.check_sell(new_spot, profit, active_order, all_buys, info)
@@ -220,7 +227,7 @@ def handle_ticker(message):
                     # Something went very wrong 
                     defs.log_error(result[1])
                 
-            # Initiate first sell
+            # Initiate sell
             if not active_order['active'] and can_sell:
                 # There is no old quantity on first sell
                 active_order['qty'] = active_order['qty_new']
@@ -271,13 +278,6 @@ def handle_ticker(message):
             # Work as a true gridbot when only spread is used
             if use_spread['enabled'] and not use_indicators['enabled'] and not use_orderbook['enabled']:
                 buy_matrix(new_spot, intervals[1])
-
-            # Spiking, when not buying or selling, let's buy and see what happens :) *** CHECK *** Might want to change this to downwards spikes (negative pricechange)
-            if not active_order['active'] and spiking:
-                print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
-                result       = orders.buy(symbol, spot, active_order, all_buys, prices)
-                active_order = result[0]
-                all_buys     = result[1]
 
         # Always set new spot price
         spot = ticker['lastPrice']
@@ -350,51 +350,6 @@ def handle_kline(message, interval):
         print("Full traceback:")
         traceback.print_tb(e.__traceback__)
 
-def buy_matrix(spot, interval):
-
-    # Declare some variables global
-    global active_order, all_buys, indicators_advice
-
-    # Initialize variables
-    can_buy                = False
-    spread_advice          = {}
-    orderbook_advice       = {}
-    initiate_buy           = {}
-    initiate_buy['delay']  = False
-    initiate_buy['order']  = False
-    result                 = ()    
-   
-    # Only initiate buy when there is no delay
-    if use_delay['enabled']:
-        if defs.now_utc()[4] < use_delay['end']:
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: Buy delay is currently enabled, pausing for " + str(use_delay['end'] - defs.now_utc()[4]) + "ms \n")
-            initiate_buy['delay'] = True
-    
-    # Only initiate buy and do complex calculations when not already trailing
-    if active_order['active']:
-        initiate_buy['order'] = True
-    
-    # Only initiate buy and do complex calculations when not already trailing
-    if not initiate_buy['delay'] and not initiate_buy['order']:
-        
-        # Get buy advice
-        result            = defs.advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval)
-        indicators_advice = result[0]
-        spread_advice     = result[1]
-        orderbook_advice  = result[2]
-                    
-        # Get buy decission and report
-        result  = defs.decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals)
-        can_buy = result[0]
-        message = result[1]
-        print(defs.now_utc()[1] + "Sunflow: buy_matrix: " + message + "\n")
-
-        # Determine distance of trigger price and execute buy decission
-        if can_buy:
-            result       = orders.buy(symbol, spot, active_order, all_buys, prices)
-            active_order = result[0]
-            all_buys     = result[1]
-
 # Handle messages to keep orderbook up to date
 def handle_orderbook(message):
 
@@ -463,6 +418,52 @@ def handle_orderbook(message):
         print(defs.now_utc()[1] + f"An error occurred in {filename} on line {line}: {e}")
         print("Full traceback:")
         traceback.print_tb(e.__traceback__)
+
+# Check if we can buy the based on signals
+def buy_matrix(spot, interval):
+
+    # Declare some variables global
+    global active_order, all_buys, indicators_advice
+
+    # Initialize variables
+    can_buy                = False
+    spread_advice          = {}
+    orderbook_advice       = {}
+    initiate_buy           = {}
+    initiate_buy['delay']  = False
+    initiate_buy['order']  = False
+    result                 = ()    
+   
+    # Only initiate buy when there is no delay
+    if use_delay['enabled']:
+        if defs.now_utc()[4] < use_delay['end']:
+            print(defs.now_utc()[1] + "Sunflow: handle_kline: Buy delay is currently enabled, pausing for " + str(use_delay['end'] - defs.now_utc()[4]) + "ms \n")
+            initiate_buy['delay'] = True
+    
+    # Only initiate buy and do complex calculations when not already trailing
+    if active_order['active']:
+        initiate_buy['order'] = True
+    
+    # Only initiate buy and do complex calculations when not already trailing
+    if not initiate_buy['delay'] and not initiate_buy['order']:
+        
+        # Get buy advice
+        result            = defs.advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval)
+        indicators_advice = result[0]
+        spread_advice     = result[1]
+        orderbook_advice  = result[2]
+                    
+        # Get buy decission and report
+        result  = defs.decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals)
+        can_buy = result[0]
+        message = result[1]
+        print(defs.now_utc()[1] + "Sunflow: buy_matrix: " + message + "\n")
+
+        # Determine distance of trigger price and execute buy decission
+        if can_buy:
+            result       = orders.buy(symbol, spot, active_order, all_buys, prices)
+            active_order = result[0]
+            all_buys     = result[1]
 
 # Prechecks to see if we can start sunflow
 def prechecks():

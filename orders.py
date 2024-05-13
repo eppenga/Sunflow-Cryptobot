@@ -96,7 +96,6 @@ def history(orderId):
     return order
 
 # Decode order from exchange to proper dictionary
-# createdTime, updatedTime, orderId, orderLinkId, symbol, side, orderType, orderStatus, price, avgPrice, qty, cumExecQty, cumExecValue, cumExecFee, status
 def decode(order):
     
     transaction                 = {}
@@ -172,6 +171,59 @@ def transaction_from_id(orderId):
 
     # Return transaction
     return transaction
+
+# Initialize active order for initial buy or sell
+def initialize_trigger(spot, active_order, info):
+
+    # Check side buy or sell
+    if active_order['side'] == "Buy":
+        active_order['qty']     = info['minBuyQuote']
+        active_order['trigger'] = defs.precision(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
+    else:
+        active_order['trigger'] = defs.precision(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
+
+    # Return active_order
+    return active_order
+
+# What orders and how much can we sell with profit
+def check_sell(spot, profit, active_order, all_buys, info):
+
+    # Initialize variables
+    qty               = 0
+    counter           = 0
+    rise_to           = ""
+    nearest           = []
+    distance          = active_order['distance']
+    can_sell          = False
+    all_sells         = []
+       
+    # Walk through buy database and find profitable buys
+    for transaction in all_buys:
+
+        # Only walk through closed buy orders
+        if transaction['status'] == 'Closed':
+                       
+            # Check if a transaction is profitable
+            profitable_price = transaction['avgPrice'] * (1 + ((profit + distance) / 100))
+            nearest.append(profitable_price - spot)
+            if spot >= profitable_price:
+                qty = qty + transaction['cumExecQty']
+                all_sells.append(transaction)
+                counter = counter + 1
+    
+    # Adjust quantity to exchange regulations
+    qty = defs.precision(qty, info['basePrecision'])
+    
+    # Can sell or not
+    if all_sells:
+        can_sell = True
+        print(defs.now_utc()[1] + "Orders: check_sell: Can sell " + str(counter) + " orders for a total of " + str(qty) + " " + info['baseCoin'] + "\n")
+    else:
+        if nearest:
+            rise_to = str(defs.precision(min(nearest), info['tickSize'])) + " " + info['quoteCoin']
+    
+    # Return data
+    return all_sells, qty, can_sell, rise_to
         
 # New buy order
 def buy(symbol, spot, active_order, all_buys, prices):
@@ -239,59 +291,6 @@ def buy(symbol, spot, active_order, all_buys, prices):
     # Return trailing order and new buy order database
     return active_order, all_buys
     
-# What orders and how much can we sell with profit
-def check_sell(spot, profit, active_order, all_buys, info):
-
-    # Initialize variables
-    qty               = 0
-    counter           = 0
-    rise_to           = ""
-    nearest           = []
-    distance          = active_order['distance']
-    can_sell          = False
-    all_sells         = []
-       
-    # Walk through buy database and find profitable buys
-    for transaction in all_buys:
-
-        # Only walk through closed buy orders
-        if transaction['status'] == 'Closed':
-                       
-            # Check if a transaction is profitable
-            profitable_price = transaction['avgPrice'] * (1 + ((profit + distance) / 100))
-            nearest.append(profitable_price - spot)
-            if spot >= profitable_price:
-                qty = qty + transaction['cumExecQty']
-                all_sells.append(transaction)
-                counter = counter + 1
-    
-    # Adjust quantity to exchange regulations
-    qty = defs.precision(qty, info['basePrecision'])
-    
-    # Can sell or not
-    if all_sells:
-        can_sell = True
-        print(defs.now_utc()[1] + "Orders: check_sell: Can sell " + str(counter) + " orders for a total of " + str(qty) + " " + info['baseCoin'] + "\n")
-    else:
-        if nearest:
-            rise_to = str(defs.precision(min(nearest), info['tickSize'])) + " " + info['quoteCoin']
-    
-    # Return data
-    return all_sells, qty, can_sell, rise_to
-
-# Initialize active order for initial buy or sell
-def initialize_trigger(spot, active_order, info):
-
-    # Check side buy or sell
-    if active_order['side'] == "Buy":
-        active_order['qty']     = info['minBuyQuote']
-        active_order['trigger'] = defs.precision(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
-    else:
-        active_order['trigger'] = defs.precision(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
-
-    # Return active_order
-    return active_order
-
 # New sell order
 def sell(symbol, spot, active_order, prices, info):
 
