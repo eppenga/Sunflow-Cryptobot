@@ -131,6 +131,9 @@ indicators_advice[intervals[3]] = {'result': True, 'value': 0, 'level': 'Neutral
 # Handle messages to keep tickers up to date
 def handle_ticker(message):
     
+    # Debug
+    debug = False
+    
     # Errors are not reported within websocket
     try:
    
@@ -204,7 +207,7 @@ def handle_ticker(message):
                 
                 if error_code == 0:
                     # Situation normal, just remove the order
-                    database.remove(active_order['orderid'], all_buys)
+                    all_buys = database.remove(active_order['orderid'], all_buys)
 
                 if error_code == 1:
                     # Trailing buy was bought
@@ -530,12 +533,13 @@ else:
 
 ### Websockets ###
 
+# Connect websocket
 def connect_websocket():
     ws = WebSocket(testnet=False, channel_type="spot")
     return ws
 
+# Continuously get tickers from websocket
 def subscribe_streams(ws):
-    # Continuously get tickers from websocket
     ws.ticker_stream(symbol=symbol, callback=handle_ticker)
 
     # At request get klines from websocket
@@ -552,12 +556,24 @@ def subscribe_streams(ws):
     if ws_orderbook:
         ws.orderbook_stream(depth=50, symbol=symbol, callback=handle_orderbook)
 
+# Fire ticker at least everysecond
+def simulated_ticker():
+    return {
+        'ts': defs.now_utc()[4],
+        'data': {
+            'lastPrice': str(spot)
+        }
+    }
+
 def main():
     ws = connect_websocket()
     subscribe_streams(ws)
 
     while True:
         try:
+            # Simulate or fetch the latest ticker message
+            simulated_message = simulated_ticker()
+            handle_ticker(simulated_message)
             sleep(1)
         except (RemoteDisconnected, ProtocolError, ChunkedEncodingError) as e:
             message = f"Sunflow: main: Exchange connection lost. Reconnecting due to: {e}"

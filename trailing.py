@@ -93,12 +93,16 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
             order = defs.rate_limit(order)
             defs.log_exchange(order, message)
 
-        # Check if trailing order if filled, if so reset counters and close trailing process
+        # Check if trailing order is filled, if so reset counters and close trailing process
         if order['result']['list'] == []:
             
-            # Output to stdout and Apprise
+            # Prepare message for stdout and Apprise
             print(defs.now_utc()[1] + "Trailing: check_order: Trailing " + active_order['side'].lower() + ": *** Order has been filled! ***\n")
-            defs.notify(f"{active_order['side']} order closed for {active_order['qty']} {info['baseCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']} for {symbol}", 1)
+            if active_order['side'] == "Buy":
+                currency = info['quoteCoin']
+            else:
+                currency = info['baseCoin']
+            message = f"{active_order['side']} order closed for {active_order['qty']} {currency} with trigger price {active_order['trigger']} {info['quoteCoin']}"
             
             # Reset counters
             stuck_fresh    = True
@@ -110,6 +114,15 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
             active_order = result[0]
             all_buys     = result[1]
             all_sells    = result[2]
+            transaction  = result[3]
+            profit       = defs.precision(result[4], info['quotePrecision'])
+        
+            # Fill in average price and report message
+            if active_order['side'] == "Buy":
+                message = message + f" and average fill price {transaction['avgPrice']} {info['quoteCoin']} for {symbol}"
+            else:
+                message = message + f", average fill price {transaction['avgPrice']} {info['quoteCoin']} and profit {profit} {info['quoteCoin']} for {symbol}"
+            defs.notify(message, 1)
             
             # Handle buy delay
             if active_order['side'] == "Sell":
@@ -155,18 +168,46 @@ def check_spiker(symbol, active_order, order, all_buys):
                 # Reset trailing buy
                 active_order['active'] = False
                 # Remove order from all buys
-                database.remove(active_order['orderid'])                        
+                all_buys = database.remove(active_order['orderid'], all_buys)
                 # Remove order from exchange
-                orders.cancel(symbol, active_order['orderid'])                                
+                orders.cancel(symbol, active_order['orderid'])
         
     # Return data
     return active_order, all_buys
 
+# Calculate profit from sell
+def calculate_profit(transaction, all_sells, info):
+    
+    # Debug
+    debug = True
+    
+    # Initialize variables
+    sells  = 0
+    buys   = 0
+    fees   = 0
+    profit = 0
+    
+    # Logic
+    sells  = transaction['cumExecValue']
+    buys   = sum(item['cumExecValue'] for item in all_sells)
+    #fees   = sum(item['cumExecFee'] for item in all_sells)    # **** CHECK *** is trading fee in quote or base?
+    profit = sells - buys - fees
+    
+    # Output to stdout for debug
+    if debug:
+        print(defs.now_utc()[1] + f"Total sells were {sells} {info['quoteCoin']}, buys were {buys} {info['quoteCoin']} and fees were {fees} {info['quoteCoin']}, giving a profit of {profit} {info['quoteCoin']}\n")
+    
+    # Return profit
+    return profit
+    
 # Trailing order does not exist anymore, close it
 def close_trail(active_order, all_buys, all_sells, info):
 
     # Debug
     debug = False
+    
+    # Initialize variables
+    profit = 0
     
     # Output to stdout
     print(defs.now_utc()[1] + "Trailing: close_trail: Trying to close trailing process\n")
@@ -177,7 +218,7 @@ def close_trail(active_order, all_buys, all_sells, info):
     # Close the transaction on either buy or sell trailing order
     transaction = orders.transaction_from_id(active_order['orderid'])
     transaction['status'] = "Closed"
-      
+          
     # Order was bought, create new all buys database
     if transaction['side'] == "Buy":
         all_buys = database.register_buy(transaction, all_buys)
@@ -190,6 +231,9 @@ def close_trail(active_order, all_buys, all_sells, info):
             print("All sell orders at close_trail")
             print(all_sells)
             print()
+
+        # Calculate profit
+        profit = calculate_profit(transaction, all_sells, info)
         
         # Create new all buys database
         all_buys = database.register_sell(all_buys, all_sells)
@@ -200,7 +244,7 @@ def close_trail(active_order, all_buys, all_sells, info):
         # Clear all sells
         all_sells = []
     
-    return active_order, all_buys, all_sells
+    return active_order, all_buys, all_sells, transaction, profit
 
 # Trailing buy or sell
 def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
