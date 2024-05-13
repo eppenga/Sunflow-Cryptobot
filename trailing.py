@@ -115,7 +115,7 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
             all_buys     = result[1]
             all_sells    = result[2]
             transaction  = result[3]
-            profit       = defs.precision(result[4], info['quotePrecision'])
+            profit       = result[4]
         
             # Fill in average price and report message
             if active_order['side'] == "Buy":
@@ -184,18 +184,22 @@ def calculate_profit(transaction, all_sells, info):
     # Initialize variables
     sells  = 0
     buys   = 0
-    fees   = 0
     profit = 0
+    fees          = {}
+    fees['total'] = 0
     
     # Logic
     sells  = transaction['cumExecValue']
     buys   = sum(item['cumExecValue'] for item in all_sells)
-    #fees   = sum(item['cumExecFee'] for item in all_sells)    # **** CHECK *** is trading fee in quote or base?
-    profit = sells - buys - fees
+    #fees['buy']   = sum(item['cumExecFee'] for item in all_sells)    # **** CHECK *** is trading fee in quote or base?
+    #fees['sell']  = transaction['cumExecFee']
+    #fees['total'] = fees['buy'] + fees['sell']
+    profit = sells - buys - fees['total']
+    profit = defs.precision(profit, info['quotePrecision'])
     
     # Output to stdout for debug
     if debug:
-        print(defs.now_utc()[1] + f"Total sells were {sells} {info['quoteCoin']}, buys were {buys} {info['quoteCoin']} and fees were {fees} {info['quoteCoin']}, giving a profit of {profit} {info['quoteCoin']}\n")
+        print(defs.now_utc()[1] + f"Total sells were {sells} {info['quoteCoin']}, buys were {buys} {info['quoteCoin']} and fees were {fees['total']} {info['quoteCoin']}, giving a profit of {profit} {info['quoteCoin']}\n")
     
     # Return profit
     return profit
