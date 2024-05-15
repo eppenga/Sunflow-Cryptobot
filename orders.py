@@ -175,6 +175,12 @@ def transaction_from_id(orderId):
 # Initialize active order for initial buy or sell
 def initialize_trigger(spot, active_order, info):
 
+    # Debug
+    debug = False
+
+    # Debug
+    print(defs.now_utc()[1] + f"initialize_trigger: Fluctuation distance {active_order['fluctuation']}% and price {spot} {info['quoteCoin']}\n")
+
     # Check side buy or sell
     if active_order['side'] == "Buy":
         active_order['qty']     = info['minBuyQuote']
@@ -226,13 +232,13 @@ def check_sell(spot, profit, active_order, all_buys, info):
     return all_sells, qty, can_sell, rise_to
         
 # New buy order
-def buy(symbol, spot, active_order, all_buys, prices):
+def buy(symbol, spot, active_order, all_buys, prices, info):
 
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
 
     # Get latest symbol info
-    info = preload.get_info(symbol, spot, config.multiplier)
+    #info = preload.get_info(symbol, spot, config.multiplier) #*** CHECK *** Better do this when it does not delay execution
 
     # Initialize active_order
     active_order['side']     = "Buy"
@@ -472,7 +478,13 @@ def distance(active_order, prices):
                 else:
                     active_order['fluctuation'] = active_order['distance']
 
+            # Temp debug
+            if debug:
+                print(defs.now_utc()[1] + "Orders: distance: debug: Default distance    : " + str(round(active_order['distance'], 4)))
+                print(defs.now_utc()[1] + "Orders: distance: debug: Wave distance       : " + str(round(active_order['wave'], 4)))
+                print(defs.now_utc()[1] + "Orders: distance: debug: Fluctuation distance: " + str(round(active_order['fluctuation'], 4)) +  "\n")
 
+            
         ''' Let's remove these fail safes for now 
 
         # Always keep wave at minimum distance
@@ -482,12 +494,13 @@ def distance(active_order, prices):
         # Double check, not really efficient, but it works
         if active_order['fluctuation'] < active_order['distance']:
             active_order['fluctuation'] = active_order['distance']
-                
+
         # Output to stdout
-        print(defs.now_utc()[1] + "Orders: distance: Using wave data via fixed to set trigger price distance to ", end="")
+        print(defs.now_utc()[1] + "Orders: distance: Using wave data to set trigger price distance to ", end="")
         print(str(round(active_order['fluctuation'], 4)) + "%\n")
 
         '''
+
 
     # Return modified data
     return active_order

@@ -261,9 +261,11 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
 
     # Check if trailing is not already executed and if so wait for next tick
     if def_trail_active:
-        #if debug:
-        print(defs.now_utc()[1] + "Trailing: trail: function is busy, waiting to end\n")
+        print(defs.now_utc()[1] + "Trailing: trail: function is busy, no further action required\n")
         return active_order, all_buys, use_delay
+    else:
+        if debug:
+            print(defs.now_utc()[1] + "Trailing: trail: function started\n")
 
     # Initialize variables
     result           = ()
@@ -322,7 +324,7 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
 
             if amend_code == 1:
                 # Order slipped, close trailing process
-                print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
+                print(defs.now_utc()[1] + f"Trailing: trail: {active_order['side']} order slipped, we keep buys database as is and stop trailing\n")
                 defs.notify(f"{active_order['side']} order slipped, we keep buys database as is and stop trailing for {symbol}", 1)
                 result       = close_trail(active_order, all_buys, all_sells, info)
                 active_order = result[0]
@@ -341,6 +343,8 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
     # Reset all_buys and allow function to be run again
     all_buys         = all_buys_new
     def_trail_active = False
+    if debug:
+        print(defs.now_utc()[1] + "Trailing: trail: function ended\n")
 
     # Debug output active_order and error
     if debug:
@@ -377,6 +381,8 @@ def amend_quantity_sell(symbol, active_order, info):
         if "(ErrCode: 170213)" in exception:
             # Order slipped
             error_code = 1
+        elif "(ErrCode: 10001)" in exception:
+            error_code = 2
         else:
             # Any other error
             error_code = 100

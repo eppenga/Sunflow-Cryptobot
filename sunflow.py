@@ -173,7 +173,7 @@ def handle_ticker(message):
         # Spiking, when not buying or selling, let's buy and see what happens :) *** CHECK *** Might want to change this to downwards spikes (negative pricechange)
         if not active_order['active'] and spiking:
             print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
-            result       = orders.buy(symbol, spot, active_order, all_buys, prices)
+            result       = orders.buy(symbol, spot, active_order, all_buys, prices, info)
             active_order = result[0]
             all_buys     = result[1]
             
@@ -256,14 +256,19 @@ def handle_ticker(message):
 
                     if amend_code == 1:
                         # Order slipped, close trailing process
-                        print(defs.now_utc()[1] + "Trailing: trail: Order slipped, we keep buys database as is and stop trailing\n")
-                        defs.notify(f"Sell order slipped, we keep buys database as is and stop trailing for {symbol}", 1)
+                        print(defs.now_utc()[1] + "Trailing: trail: Sell order slipped, we keep all buys database as is and stop trailing\n")
+                        defs.notify(f"Sell order slipped, we keep all buys database as is and stop trailing for {symbol}", 1)
                         result       = trailing.close_trail(active_order, all_buys, all_sells, info)
                         active_order = result[0]
                         all_buys     = result[1]
                         all_sells    = result[2]
                         # Revert old situation
                         all_sells_new = all_sells
+
+                    if amend_code == 2:
+                        # Quantity could not be changed, do nothing
+                        print(defs.now_utc()[1] + "Trailing: trail: Sell order quantity could not be changed, doing nothing\n")
+                        defs.notify(f"Trailing: trail: Sell order quantity could not be changed, doing nothing for {symbol}", 1)
 
                     if amend_code == 100:
                         # Critical error, let's log it and revert
@@ -461,7 +466,7 @@ def buy_matrix(spot, interval):
 
         # Determine distance of trigger price and execute buy decission
         if can_buy:
-            result       = orders.buy(symbol, spot, active_order, all_buys, prices)
+            result       = orders.buy(symbol, spot, active_order, all_buys, prices, info)
             active_order = result[0]
             all_buys     = result[1]
 
