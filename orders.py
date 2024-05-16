@@ -221,7 +221,7 @@ def check_sell(spot, profit, active_order, all_buys, info):
     qty = defs.precision(qty, info['basePrecision'])
     
     # Can sell or not
-    if all_sells:
+    if all_sells and qty > 0:
         can_sell = True
         print(defs.now_utc()[1] + "Orders: check_sell: Can sell " + str(counter) + " orders for a total of " + str(qty) + " " + info['baseCoin'] + "\n")
     else:
@@ -362,6 +362,9 @@ def distance(active_order, prices):
     price_distance      = 0       # Price distance between start and current price in percentage
     fluc_price_distance = 0       # Price distance used in calculations
     
+    # Store previous fluctuation
+    previous_flucation = active_order['fluctuation']
+    
     # By default fluctuation equals distance
     active_order['fluctuation'] = active_order['distance']
     
@@ -382,7 +385,8 @@ def distance(active_order, prices):
 
         # Calculate trigger price distance percentage
         active_order['fluctuation'] = (fluctuation / scaler) + active_order['distance']
-        print(defs.now_utc()[1] + "Orders: distance: Using EMA to set trigger price distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+        if previous_flucation != active_order['fluctuation']:
+            print(defs.now_utc()[1] + "Orders: distance: Using EMA calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
     
     # Use spot to set distance
     elif active_order['wiggle'] == "Spot" or active_order['wiggle'] == "Wave":
@@ -415,12 +419,14 @@ def distance(active_order, prices):
         
         # Only output for spot
         if active_order['wiggle'] == "Spot":
-            print(defs.now_utc()[1] + "Orders: distance: Using spot calculated trigger price distance is " + str(round(active_order['fluctuation'], 4)) + "%\n")
+            if previous_flucation != active_order['fluctuation']:
+                print(defs.now_utc()[1] + "Orders: distance: Using spot calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Use fixed from config file to set distance        
     elif active_order['wiggle'] != "Wave":
         active_order['fluctuation'] = active_order['distance']
-        print(defs.now_utc()[1] + "Orders: distance: Using fixed calculated trigger price distance is " + str(round(active_order['fluctuation'], 4)) + "%\n")
+        if previous_flucation != active_order['fluctuation']:
+            print(defs.now_utc()[1] + "Orders: distance: Using fixed calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Use wave to set distance
     if active_order['wiggle'] == "Wave":
@@ -498,7 +504,8 @@ def distance(active_order, prices):
         '''
 
         # Output to stdout
-        print(defs.now_utc()[1] + "Orders: distance: Using wave calculated trigger price distance is " + str(round(active_order['fluctuation'], 4)) + "%\n")
+        if previous_flucation != active_order['fluctuation']:
+            print(defs.now_utc()[1] + "Orders: distance: Using wave calculated trigger price distance is " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Return modified data
     return active_order
