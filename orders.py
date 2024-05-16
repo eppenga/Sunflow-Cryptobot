@@ -415,12 +415,12 @@ def distance(active_order, prices):
         
         # Only output for spot
         if active_order['wiggle'] == "Spot":
-            print(defs.now_utc()[1] + "Orders: distance: Using spot to set trigger price distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+            print(defs.now_utc()[1] + "Orders: distance: Using spot calculated trigger price distance is " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Use fixed from config file to set distance        
     elif active_order['wiggle'] != "Wave":
         active_order['fluctuation'] = active_order['distance']
-        print(defs.now_utc()[1] + "Orders: distance: Using fixed data to set trigger distance to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+        print(defs.now_utc()[1] + "Orders: distance: Using fixed calculated trigger price distance is " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Use wave to set distance
     if active_order['wiggle'] == "Wave":
@@ -495,12 +495,10 @@ def distance(active_order, prices):
         if active_order['fluctuation'] < active_order['distance']:
             active_order['fluctuation'] = active_order['distance']
 
-        # Output to stdout
-        print(defs.now_utc()[1] + "Orders: distance: Using wave data to set trigger price distance to ", end="")
-        print(str(round(active_order['fluctuation'], 4)) + "%\n")
-
         '''
 
+        # Output to stdout
+        print(defs.now_utc()[1] + "Orders: distance: Using wave calculated trigger price distance is " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Return modified data
     return active_order
