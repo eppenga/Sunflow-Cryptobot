@@ -79,7 +79,6 @@ def remove(orderid, all_buys):
     if not found_order:
         message = "Database: remove: The order with ID " + str(orderid) + " which we were about to remove was not found!"
         print(defs.now_utc()[1] + message + "\n")
-        defs.log_error(message)
     else:
         print(defs.now_utc()[1] + "Database: remove: Order with ID " + str(orderid) + " removed from all buys database!\n")
     

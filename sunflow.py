@@ -282,7 +282,7 @@ def handle_ticker(message):
 
             # Work as a true gridbot when only spread is used
             if use_spread['enabled'] and not use_indicators['enabled'] and not use_orderbook['enabled']:
-                buy_matrix(new_spot, intervals[1])
+                buy_matrix(new_spot, active_order, all_buys, intervals[1])
 
         # Always set new spot price
         spot = ticker['lastPrice']
@@ -345,7 +345,7 @@ def handle_kline(message, interval):
             klines[interval] = defs.update_kline(kline, klines[interval])
         
         # Run buy matrix
-        buy_matrix(spot, interval)
+        buy_matrix(spot, active_order, all_buys, interval)
 
     # Report error
     except Exception as e:
@@ -425,10 +425,10 @@ def handle_orderbook(message):
         traceback.print_tb(e.__traceback__)
 
 # Check if we can buy the based on signals
-def buy_matrix(spot, interval):
+def buy_matrix(spot, active_order, all_buys, interval):
 
     # Declare some variables global
-    global active_order, all_buys, indicators_advice
+    global indicators_advice
 
     # Initialize variables
     can_buy                = False

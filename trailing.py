@@ -157,7 +157,7 @@ def check_spiker(symbol, active_order, order, all_buys):
                 # Reset trailing sell
                 active_order['active'] = False
                 # Remove order from exchange
-                orders.cancel(symbol, active_order['orderid'])
+                orders.cancel(symbol, active_order['orderid'])[0]
     else:
         # Did it spike and was forgotten when buying
         if transaction['triggerPrice'] < active_order['current']:
@@ -170,7 +170,7 @@ def check_spiker(symbol, active_order, order, all_buys):
                 # Remove order from all buys
                 all_buys = database.remove(active_order['orderid'], all_buys)
                 # Remove order from exchange
-                orders.cancel(symbol, active_order['orderid'])
+                orders.cancel(symbol, active_order['orderid'])[0]
         
     # Return data
     return active_order, all_buys
