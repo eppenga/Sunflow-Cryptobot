@@ -266,7 +266,7 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices, use_del
     # Check if trailing is not already executed and if so wait for next tick
     if def_trail_active:
         trail_counter = trail_counter + 1
-        if trail_counter < 10:
+        if trail_counter < 25:
             print(defs.now_utc()[1] + f"Trailing: trail: function is busy, for the {trail_counter} time, no further action required\n")
         else:
             print(defs.now_utc()[1] + f"Trailing: trail: function is busy, for the {trail_counter} time, resetting race condition checker\n")
