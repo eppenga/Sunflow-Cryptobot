@@ -8,7 +8,7 @@ from pybit.unified_trading import HTTP
 import importlib, sys
 
 # Load internal libraries
-import argparse, database, defs, orders
+import argparse, database, defs, distance, orders
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
@@ -270,6 +270,7 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices, use_del
             print(defs.now_utc()[1] + f"Trailing: trail: function is busy, for the {trail_counter} time, no further action required\n")
         else:
             print(defs.now_utc()[1] + f"Trailing: trail: function is busy, for the {trail_counter} time, resetting race condition checker\n")
+            trail_counter    = 0
             def_trail_active = False
         return active_order, all_buys, use_delay
     else:
@@ -300,7 +301,7 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices, use_del
         active_order['previous'] = active_order['current']
                     
         # Determine distance of trigger price
-        active_order = orders.distance(active_order, prices)
+        active_order = distance.calculate(active_order, prices)
                     
         # Calculate new trigger price
         if active_order['side'] == "Sell":
