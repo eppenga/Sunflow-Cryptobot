@@ -35,6 +35,10 @@ session = HTTP(
     return_response_headers = True
 )
 
+# Initialize variables to prevent race conditions
+def_buy_active  = False
+def_sell_active = False
+
 # Get orderId from exchange order
 def order_id(order):
     
@@ -179,7 +183,7 @@ def initialize_trigger(spot, active_order, info):
     debug = False
 
     # Debug
-    print(defs.now_utc()[1] + f"initialize_trigger: Fluctuation distance {active_order['fluctuation']}% and price {spot} {info['quoteCoin']}\n")
+    print(defs.now_utc()[1] + f"initialize_trigger: Fluctuation distance {round(active_order['fluctuation'], 4)}% and price {spot} {info['quoteCoin']}\n")
 
     # Check side buy or sell
     if active_order['side'] == "Buy":
@@ -234,11 +238,22 @@ def check_sell(spot, profit, active_order, all_buys, info):
 # New buy order
 def buy(symbol, spot, active_order, all_buys, prices, info):
 
+    # Define global variables
+    global def_buy_active
+
+    # Prevent race condition
+    if def_buy_active:
+        print(defs.now_utc()[1] + "Orders: buy: function is busy, no further action required\n")
+        return active_order, all_buys
+
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
 
     # Get latest symbol info
     #info = preload.get_info(symbol, spot, config.multiplier) #*** CHECK *** Better do this when it does not delay execution
+
+    # Set race condition
+    def_buy_active = True
 
     # Initialize active_order
     active_order['side']     = "Buy"
@@ -294,14 +309,28 @@ def buy(symbol, spot, active_order, all_buys, prices, info):
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: buy: Starting trailing buy\n")
     
+    # Reset race condition
+    def_buy_active = False
+    
     # Return trailing order and new buy order database
     return active_order, all_buys
     
 # New sell order
 def sell(symbol, spot, active_order, prices, info):
 
+    # Define global variables
+    global def_buy_active
+
+    # Prevent race condition
+    if def_sell_active:
+        print(defs.now_utc()[1] + "Orders: sell: function is busy, no further action required\n")
+        return active_order
+
     # Output to stdout
     print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
+
+    # Set race condition
+    def_buy_active = True
 
     # Initialize active_order
     active_order['side']     = "Sell"
@@ -345,6 +374,9 @@ def sell(symbol, spot, active_order, prices, info):
     message = f"Sell order opened for {active_order['qty']} {info['baseCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
     print(defs.now_utc()[1] + message + "\n")
     defs.notify(message + f" for {symbol}", 1)
+
+    # Reset race condition
+    def_buy_active = False
     
     # Return data
     return active_order
@@ -386,7 +418,7 @@ def distance(active_order, prices):
         # Calculate trigger price distance percentage
         active_order['fluctuation'] = (fluctuation / scaler) + active_order['distance']
         if previous_flucation != active_order['fluctuation']:
-            print(defs.now_utc()[1] + "Orders: distance: Using EMA calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+            print(defs.now_utc()[1] + "Orders: distance: EMA calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
     
     # Use spot to set distance
     elif active_order['wiggle'] == "Spot" or active_order['wiggle'] == "Wave":
@@ -420,13 +452,13 @@ def distance(active_order, prices):
         # Only output for spot
         if active_order['wiggle'] == "Spot":
             if previous_flucation != active_order['fluctuation']:
-                print(defs.now_utc()[1] + "Orders: distance: Using spot calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+                print(defs.now_utc()[1] + "Orders: distance: Spot calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Use fixed from config file to set distance        
     elif active_order['wiggle'] != "Wave":
         active_order['fluctuation'] = active_order['distance']
         if previous_flucation != active_order['fluctuation']:
-            print(defs.now_utc()[1] + "Orders: distance: Using fixed calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+            print(defs.now_utc()[1] + "Orders: distance: Fixed calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Use wave to set distance
     if active_order['wiggle'] == "Wave":
@@ -505,7 +537,7 @@ def distance(active_order, prices):
 
         # Output to stdout
         if previous_flucation != active_order['fluctuation']:
-            print(defs.now_utc()[1] + "Orders: distance: Using wave calculated trigger price distance is " + str(round(active_order['fluctuation'], 4)) + "%\n")
+            print(defs.now_utc()[1] + "Orders: distance: Wave calculated trigger price distance is " + str(round(active_order['fluctuation'], 4)) + "%\n")
 
     # Return modified data
     return active_order

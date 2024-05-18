@@ -143,7 +143,7 @@ def register_sell(all_buys, all_sells):
     unique_ids = len(sell_order_ids)
         
     if unique_ids == 0:
-        defs.log_error("\n0 orders in trailing sell when trying to register\n")
+        print(defs.now_utc()[1] + "Database: register_sell: No orders in trailing sell when trying to register\n")
     
     # Save to database
     save(filtered_buys)

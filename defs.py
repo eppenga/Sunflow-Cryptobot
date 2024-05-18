@@ -165,7 +165,7 @@ def log_error(exception):
 
     # Output debug
     if debug:
-        print(defs.now_utc()[1] + "Defs: log_exchange: Debug")
+        print(defs.now_utc()[1] + "Defs: log_error: Debug")
         print("Exception RAW:")
         print(exception)
         print()
@@ -196,9 +196,10 @@ def log_error(exception):
     
     # Terminate hard
     if halt_execution:
-        print(defs.now_utc()[1] + "Defs: error: *** Termination program, error to severe! ***\n")
+        print(defs.now_utc()[1] + "Defs: error: *** Terminating Sunflow, error to severe! ***\n")
         print(exception)
         defs.notify("Terminating Sunflow, error to severe!", 1)
+        defs.notify(exception, 1)
         exit()
 
 # Outputs a (Pass) or (Fail)
@@ -325,16 +326,16 @@ def get_closest_index(prices, span):
     # Return closest index
     return closest_index
 
-# Calculate price changes for spike detection 
-def waves_spikes(prices, use_data, select):
+# Calculate price changes to get wave length 
+def waves(prices, use_waves):
 
     # Initialize variables
     debug   = False
     spiking = False
 
     # Time calculations
-    latest_time = prices['time'][-1]             # Get the latest time
-    span = latest_time - use_data['timeframe']   # timeframe in milliseconds
+    latest_time = prices['time'][-1]              # Get the latest time
+    span = latest_time - use_waves['timeframe']   # timeframe in milliseconds
 
     # Get the closest index in the time {timeframe}
     closest_index = get_closest_index(prices, span)
@@ -347,20 +348,13 @@ def waves_spikes(prices, use_data, select):
         price_change_perc = (price_change / prices['price'][closest_index]) * 100
 
     # Apply wave multiplier
-    if select == "Wave":
-        price_change_perc = price_change_perc * use_data['multiplier']
+    price_change_perc = price_change_perc * use_waves['multiplier']
 
-    # Output to stdout
-    if select == "Spike":
-        if abs(price_change_perc) > use_data['threshold']:
-            print(defs.now_utc()[1] + "Defs: waves_spikes: *** SPIKE DETECTED ***\n")
-            spiking = True 
-
-    if debug or spiking:
-        print(defs.now_utc()[1] + "Defs: waves_spikes: Price change in the last " + str(round((use_data['timeframe'] / 1000), 2)) +  " seconds is " + str(round(price_change_perc, 2)) + "%\n")
+    if debug:
+        print(defs.now_utc()[1] + "Defs: wave: Price change in the last " + str(round((use_waves['timeframe'] / 1000), 2)) +  " seconds is " + str(round(price_change_perc, 2)) + "%\n")
 
     # Return price change percentage
-    return price_change_perc, spiking
+    return price_change_perc
 
 # Deal with API rate limit
 def rate_limit(response):

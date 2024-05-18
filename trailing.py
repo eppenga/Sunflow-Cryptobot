@@ -38,13 +38,14 @@ session = HTTP(
 stuck_fresh      = True
 stuck_counter    = 0
 spiker_counter   = 0
+trail_counter    = 0
 def_trail_active = False
    
 # Check if we can do trailing buy or sell
-def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
+def check_order(symbol, spot, active_order, all_buys, all_sells, use_delay, info):
 
     # Declare some variables global
-    global stuck_fresh, stuck_counter, spiker_counter
+    global stuck_fresh, stuck_counter, spiker_counter, def_trail_active
     
     # Initialize variables
     result         = ()
@@ -59,12 +60,12 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
             do_check_order = True
 
     # Check every minute, sometimes orders get stuck
-    if stuck_fresh:
-        stuck_fresh = False
-        stuck_counter = defs.now_utc()[4]
     current_time = defs.now_utc()[4]
+    if stuck_fresh:
+        stuck_fresh   = False
+        stuck_counter = defs.now_utc()[4]
     if current_time - stuck_counter > 10000:
-        print(defs.now_utc()[1] + "Trailing: check_orders: Doing an additional check on trailing order\n")
+        print(defs.now_utc()[1] + "Trailing: check_order: Doing an additional check on trailing order\n")
         stuck_fresh    = True
         stuck_counter  = 0
         do_check_order = True
@@ -73,10 +74,10 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
     if do_check_order:
 
         # Output to stdout
-        print(defs.now_utc()[1] + "Trailing: check_orders: Get open order from exchange\n")
+        print(defs.now_utc()[1] + "Trailing: check_order: Get open order from exchange\n")
 
         # Has trailing endend, check if order does still exist
-        message = defs.now_utc()[1] + "Trailing: check_orders: session: get_open_orders\n"
+        message = defs.now_utc()[1] + "Trailing: check_order: session: get_open_orders\n"
         print(message)
         order = {}
         try:
@@ -86,6 +87,9 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
                 orderID  = str(active_order['orderid'])
             )
         except Exception as e:
+            # Reset race condition for trail function
+            def_trail_active = False
+            # Log error
             defs.log_error(e)
 
         # Check API rate limit and log data if possible
@@ -132,7 +136,7 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
 
         # Check if symbol is spiking
         else:
-            result       = check_spiker(symbol, active_order, order, all_buys)
+            result       = check_spike(symbol, spot, active_order, order, all_buys)
             active_order = result[0]
             all_buys     = result[1]
 
@@ -140,7 +144,7 @@ def check_order(symbol, active_order, all_buys, all_sells, use_delay, info):
     return active_order, all_buys, use_delay
 
 # Checks if the trailing error spiked
-def check_spiker(symbol, active_order, order, all_buys):
+def check_spike(symbol, spot, active_order, order, all_buys):
 
     # Declare some variables global
     global spiker_counter
@@ -149,10 +153,10 @@ def check_spiker(symbol, active_order, order, all_buys):
     transaction = orders.decode(order)
     if active_order['side'] == "Sell":
         # Did it spike and was forgotten when selling
-        if transaction['triggerPrice'] > active_order['current']:
+        if transaction['triggerPrice'] > spot:
             spiker_counter = spiker_counter + 1
             # It spiked when selling
-            if spiker_counter == 3:
+            if spiker_counter > 3:
                 print(defs.now_utc()[1] + "Trailing: check_order: " + active_order['side'] + ": *** It spiked, yakes! ***\n")
                 # Reset trailing sell
                 active_order['active'] = False
@@ -160,10 +164,10 @@ def check_spiker(symbol, active_order, order, all_buys):
                 orders.cancel(symbol, active_order['orderid'])[0]
     else:
         # Did it spike and was forgotten when buying
-        if transaction['triggerPrice'] < active_order['current']:
+        if transaction['triggerPrice'] < spot:
             spiker_counter = spiker_counter + 1
             # It spiked when buying
-            if spiker_counter == 3:
+            if spiker_counter > 3:
                 print(defs.now_utc()[1] + "Trailing: check_order: " + active_order['side'] + ": *** It spiked, yakes! ***\n")
                 # Reset trailing buy
                 active_order['active'] = False
@@ -251,17 +255,22 @@ def close_trail(active_order, all_buys, all_sells, info):
     return active_order, all_buys, all_sells, transaction, profit
 
 # Trailing buy or sell
-def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
+def trail(symbol, spot, active_order, info, all_buys, all_sells, prices, use_delay):
 
     # Debug
     debug = False
 
     # Define global variables
-    global def_trail_active
+    global def_trail_active, trail_counter
 
     # Check if trailing is not already executed and if so wait for next tick
     if def_trail_active:
-        print(defs.now_utc()[1] + "Trailing: trail: function is busy, no further action required\n")
+        trail_counter = trail_counter + 1
+        if trail_counter < 10:
+            print(defs.now_utc()[1] + f"Trailing: trail: function is busy, for the {trail_counter} time, no further action required\n")
+        else:
+            print(defs.now_utc()[1] + f"Trailing: trail: function is busy, for the {trail_counter} time, resetting race condition checker\n")
+            def_trail_active = False
         return active_order, all_buys, use_delay
     else:
         if debug:
@@ -279,7 +288,7 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
         print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Checking if we can do trailing\n")
 
     # Check if the order still exists
-    result       = check_order(symbol, active_order, all_buys, all_sells, use_delay, info)
+    result       = check_order(symbol, spot, active_order, all_buys, all_sells, use_delay, info)
     active_order = result[0]
     all_buys_new = result[1]
     use_delay    = result[2]
@@ -332,9 +341,12 @@ def trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay):
                 all_sells    = result[2]
                 # Revert old situation
                 all_buys_new = all_buys
+                # Just for safety remove the order although it might not exist anymore *** CHECK *** Might not be correct this action, test!
+                orders.cancel(symbol, active_order['orderid'])
 
             if amend_code == 100:
                 # Critical error, let's log it and revert
+                def_trail_active = False
                 all_buys_new = all_buys
                 print(defs.now_utc()[1] + "Trailing: trail: Critical error, logging to file\n")
                 defs.notify(f"While trailing a critical error occurred for {symbol}", 1)

@@ -66,13 +66,6 @@ use_orderbook['enabled']     = config.orderbook_enabled       # Use orderbook as
 use_orderbook['minimum']     = config.orderbook_minimum       # Minimum orderbook percentage
 use_orderbook['maximum']     = config.orderbook_maximum       # Maximum orderbook percentage
 
-# Spike detection
-use_spikes                   = {}                             # Spikes
-use_spikes['enabled']        = config.spike_enabled           # Use spike detection as buy trigger
-use_spikes['timeframe']      = config.spike_timeframe         # Timeframe in ms to measure spikes
-use_spikes['threshold']      = config.spike_threshold         # Threshold to reach within timeframe as percentage
-use_spikes['multiplier']     = 1                              # Multiply spike percentage by this multiplier (and to keep compatible with waves)
-
 # Wave measurement
 use_waves                    = {}                             # Waves
 use_waves['enabled']         = False                          # Use waves in trigger price distance calculation
@@ -126,6 +119,9 @@ indicators_advice[intervals[1]] = {'result': True, 'value': 0, 'level': 'Neutral
 indicators_advice[intervals[2]] = {'result': True, 'value': 0, 'level': 'Neutral'}
 indicators_advice[intervals[3]] = {'result': True, 'value': 0, 'level': 'Neutral'}
 
+# Prevent race condition
+def_buy_matrix_active           = False
+
 ### Functions ###
 
 # Handle messages to keep tickers up to date
@@ -142,7 +138,6 @@ def handle_ticker(message):
 
         # Initialize variables
         ticker                 = {}
-        spiking                = False
         amend_code             = 0
         amend_error            = ""
         result                 = ()
@@ -164,24 +159,13 @@ def handle_ticker(message):
 
         # Calculate wave, also used in trailing when distance set to wave
         if use_waves['enabled']:
-            active_order['wave'] = defs.waves_spikes(prices, use_waves, "Wave")[0]
-
-        # Determine if spiking
-        if use_spikes['enabled']:
-            spiking = defs.waves_spikes(prices, use_spikes, "Spike")[1]
-
-        # Spiking, when not buying or selling, let's buy and see what happens :) *** CHECK *** Might want to change this to downwards spikes (negative pricechange)
-        if not active_order['active'] and spiking:
-            print(defs.now_utc()[1] + "Sunflow: handle_ticker: Spike detected, initiate buying!\n")
-            result       = orders.buy(symbol, spot, active_order, all_buys, prices, info)
-            active_order = result[0]
-            all_buys     = result[1]
-            
+            active_order['wave'] = defs.waves(prices, use_waves)
+           
         # Run trailing if active
         if active_order['active']:
             active_order['current'] = ticker['lastPrice']
             active_order['status']  = 'Trailing'
-            result       = trailing.trail(symbol, active_order, info, all_buys, all_sells, prices, use_delay)
+            result       = trailing.trail(symbol, ticker['lastPrice'], active_order, info, all_buys, all_sells, prices, use_delay)
             active_order = result[0]
             all_buys     = result[1]
             use_delay    = result[2]
@@ -264,7 +248,9 @@ def handle_ticker(message):
                         all_sells    = result[2]
                         # Revert old situation
                         all_sells_new = all_sells
-
+                        # Just for safety remove the order although it might not exist anymore *** CHECK *** Might not be correct this action, test!
+                        orders.cancel(symbol, active_order['orderid'])
+                        
                     if amend_code == 2:
                         # Quantity could not be changed, do nothing
                         print(defs.now_utc()[1] + "Trailing: trail: Sell order quantity could not be changed, doing nothing\n")
@@ -281,8 +267,8 @@ def handle_ticker(message):
                 #all_sells = all_sells_new
 
             # Work as a true gridbot when only spread is used
-            if use_spread['enabled'] and not use_indicators['enabled'] and not use_orderbook['enabled']:
-                buy_matrix(new_spot, active_order, all_buys, intervals[1])
+            if use_spread['enabled'] and not use_indicators['enabled'] and not use_orderbook['enabled'] and not active_order['active']:
+                active_order = buy_matrix(new_spot, active_order, all_buys, intervals[1])
 
         # Always set new spot price
         spot = ticker['lastPrice']
@@ -345,7 +331,7 @@ def handle_kline(message, interval):
             klines[interval] = defs.update_kline(kline, klines[interval])
         
         # Run buy matrix
-        buy_matrix(spot, active_order, all_buys, interval)
+        active_order = buy_matrix(spot, active_order, all_buys, interval)
 
     # Report error
     except Exception as e:
@@ -428,7 +414,14 @@ def handle_orderbook(message):
 def buy_matrix(spot, active_order, all_buys, interval):
 
     # Declare some variables global
-    global indicators_advice
+    global indicators_advice, def_buy_matrix_active
+    
+    # Prevent race condition
+    if def_buy_matrix_active:
+        print(defs.now_utc()[1] + "Sunflow: buy_matrix: function is busy, no further action required\n") 
+
+    # Set race condition
+    def_buy_matrix_active = True
 
     # Initialize variables
     can_buy                = False
@@ -469,6 +462,12 @@ def buy_matrix(spot, active_order, all_buys, interval):
             result       = orders.buy(symbol, spot, active_order, all_buys, prices, info)
             active_order = result[0]
             all_buys     = result[1]
+
+    # Reset race condition
+    def_buy_matrix_active = False
+    
+    # Return active_order
+    return active_order
 
 # Prechecks to see if we can start sunflow
 def prechecks():
