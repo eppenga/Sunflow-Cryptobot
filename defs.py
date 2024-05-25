@@ -403,6 +403,7 @@ def rate_limit(response):
 # Report ticker info to stdout
 def ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info):
 
+    # Create message
     message = "Price went "
     if new_spot > spot:
         message += "up"

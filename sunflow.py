@@ -514,6 +514,7 @@ spot                 = ticker['lastPrice']
 info                 = preload.get_info(symbol, spot, multiplier)
 all_buys             = database.load(config.dbase_file, info) 
 all_buys             = preload.check_orders(all_buys, info)
+all_buys             = orders.rebalance(all_buys, info)
 prices               = preload.get_prices(symbol, limit)
 
 # Announce start
