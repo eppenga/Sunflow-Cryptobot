@@ -518,7 +518,7 @@ prices               = preload.get_prices(symbol, limit)
 
 # Announce start
 print("\n*** Starting ***\n")
-defs.announce(f"Sunflow started at {defs.now_utc()[0]}", True, 1)
+defs.announce(f"Sunflow started at {defs.now_utc()[0]} UTC", True, 1)
 
 
 ### Websockets ###
