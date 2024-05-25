@@ -503,7 +503,7 @@ if use_spread['enabled']:
 print(f"Limit     : {limit}\n")
 
 # Preload all requirements
-print("*** Preloading ***\n")
+print("\n*** Preloading ***\n")
 
 preload.check_files()
 if intervals[1] !=0  : klines[intervals[1]] = preload.get_klines(symbol, intervals[1], limit)
@@ -517,7 +517,8 @@ all_buys             = preload.check_orders(all_buys, info)
 prices               = preload.get_prices(symbol, limit)
 
 # Announce start
-defs.announce("*** Starting ***", True, 1)
+print("\n*** Starting ***\n")
+defs.announce(f"Sunflow started at {defs.now_utc()[0]}", True, 1)
 
 
 ### Websockets ###
