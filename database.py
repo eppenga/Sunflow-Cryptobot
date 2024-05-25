@@ -3,7 +3,7 @@
 # Do database stuff
 
 # Load libraries
-from config_loader import load_config
+from loader import load_config
 import defs
 import json
 

@@ -3,7 +3,7 @@
 # Order functions
 
 # Load libraries
-from config_loader import load_config
+from loader import load_config
 from pybit.unified_trading import HTTP
 import database, defs, distance
 

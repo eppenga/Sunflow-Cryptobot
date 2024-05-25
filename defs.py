@@ -3,10 +3,10 @@
 # General functions
 
 # Load libraries
-from config_loader import load_config
+from loader import load_config
 from pathlib import Path
 from datetime import datetime, timezone
-import  defs, indicators
+import defs, indicators
 import apprise, inspect, math, time
 
 # Load config
