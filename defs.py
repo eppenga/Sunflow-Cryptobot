@@ -277,21 +277,21 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
         if intervals[1] != 0:
             if indicators_advice[intervals[1]]['result']:
                 do_buy[1] = True
-            message += f"{intervals[1]}m: f{indicators_advice[intervals[1]]['value']:.2f} "
+            message += f"{intervals[1]}m: {indicators_advice[intervals[1]]['value']:.2f} "
             message += report_result(indicators_advice[intervals[1]]['result']) + ", "
         else:
             do_buy[1] = True
         if intervals[2] != 0:
             if indicators_advice[intervals[2]]['result']:
                 do_buy[2] = True
-            message += f"{intervals[2]}m: f{indicators_advice[intervals[2]]['value']:.2f} "
+            message += f"{intervals[2]}m: {indicators_advice[intervals[2]]['value']:.2f} "
             message += report_result(indicators_advice[intervals[2]]['result']) + ", "
         else:
             do_buy[2] = True
         if intervals[3] != 0:
             if indicators_advice[intervals[3]]['result']:
                 do_buy[3] = True
-            message +=f"{intervals[3]}m: f{indicators_advice[intervals[3]]['value']:.2f} "
+            message +=f"{intervals[3]}m: {indicators_advice[intervals[3]]['value']:.2f} "
             message += report_result(indicators_advice[intervals[3]]['result']) + ", "                
         else:
             do_buy[3] = True
