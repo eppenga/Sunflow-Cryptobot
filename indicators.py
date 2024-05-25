@@ -2,27 +2,24 @@
 #
 # Calculate technical indicators
 
-# Load external libraries
-import time
-import pandas as pd
-import pandas_ta as ta
-
-# Load internal libraries
+# Load libraries
+import pandas as pd, pandas_ta as ta
 import defs
-
-# Debug
-debug = False
 
 # Calculcate indicators based on klines
 def calculate(klines, spot):
     
+    # Debug
+    debug = False
+    
     # Initialize variables
     indicators = {}
     df = pd.DataFrame(klines)
-    
+
+    # Calculate start and end times    
     if debug:
-        print(defs.now_utc()[1] + "Indicators: calculate: Calculating indicators")
         start_time = defs.now_utc()[4]
+        defs.announce("Calculating indicators")
         
     # Indicators: Calculate various Oscillators
     df['RSI']         = ta.rsi(df['close'], length=14)
@@ -33,7 +30,7 @@ def calculate(klines, spot):
     #df['BullBear']
     df['UO']          = ta.uo(df['high'], df['low'], df['close'], fast=7, medium=14, slow=28)
 
-    # Indicator: Stochastic %K Oscillator
+    # Indicator: Stochastic % K Oscillator
     stoch_k           = {}
     stoch_k_result    = ta.stoch(df['high'], df['low'], df['close'], k=14, d=3, smooth_k=3)
     stoch_k['k']      = stoch_k_result['STOCHk_14_3_3']
@@ -81,7 +78,7 @@ def calculate(klines, spot):
         print(df)
         print("MACD Dataframes")
         print(macd_result)
-        print("Stochastic %K Dataframes")
+        print("Stochastic % K Dataframes")
         print(stoch_k_result)
         print("Stochastic RSI Fast Dataframes")
         print(stoch_rsi_result)
@@ -97,7 +94,7 @@ def calculate(klines, spot):
     if rsi < 30:bsn = 'B'
     indicators['rsi'] = [rsi, bsn, 'O']
 
-    # Stochastic %K Oscillator
+    # Stochastic % K Oscillator
     bsn = 'N'
     if stoch_k['k'].iloc[-1] < 20:
         if stoch_k['k'].iloc[-1] > stoch_k['d'].iloc[-1]: bsn = 'B'
@@ -195,10 +192,10 @@ def calculate(klines, spot):
 
     # Output to stdout
     if debug:
-        print(defs.now_utc()[1] + "Indicators: calculate: Advice calculated:")
+        defs.announce("Advice calculated:")
         print(indicators)
         end_time = defs.now_utc()[4]
-        print(defs.now_utc()[1] + "Pandas_ta spent " + (str(end_time - start_time)) + " ms calculating indicators and advice\n")
+        defs.announce(f"Pandas_ta spent {end_time - start_time}ms calculating indicators and advice")
     
     # Return technicals
     return indicators
@@ -268,6 +265,9 @@ def technicals_advice(strength):
 
 # Caculate advice based on indicators
 def advice(indicators):
+    
+    # Debug
+    debug = False
 
     # Count the Buys, Sells and Neutrals
     countA  = 0;   # Moving Averages
@@ -317,7 +317,7 @@ def advice(indicators):
     adviceO = technicals_advice(strengthO);                  # Oscillator advice
 
     if debug:
-        print(defs.now_utc()[1] + "Indicators: advice: Technical Indicator Advice")
+        defs.announce("Technical Indicator Advice")
         print("Moving Averages BUY      : " + str(countAB))
         print("Moving Averages NEUTRAL  : " + str(countAN))
         print("Moving Averages SELL     : " + str(countAS))

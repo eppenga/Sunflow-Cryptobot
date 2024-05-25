@@ -3,31 +3,13 @@
 # Preload ticker, klines, instrument info and other data
 
 # Load external libraries
-from pathlib import Path
+from config_loader import load_config
 from pybit.unified_trading import HTTP
-import importlib, os, sys
+import database, defs, orders
+import os
 
-# Load internal libraries
-import argparse, database, defs, orders
-
-# Parse command line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', '--config', default='config.py')
-args = parser.parse_args()
-
-# Resolve config file path
-config_path = Path(args.config).resolve()
-if not config_path.exists():
-    print(f"Config file not found at {config_path}, aborting...\n")
-    sys.exit()
-
-# Dynamically load the config module
-sys.path.append(str(config_path.parent))
-config_module_name = config_path.stem
-config = importlib.import_module(config_module_name)
-
-# Debug
-debug = False
+# Load config
+config = load_config()
 
 # Connect to exchange
 session = HTTP(
@@ -38,13 +20,15 @@ session = HTTP(
 # Preload ticker
 def get_ticker(symbol):
 
+    # Debug
+    debug = False
+
     # Initialize ticker
     ticker = {'time': 0, 'lastPrice': 0}
    
     # Load ticker via normal session
-    message = defs.now_utc()[1] + "Preload: get_ticker: session: get_tickers\n"
-    print(message)
     pre_ticker = {}
+    message = defs.announce("session: get_tickers")
     try:
         pre_ticker   = session.get_tickers(
             category = "spot",
@@ -64,13 +48,12 @@ def get_ticker(symbol):
     ticker['lastPrice'] = float(pre_ticker['result']['list'][0]['lastPrice'])
     
     # Output to stdout
-    print(defs.now_utc()[1] + "Preload: get_ticker: Initial ticker loaded!\n")
+    defs.announce("Initial ticker loaded")
     
     if debug:
-        print(defs.now_utc()[1])
-        print(ticker)
+        defs.announce(ticker)
        
-    #return ticker
+    # Return ticker
     return ticker
 
 # Preload klines
@@ -79,13 +62,13 @@ def get_klines(symbol, interval, limit):
     # Debug
     debug = False
     
-    # Initialize klines
-    klines = {'time': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volume': [], 'turnover': []}
+    # Initialize variables
+    pre_klines = {}
+    klines     = {'time': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volume': [], 'turnover': []}
     
     # Load klines via normal session
-    message = defs.now_utc()[1] + "Orders: get_klines: session: get_kline\n"
-    print(message)
     pre_klines = {}
+    message = defs.announce("session: getkline")
     try:
         pre_klines = session.get_kline(
             category = "spot",
@@ -116,25 +99,22 @@ def get_klines(symbol, interval, limit):
         klines[key].reverse()
         
     # Output to stdout
-    print(defs.now_utc()[1] + "Preload: get_klines: Initial klines with interval " + str(interval) + "m loaded!\n")
+    defs.announce(f"Initial klines with interval {interval}m loaded")
     
     if debug:
-        print(defs.now_utc()[1] + "Preload: get_klines: Prefilled klines with interval " + str(interval) + "m")
-        print(defs.now_utc()[1] + "Time : " + str(klines['time']))
-        print(defs.now_utc()[1] + "Open : " + str(klines['open']))
-        print(defs.now_utc()[1] + "High : " + str(klines['high']))
-        print(defs.now_utc()[1] + "Low  : " + str(klines['low']))
-        print(defs.now_utc()[1] + "Close: " + str(klines['close']))
+        defs.announce(f"Prefilled klines with interval {interval}m")
+        defs.announce(f"Time : {klines['time']}")
+        defs.announce(f"Open : {klines['open']}")
+        defs.announce(f"High : {klines['high']}")
+        defs.announce(f"Low  : {klines['low']}")
+        defs.announce(f"Close: {klines['close']}")
     
     # return klines
     return klines
 
 # Preload prices
 def get_prices(symbol, limit):
-    
-    # Debug
-    debug = False
-    
+       
     # Initialize prices
     prices = {}
 
@@ -158,9 +138,8 @@ def get_info(symbol, spot, multiplier):
     info   = {'time': 0, 'symbol': '', 'baseCoin': '', 'quoteCoin': '', 'status': '', 'basePrecision': 0, 'quotePrecision': 0, 'minOrderQty': 0, 'maxOrderQty': 0, 'minOrderAmt': 0, 'maxOrderAmt': 0, 'tickSize': 0} 
 
     # Load instrument info via normal session
-    message = defs.now_utc()[1] + "Orders: get_info: session: get_instruments_info\n"
-    print(message)
     pre_info = {}
+    message = defs.announce("session: get_instruments_info")
     try:
         pre_info = session.get_instruments_info(
             category = "spot",
@@ -189,7 +168,7 @@ def get_info(symbol, spot, multiplier):
     info['maxOrderAmt']    = float(pre_info['result']['list'][0]['lotSizeFilter']['maxOrderAmt'])
     info['tickSize']       = float(pre_info['result']['list'][0]['priceFilter']['tickSize'])
 
-    # Calculate minimum order value and add 10% to prevent strange errors
+    # Calculate minimum order value and add 10 % to prevent strange errors
     minimumQty = info['minOrderQty'] * spot
     minimumAmt = info['minOrderAmt']
 
@@ -202,7 +181,7 @@ def get_info(symbol, spot, multiplier):
 
     # Output to stdout
     if debug:
-        print(defs.now_utc()[1] + "Preload: get_info: Instrument info loaded!\n")
+        defs.announce("Instrument info loaded")
        
     # Summarize all info and return data
     data                   = {}                            # Declare data variable
@@ -223,21 +202,11 @@ def get_info(symbol, spot, multiplier):
 
     # Debug
     if debug:
-        print(defs.now_utc()[1] + "Preload: get_info: Instrument info")
+        defs.announce("Instrument info")
         print(data)
   
     # Return instrument info
     return data
-
-# Preload database with buys
-def get_buys(dbase_file):
-    
-    # Get the database
-    all_buys = database.load(dbase_file)
-    print(defs.now_utc()[1] + "Preload: get_buys: Loaded database with buy transactions!\n")
-    
-    # Return the database
-    return all_buys
     
 # Check if necessary files exists
 def check_files():
@@ -261,24 +230,21 @@ def check_files():
         with open(config.exchange_file, 'a') as file:
             pass
     
-    print(defs.now_utc()[1] + "Preload: check_files: All folders and files checked!\n")
+    defs.announce("All folders and files checked")
     
 # Check orders in database if they still exist
-def check_orders(transactions):
+def check_orders(transactions, info):
     
-    # Debug
-    debug = False
-
     # Initialize variables
     all_buys = []
 
-    print(defs.now_utc()[1] + "Preload: check_orders: Checking all order on exchange!\n")
+    defs.announce("Checking all order on exchange")
 
     # Loop through all buys
     for transaction in transactions:
 
         # Get exchange info
-        print(defs.now_utc()[1] + "Preload: check_orders: Now checking order: " + str(transaction['orderId']) + "\n")
+        defs.announce(f"Now checking order: {transaction['orderId']}")
         exchange_transaction = orders.transaction_from_id(transaction['orderId'])
 
         if "Filled" in exchange_transaction['orderStatus']:
@@ -286,7 +252,7 @@ def check_orders(transactions):
             all_buys.append(exchange_transaction)
         
     # Save refreshed database
-    database.save(all_buys)
+    database.save(all_buys, info)
     
     # Return correct database
     return all_buys 

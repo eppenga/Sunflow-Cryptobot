@@ -2,12 +2,55 @@
 #
 # Calculate trigger price distance
 
-# Load external libraries
-import math, pandas as pd
-from pybit.unified_trading import HTTP
-
-# Load internal libraries
+# Load libraries
 import defs
+import math, pandas as pd
+
+# Calculates the closest index
+def get_closest_index(prices, span):
+    
+    # Find the closest index in the time {timeframe}
+    closest_index = None
+    min_diff = float('inf')
+
+    for i, t in enumerate(prices['time']):
+        diff = abs(t - span)
+        if diff < min_diff:
+            min_diff = diff
+            closest_index = i
+
+    # Return closest index
+    return closest_index
+
+# Calculate price changes to get wave length 
+def waves(prices, use_waves):
+
+    # Initialize variables
+    debug   = False
+    spiking = False
+
+    # Time calculations
+    latest_time = prices['time'][-1]              # Get the latest time
+    span = latest_time - use_waves['timeframe']   # timeframe in milliseconds
+
+    # Get the closest index in the time {timeframe}
+    closest_index = get_closest_index(prices, span)
+
+    # Calculate the change in price
+    price_change      = 0
+    price_change_perc = 0
+    if closest_index is not None and prices['time'][-1] > span:
+        price_change      = prices['price'][-1] - prices['price'][closest_index]
+        price_change_perc = (price_change / prices['price'][closest_index]) * 100
+
+    # Apply wave multiplier
+    price_change_perc = price_change_perc * use_waves['multiplier']
+
+    if debug:
+        defs.announce(f"Price change in the last {use_waves['timeframe'] / 1000:.2f} seconds is {price_change_perc:.2f} %")
+
+    # Return price change percentage
+    return price_change_perc
 
 # Calculate trigger price distance
 def calculate(active_order, prices):
@@ -37,7 +80,7 @@ def calculate(active_order, prices):
     if active_order['wiggle'] == "Fixed":
         active_order['fluctuation'] = active_order['distance']
         if previous_flucation != active_order['fluctuation']:
-            print(defs.now_utc()[1] + "Distance: calculate: Fixed calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+            defs.announce(f"Fixed calculated trigger price distance changed to {active_order['fluctuation']:.4f} %")
 
 
     ''' Use EMA to set trigger price distance '''
@@ -59,7 +102,7 @@ def calculate(active_order, prices):
         # Calculate trigger price distance percentage
         active_order['fluctuation'] = (fluctuation / scaler) + active_order['distance']
         if previous_flucation != active_order['fluctuation']:
-            print(defs.now_utc()[1] + "Distance: calculate: EMA calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+            defs.announce(f"EMA calculated trigger price distance changed to {active_order['fluctuation']:.4f} %")
     
 
     ''' Use SPOT to set trigger price distance '''
@@ -87,7 +130,7 @@ def calculate(active_order, prices):
         
         # Output to stdout
         if previous_flucation != active_order['fluctuation']:
-            print(defs.now_utc()[1] + "Distance: calculate: Spot calculated trigger price distance changed to " + str(round(active_order['fluctuation'], 4)) + "%\n")
+            defs.announce(f"Spot calculated trigger price distance changed to {active_order['fluctuation']:.4f} %")
 
 
     ''' Use WAVE to set distance '''
@@ -96,11 +139,12 @@ def calculate(active_order, prices):
 
         # Debug
         if debug:
-            print(defs.now_utc()[1] + "Distance: calculate: debug: Trailing        : " + active_order['side'])
-            print(defs.now_utc()[1] + "Distance: calculate: debug: Default distance: " + str(round(active_order['distance'], 4)))
-            print(defs.now_utc()[1] + "Distance: calculate: debug: Price distance  : " + str(round(price_distance, 4)))
-            print(defs.now_utc()[1] + "Distance: calculate: debug: Spot distance   : " + str(round(active_order['fluctuation'], 4)))
-            print(defs.now_utc()[1] + "Distance: calculate: debug: Wave distance   : " + str(round(active_order['wave'], 4)) +  "\n")
+            defs.announce( "debug: Distances before")
+            print        (f"Trailing side   : {active_order['side']}")
+            print        (f"Default distance: {active_order['distance']:.4f} %")
+            print        (f"Price distance  : {price_distance:.4f} %")
+            print        (f"Spot distance   : {active_order['fluctuation']:.4f} %")
+            print        (f"Wave distance   : {active_order['wave']:.4f} %\n")
        
         # Selling
         if active_order['side'] == "Sell":
@@ -120,8 +164,7 @@ def calculate(active_order, prices):
                         active_order['fluctuation'] = active_order['wave']
                 else:
                     active_order['fluctuation'] = active_order['distance']
-            
-        
+                    
         # Buying
         if active_order['side'] == "Buy":
             
@@ -146,9 +189,10 @@ def calculate(active_order, prices):
 
             # Temp debug
             if debug:
-                print(defs.now_utc()[1] + "Distance: calculate: debug: Default distance    : " + str(round(active_order['distance'], 4)))
-                print(defs.now_utc()[1] + "Distance: calculate: debug: Wave distance       : " + str(round(active_order['wave'], 4)))
-                print(defs.now_utc()[1] + "Distance: calculate: debug: Fluctuation distance: " + str(round(active_order['fluctuation'], 4)) +  "\n")
+                defs.announce( "debug: Distances after")
+                print        (f"Default distance    : {active_order['distance']:.4f} %")
+                print        (f"Wave distance       : {active_order['wave']:.4f} %")
+                print        (f"Fluctuation distance: {active_order['fluctuation']:.4f} %\n")
 
             
         ''' Let's remove these fail safes for now 
@@ -165,7 +209,7 @@ def calculate(active_order, prices):
 
         # Output to stdout
         if previous_flucation != active_order['fluctuation']:
-            print(defs.now_utc()[1] + "Distance: calculate: Wave calculated trigger price distance is " + str(round(active_order['fluctuation'], 4)) + "%\n")
+            defs.announce(f"Wave calculated trigger price distance is {active_order['fluctuation']:.4f} %")
 
     # Return modified data
     return active_order

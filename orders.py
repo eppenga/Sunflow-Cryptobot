@@ -2,30 +2,13 @@
 #
 # Order functions
 
-# Load external libraries
-from pathlib import Path
-import importlib, math, sys
-import pandas as pd
+# Load libraries
+from config_loader import load_config
 from pybit.unified_trading import HTTP
+import database, defs, distance
 
-# Load internal libraries
-import argparse, database, defs, distance, preload
-
-# Parse command line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', '--config', default='config.py')
-args = parser.parse_args()
-
-# Resolve config file path
-config_path = Path(args.config).resolve()
-if not config_path.exists():
-    print(f"Config file not found at {config_path}, aborting...\n")
-    sys.exit()
-
-# Dynamically load the config module
-sys.path.append(str(config_path.parent))
-config_module_name = config_path.stem
-config = importlib.import_module(config_module_name)
+# Load config
+config = load_config()
 
 # Connect to exchange
 session = HTTP(
@@ -35,13 +18,10 @@ session = HTTP(
     return_response_headers = True
 )
 
-# Initialize variables to prevent race conditions
-def_buy_active  = False
-def_sell_active = False
-
 # Get orderId from exchange order
 def order_id(order):
     
+    # Logic
     id = order['result']['orderId']
     return id
 
@@ -50,14 +30,10 @@ def history(orderId):
     
     # Debug
     debug = False
-    
-    # Initialize variables
-    order = []
-    
+       
     # First try realtime
-    message = defs.now_utc()[1] + "Orders: history: session: get_open_orders\n"
-    print(message)
-    order = {}
+    order   = {}
+    message = defs.announce("session: get_open_orders")
     try:
         order = session.get_open_orders(
             category = "spot",
@@ -73,8 +49,7 @@ def history(orderId):
       
     # If realtime fails, get it from history
     if order['result']['list'] == []:
-        message = defs.now_utc()[1] + "Orders: history: session: get_order_history\n" 
-        print(message)
+        message = defs.announce("session: get_order_history") 
         try:
             order = session.get_order_history(
                 category = "spot",
@@ -90,11 +65,11 @@ def history(orderId):
 
     # If realtime and history fails, throw an error
     if order['result']['list'] == []:
-        message = defs.now_utc()[1] + "Orders: history: Trying to load non-existing order, something is corrupt!"
+        message = defs.announce("Trying to load non-existing order, something is corrupt!")
         defs.log_error(message)
 
     if debug:
-        print(defs.now_utc()[1] + "Orders: OrderId: Order history")
+        defs.announce("Order history")
         print(order)
 
     return order
@@ -102,6 +77,7 @@ def history(orderId):
 # Decode order from exchange to proper dictionary
 def decode(order):
     
+    # Initialize transaction
     transaction                 = {}
     transaction['createdTime']  = int(order['result']['list'][0]['createdTime'])
     transaction['updatedTime']  = int(order['result']['list'][0]['updatedTime'])
@@ -130,9 +106,8 @@ def cancel(symbol, orderid):
     exception  = ""
     
     # Cancel order
-    message = defs.now_utc()[1] + "Orders: cancel: session: cancel_order\n"
-    print(message)
-    order = {}
+    order   = {}
+    message = defs.announce("session: cancel_order")
     try:
         order = session.cancel_order(
             category = "spot",
@@ -177,13 +152,10 @@ def transaction_from_id(orderId):
     return transaction
 
 # Initialize active order for initial buy or sell
-def initialize_trigger(spot, active_order, info):
+def set_trigger(spot, active_order, info):
 
     # Debug
-    debug = False
-
-    # Debug
-    print(defs.now_utc()[1] + f"initialize_trigger: Fluctuation distance {round(active_order['fluctuation'], 4)}% and price {spot} {info['quoteCoin']}\n")
+    defs.announce(f"Fluctuation distance {active_order['fluctuation']:.4f} % and spot {defs.format_price(spot, info['tickSize'])} {info['quoteCoin']}")
 
     # Check side buy or sell
     if active_order['side'] == "Buy":
@@ -227,10 +199,10 @@ def check_sell(spot, profit, active_order, all_buys, info):
     # Can sell or not
     if all_sells and qty > 0:
         can_sell = True
-        print(defs.now_utc()[1] + "Orders: check_sell: Can sell " + str(counter) + " orders for a total of " + str(qty) + " " + info['baseCoin'] + "\n")
+        defs.announce(f"Can sell {counter} orders for a total of {defs.format_price(qty, info['basePrecision'])} {info['baseCoin']}")
     else:
         if nearest:
-            rise_to = str(defs.precision(min(nearest), info['tickSize'])) + " " + info['quoteCoin']
+            rise_to = f"{defs.format_price(min(nearest), info['tickSize'])} {info['quoteCoin']}"
     
     # Return data
     return all_sells, qty, can_sell, rise_to
@@ -238,22 +210,11 @@ def check_sell(spot, profit, active_order, all_buys, info):
 # New buy order
 def buy(symbol, spot, active_order, all_buys, prices, info):
 
-    # Define global variables
-    global def_buy_active
-
-    # Prevent race condition
-    if def_buy_active:
-        print(defs.now_utc()[1] + "Orders: buy: function is busy, no further action required\n")
-        return active_order, all_buys
-
     # Output to stdout
-    print(defs.now_utc()[1] + "Orders: buy: *** BUY BUY BUY! ***\n")
+    defs.announce("*** BUY BUY BUY! ***")
 
     # Get latest symbol info
-    #info = preload.get_info(symbol, spot, config.multiplier) #*** CHECK *** Better do this when it does not delay execution
-
-    # Set race condition
-    def_buy_active = True
+    #info = preload.get_info(symbol, spot, config.multiplier) #*** CHECK *** Do this more clever, now it's to many times
 
     # Initialize active_order
     active_order['side']     = "Buy"
@@ -266,12 +227,11 @@ def buy(symbol, spot, active_order, all_buys, prices, info):
     active_order = distance.calculate(active_order, prices)
 
     # Initialize trigger price
-    active_order = initialize_trigger(spot, active_order, info)  
+    active_order = set_trigger(spot, active_order, info)  
 
     # Place buy order
-    message = defs.now_utc()[1] + "Orders: buy: session: place_order\n"
-    print(message)
-    order = {}
+    order   = {}
+    message = defs.announce("session: place_order")
     try:
         order = session.place_order(
             category     = "spot",
@@ -298,39 +258,21 @@ def buy(symbol, spot, active_order, all_buys, prices, info):
     
     # Set the status
     transaction['status'] = "Open"
-    message = f"Buy order opened for {active_order['qty']} {info['quoteCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
-    print(defs.now_utc()[1] + "Orders: buy: " + message + "\n")
-    defs.notify(message + f" for {symbol}", 1)
+    message = f"Buy order opened for {active_order['qty']} {info['quoteCoin']} at trigger price {active_order['trigger']} {info['quoteCoin']}"
+    defs.announce(message, True)
     
     # Store the transaction in the database buys file
-    all_buys = database.register_buy(transaction, all_buys)
-    print(defs.now_utc()[1] + "Orders: buy: Registered buy order in database " + config.dbase_file + "\n")
-
-    # Output to stdout
-    print(defs.now_utc()[1] + "Orders: buy: Starting trailing buy\n")
-    
-    # Reset race condition
-    def_buy_active = False
-    
+    all_buys = database.register_buy(transaction, all_buys, info)
+    defs.announce(f"Registered buy order in database {config.dbase_file}")
+       
     # Return trailing order and new buy order database
     return active_order, all_buys
     
 # New sell order
 def sell(symbol, spot, active_order, prices, info):
 
-    # Define global variables
-    global def_buy_active
-
-    # Prevent race condition
-    if def_sell_active:
-        print(defs.now_utc()[1] + "Orders: sell: function is busy, no further action required\n")
-        return active_order
-
     # Output to stdout
-    print(defs.now_utc()[1] + "Orders: sell: *** SELL SELL SELL! ***\n")
-
-    # Set race condition
-    def_buy_active = True
+    defs.announce("*** SELL SELL SELL! ***")
 
     # Initialize active_order
     active_order['side']     = "Sell"
@@ -343,12 +285,11 @@ def sell(symbol, spot, active_order, prices, info):
     active_order = distance.calculate(active_order, prices)
 
     # Initialize trigger price
-    active_order = initialize_trigger(spot, active_order, info)
+    active_order = set_trigger(spot, active_order, info)
 
     # Place sell order
-    message = defs.now_utc()[1] + "Orders: sell: session: place_order\n"
-    print(message)
-    order = {}
+    order   = {}
+    message = defs.announce("session: place_order")
     try:
         order = session.place_order(
             category     = "spot",
@@ -371,13 +312,9 @@ def sell(symbol, spot, active_order, prices, info):
     active_order['orderid'] = int(order['result']['orderId'])
     
     # Output to stdout and Apprise
-    message = f"Sell order opened for {active_order['qty']} {info['baseCoin']} with trigger price {active_order['trigger']} {info['quoteCoin']}"
-    print(defs.now_utc()[1] + message + "\n")
-    defs.notify(message + f" for {symbol}", 1)
-
-    # Reset race condition
-    def_buy_active = False
-    
+    message = f"Sell order opened for {active_order['qty']} {info['baseCoin']} at trigger price {active_order['trigger']} {info['quoteCoin']}"
+    defs.announce(message, True)
+   
     # Return data
     return active_order
 
@@ -397,14 +334,14 @@ def rebalance(all_buys, info):
 
     # Report to stdout
     if debug:
-        print(defs.now_utc()[1] + "Orders: balance_wallet: Trying to rebalance buys database with exchange data\n")
+        defs.announce("Trying to rebalance buys database with exchange data")
 
     # Get all buys
-    all_buys = preload.get_buys(config.dbase_file)
+    all_buys = database.load(config.dbase_file, info)
 
     # Get wallet
-    message = defs.now_utc()[1] + "Orders: rebalance: session: get_wallet_balance\n"
-    print(message)
+    wallet   = {}
+    message = defs.announce("session: get_wallet_balance")
     try:
         wallet = session.get_wallet_balance(
             accountType = "UNIFIED",
@@ -427,8 +364,8 @@ def rebalance(all_buys, info):
 
     # Report
     if debug:
-        print(defs.now_utc()[1] + "Orders: balance_wallet: Before rebalance equity on exchange: " + str(equity_wallet) + " " + info['baseCoin'])
-        print(defs.now_utc()[1] + "Orders: balance_wallet: Before rebalance equity in database: " + str(equity_dbase) + " " + info['baseCoin'])
+        defs.announce(f"Before rebalance equity on exchange: {equity_wallet} {info['baseCoin']}")
+        defs.announce(f"Before rebalance equity in database: {equity_dbase} {info['baseCoin']}")
 
     # Selling more than we have
     while equity_dbase > equity_wallet:
@@ -447,14 +384,14 @@ def rebalance(all_buys, info):
 
     # Report
     if debug:
-        print(defs.now_utc()[1] + "Orders: balance_wallet: After rebalance equity on exchange: " + str(equity_wallet) + " " + info['baseCoin'])
-        print(defs.now_utc()[1] + "Orders: balance_wallet: After rebalance equity in database: " + str(equity_dbase) + " " + info['baseCoin'] + "\n")
+        defs.announce(f"After rebalance equity on exchange: {equity_wallet} {info['baseCoin']}")
+        defs.announce(f"After rebalance equity in database: {equity_dbase} {info['baseCoin']}")
 
     # Save new database
     if dbase_changed:
         equity_lost = equity_remind - equity_dbase
-        print(defs.now_utc()[1] + "Orders: balance_wallet: Rebalanced buys database with exchange data and lost " + str(equity_lost) + " " + info['baseCoin'] + "\n")
-        database.save(all_buys)
+        defs.announce(f"Rebalanced buys database with exchange data and lost {equity_lost} {info['baseCoin']}")
+        database.save(all_buys, info)
 
     # Return all buys
     return all_buys

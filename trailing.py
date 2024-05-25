@@ -2,29 +2,13 @@
 #
 # Traling buy and sell
 
-# Load external libraries
-from pathlib import Path
+# Load libraries
+from config_loader import load_config
 from pybit.unified_trading import HTTP
-import importlib, sys
+import database, defs, distance, orders
 
-# Load internal libraries
-import argparse, database, defs, distance, orders
-
-# Parse command line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', '--config', default='config.py')
-args = parser.parse_args()
-
-# Resolve config file path
-config_path = Path(args.config).resolve()
-if not config_path.exists():
-    print(f"Config file not found at {config_path}, aborting...\n")
-    sys.exit()
-
-# Dynamically load the config module
-sys.path.append(str(config_path.parent))
-config_module_name = config_path.stem
-config = importlib.import_module(config_module_name)
+# Load config
+config = load_config()
 
 # Connect to exchange
 session = HTTP(
@@ -35,17 +19,17 @@ session = HTTP(
 )
 
 # Initialize variables
-stuck_fresh      = True
-stuck_counter    = 0
-spiker_counter   = 0
-trail_counter    = 0
-def_trail_active = False
+stuck          = {}
+stuck['check']    = True
+stuck['time']     = 0
+stuck['interval'] = 10000
+spike_counter  = 0
    
 # Check if we can do trailing buy or sell
-def check_order(symbol, spot, active_order, all_buys, all_sells, use_delay, info):
+def check_order(symbol, spot, active_order, all_buys, all_sells, info):
 
     # Declare some variables global
-    global stuck_fresh, stuck_counter, spiker_counter, def_trail_active
+    global stuck, spike_counter
     
     # Initialize variables
     result         = ()
@@ -59,27 +43,26 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, use_delay, info
         if active_order['current'] >= active_order['trigger']:
             do_check_order = True
 
-    # Check every minute, sometimes orders get stuck
+    # Check every interval, sometimes orders get stuck
     current_time = defs.now_utc()[4]
-    if stuck_fresh:
-        stuck_fresh   = False
-        stuck_counter = defs.now_utc()[4]
-    if current_time - stuck_counter > 10000:
-        print(defs.now_utc()[1] + "Trailing: check_order: Doing an additional check on trailing order\n")
-        stuck_fresh    = True
-        stuck_counter  = 0
+    if stuck['check']:
+        stuck['check'] = False
+        stuck['time']  = defs.now_utc()[4]
+    if current_time - stuck['time'] > stuck['interval']:
+        defs.announce("Doing an additional check on trailing order")
+        stuck['check'] = True
+        stuck['time']  = 0
         do_check_order = True
 
     # Current price crossed trigger price
     if do_check_order:
 
         # Output to stdout
-        print(defs.now_utc()[1] + "Trailing: check_order: Get open order from exchange\n")
+        defs.announce("Get open order from exchange")
 
         # Has trailing endend, check if order does still exist
-        message = defs.now_utc()[1] + "Trailing: check_order: session: get_open_orders\n"
-        print(message)
         order = {}
+        message = defs.announce("session: get_open_orders")
         try:
             order = session.get_open_orders(
                 category = "spot",
@@ -87,9 +70,6 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, use_delay, info
                 orderID  = str(active_order['orderid'])
             )
         except Exception as e:
-            # Reset race condition for trail function
-            def_trail_active = False
-            # Log error
             defs.log_error(e)
 
         # Check API rate limit and log data if possible
@@ -101,17 +81,17 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, use_delay, info
         if order['result']['list'] == []:
             
             # Prepare message for stdout and Apprise
-            print(defs.now_utc()[1] + "Trailing: check_order: Trailing " + active_order['side'].lower() + ": *** Order has been filled! ***\n")
+            defs.announce(f"Trailing {active_order['side'].lower()}: *** Order has been filled! ***")
             if active_order['side'] == "Buy":
                 currency = info['quoteCoin']
             else:
                 currency = info['baseCoin']
-            message = f"{active_order['side']} order closed for {active_order['qty']} {currency} with trigger price {active_order['trigger']} {info['quoteCoin']}"
+            message = f"{active_order['side']} order closed for {active_order['qty']} {currency} at trigger price {active_order['trigger']} {info['quoteCoin']}"
             
             # Reset counters
-            stuck_fresh    = True
-            stuck_counter  = 0
-            spiker_counter = 0
+            stuck['check']= True
+            stuck['time'] = 0
+            spike_counter = 0
             
             # Close trailing process
             result       = close_trail(active_order, all_buys, all_sells, info)
@@ -123,59 +103,61 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, use_delay, info
         
             # Fill in average price and report message
             if active_order['side'] == "Buy":
-                message = message + f" and average fill price {transaction['avgPrice']} {info['quoteCoin']} for {symbol}"
+                message = message + f" and average fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']}"
             else:
-                message = message + f", average fill price {transaction['avgPrice']} {info['quoteCoin']} and profit {profit} {info['quoteCoin']} for {symbol}"
-            defs.notify(message, 1)
+                message = message + f", average fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} and profit {profit} {info['quoteCoin']}"
+            defs.announce(message, True, 1)
             
-            # Handle buy delay
-            if active_order['side'] == "Sell":
-                if use_delay['enabled']:
-                    use_delay['start'] = defs.now_utc()[4]
-                    use_delay['end']   = use_delay['start'] + use_delay['timeframe']
-
         # Check if symbol is spiking
         else:
-            result       = check_spike(symbol, spot, active_order, order, all_buys)
+            result       = check_spike(symbol, spot, active_order, order, all_buys, info)
             active_order = result[0]
             all_buys     = result[1]
 
     # Return modified data
-    return active_order, all_buys, use_delay
+    return active_order, all_buys
 
 # Checks if the trailing error spiked
-def check_spike(symbol, spot, active_order, order, all_buys):
+def check_spike(symbol, spot, active_order, order, all_buys, info):
 
     # Declare some variables global
-    global spiker_counter
+    global spike_counter
+
+    # Initialize variables
+    error_code = 0
 
     # Check if the order spiked and is stuck
     transaction = orders.decode(order)
     if active_order['side'] == "Sell":
+
         # Did it spike and was forgotten when selling
         if transaction['triggerPrice'] > spot:
-            spiker_counter = spiker_counter + 1
+            spike_counter = spike_counter + 1
             # It spiked when selling
-            if spiker_counter > 3:
-                print(defs.now_utc()[1] + "Trailing: check_order: " + active_order['side'] + ": *** It spiked, yakes! ***\n")
+            if spike_counter > 3:
+                defs.announce(f"*** {active_order['side']} order spiked, yakes! ***", True, 1)
                 # Reset trailing sell
                 active_order['active'] = False
                 # Remove order from exchange
-                orders.cancel(symbol, active_order['orderid'])[0]
+                orders.cancel(symbol, active_order['orderid'])
     else:
+
         # Did it spike and was forgotten when buying
         if transaction['triggerPrice'] < spot:
-            spiker_counter = spiker_counter + 1
+            spike_counter = spike_counter + 1
             # It spiked when buying
-            if spiker_counter > 3:
-                print(defs.now_utc()[1] + "Trailing: check_order: " + active_order['side'] + ": *** It spiked, yakes! ***\n")
+            if spike_counter > 3:
+                defs.announce(f"*** {active_order['side']} order spiked, yakes! ***", True, 1)
                 # Reset trailing buy
                 active_order['active'] = False
                 # Remove order from all buys
-                all_buys = database.remove(active_order['orderid'], all_buys)
+                all_buys = database.remove(active_order['orderid'], all_buys, info)
                 # Remove order from exchange
-                orders.cancel(symbol, active_order['orderid'])[0]
-        
+                orders.cancel(symbol, active_order['orderid'])
+    
+    if error_code == 1:
+        defs.announce(f"Although order {active_order['orderid']} spiked, this order was not found at the exchange", True, 1)
+    
     # Return data
     return active_order, all_buys
 
@@ -183,7 +165,7 @@ def check_spike(symbol, spot, active_order, order, all_buys):
 def calculate_profit(transaction, all_sells, info):
     
     # Debug
-    debug = True
+    debug = False
     
     # Initialize variables
     sells  = 0
@@ -203,7 +185,7 @@ def calculate_profit(transaction, all_sells, info):
     
     # Output to stdout for debug
     if debug:
-        print(defs.now_utc()[1] + f"Total sells were {sells} {info['quoteCoin']}, buys were {buys} {info['quoteCoin']} and fees were {fees['total']} {info['quoteCoin']}, giving a profit of {profit} {info['quoteCoin']}\n")
+        defs.announce(f"Total sells were {sells} {info['quoteCoin']}, buys were {buys} {info['quoteCoin']} and fees were {fees['total']} {info['quoteCoin']}, giving a profit of {profit} {info['quoteCoin']}")
     
     # Return profit
     return profit
@@ -217,9 +199,6 @@ def close_trail(active_order, all_buys, all_sells, info):
     # Initialize variables
     profit = 0
     
-    # Output to stdout
-    print(defs.now_utc()[1] + "Trailing: close_trail: Trying to close trailing process\n")
-    
     # Make active_order inactive
     active_order['active'] = False
     
@@ -229,7 +208,7 @@ def close_trail(active_order, all_buys, all_sells, info):
           
     # Order was bought, create new all buys database
     if transaction['side'] == "Buy":
-        all_buys = database.register_buy(transaction, all_buys)
+        all_buys = database.register_buy(transaction, all_buys, info)
     
     # Order was sold, create new all buys database, rebalance database and clear all sells
     if transaction['side'] == "Sell":
@@ -244,55 +223,39 @@ def close_trail(active_order, all_buys, all_sells, info):
         profit = calculate_profit(transaction, all_sells, info)
         
         # Create new all buys database
-        all_buys = database.register_sell(all_buys, all_sells)
+        all_buys = database.register_sell(all_buys, all_sells, info)
         
         # Rebalance new database
         all_buys = orders.rebalance(all_buys, info)
         
         # Clear all sells
         all_sells = []
+
+    # Output to stdout
+    defs.announce(f"Closed trailing {active_order['side'].lower()} order")
     
     return active_order, all_buys, all_sells, transaction, profit
 
 # Trailing buy or sell
-def trail(symbol, spot, active_order, info, all_buys, all_sells, prices, use_delay):
+def trail(symbol, spot, active_order, info, all_buys, all_sells, prices):
 
     # Debug
     debug = False
-
-    # Define global variables
-    global def_trail_active, trail_counter
-
-    # Check if trailing is not already executed and if so wait for next tick
-    if def_trail_active:
-        trail_counter = trail_counter + 1
-        if trail_counter < 25:
-            print(defs.now_utc()[1] + f"Trailing: trail: function is busy, for the {trail_counter} time, no further action required\n")
-        else:
-            print(defs.now_utc()[1] + f"Trailing: trail: function is busy, for the {trail_counter} time, resetting race condition checker\n")
-            trail_counter    = 0
-            def_trail_active = False
-        return active_order, all_buys, use_delay
-    else:
-        if debug:
-            print(defs.now_utc()[1] + "Trailing: trail: function started\n")
 
     # Initialize variables
     result           = ()
     amend_code       = 0
     amend_error      = ""
     do_amend         = False
-    def_trail_active = True
 
     # Output trailing to stdout
     if debug:
-        print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": Checking if we can do trailing\n")
+        defs.announce(f"Trailing {active_order['side']}: Checking if we can do trailing")
 
     # Check if the order still exists
-    result       = check_order(symbol, spot, active_order, all_buys, all_sells, use_delay, info)
+    result       = check_order(symbol, spot, active_order, all_buys, all_sells, info)
     active_order = result[0]
     all_buys_new = result[1]
-    use_delay    = result[2]
 
     # Order still exists, we can do trailing buy or sell
     if active_order['active']:
@@ -327,15 +290,15 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices, use_del
             if amend_code == 0:
                 # Everything went fine, we can continue trailing
                 message = f"Adjusted trigger price from {active_order['trigger']} to {active_order['trigger_new']} {info['quoteCoin']} in {active_order['side'].lower()} order"
-                print(defs.now_utc()[1] + "Trailing: trail: Trailing " + active_order['side'] + ": " + message + "\n")
-                defs.notify(message + f" for {symbol}", 0)
+                defs.announce(message, True, 0)
                 active_order['trigger'] = active_order['trigger_new']
                 all_buys                = all_buys_new
 
             if amend_code == 1:
                 # Order slipped, close trailing process
-                print(defs.now_utc()[1] + f"Trailing: trail: {active_order['side']} order slipped, we keep buys database as is and stop trailing\n")
-                defs.notify(f"{active_order['side']} order slipped, we keep buys database as is and stop trailing for {symbol}", 1)
+                message = f"{active_order['side']} order slipped, we keep buys database as is and stop trailing"
+                defs.announce(message, True, 1)
+                database.remove(active_order['orderid'], all_buys, info)
                 result       = close_trail(active_order, all_buys, all_sells, info)
                 active_order = result[0]
                 all_buys     = result[1]
@@ -347,26 +310,15 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices, use_del
 
             if amend_code == 100:
                 # Critical error, let's log it and revert
-                def_trail_active = False
                 all_buys_new = all_buys
-                print(defs.now_utc()[1] + "Trailing: trail: Critical error, logging to file\n")
-                defs.notify(f"While trailing a critical error occurred for {symbol}", 1)
+                defs.announce("Critical error while trailing", True, 1)
                 defs.log_error(amend_error)
 
     # Reset all_buys and allow function to be run again
-    all_buys         = all_buys_new
-    def_trail_active = False
-    if debug:
-        print(defs.now_utc()[1] + "Trailing: trail: function ended\n")
-
-    # Debug output active_order and error
-    if debug:
-        print(defs.now_utc()[1] + "Trailing: trail: Debug output of active_order:\n" + str(active_order) + "\n")
-        if amend_error:
-            print(defs.now_utc()[1] + "Trailing: trail: Debug output of error code:\n" + amend_error + "\n")
+    all_buys = all_buys_new
         
     # Return modified data
-    return active_order, all_buys, use_delay
+    return active_order, all_buys
    
 # Change the quantity of the current trailing sell
 def amend_quantity_sell(symbol, active_order, info):
@@ -377,11 +329,11 @@ def amend_quantity_sell(symbol, active_order, info):
     exception  = ""
 
     # Output to stdout
-    print(defs.now_utc()[1] + "Trailing: amend_quantity_sell: Trying to adjust quantity from " + str(active_order['qty']) + " to " +  str(active_order['qty_new']) + " " + info['baseCoin'] + "\n")
+    defs.announce(f"Trying to adjust quantity from {active_order['qty']} to {active_order['qty_new']} {info['baseCoin']}")
 
     # Ammend order
-    message = defs.now_utc()[1] + "Trailing: amend_sell: session: amend_order\n"
-    print(message)
+    order = {}
+    message = defs.announce("session: amend_order")
     try:
         order = session.amend_order(
             category = "spot",
@@ -417,11 +369,11 @@ def amend_trigger_price(symbol, active_order, info):
     exception  = ""
     
     # Output to stdout    
-    print(defs.now_utc()[1] + "Trailing: amend_trigger_price: Trying to adjusted trigger price from " + str(active_order['trigger']) + " to " +  str(active_order['trigger_new']) + " " + info['quoteCoin'] + "\n")
+    defs.announce(f"Trying to adjusted trigger price from {active_order['trigger']} to {active_order['trigger_new']} {info['quoteCoin']}")
     
     # Amend order
-    message = defs.now_utc()[1] + "Trailing: amend_trigger_price: session: amend_order\n"
-    print(message)
+    order = {}
+    message = defs.announce("session: amend_order")
     try:
         order = session.amend_order(
             category     = "spot",

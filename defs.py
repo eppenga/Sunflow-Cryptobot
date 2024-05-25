@@ -2,30 +2,15 @@
 #
 # General functions
 
-# Load external libraries
+# Load libraries
+from config_loader import load_config
 from pathlib import Path
-from pybit.unified_trading import WebSocket
 from datetime import datetime, timezone
-import apprise, argparse, importlib, math, re, sys, time
+import  defs, indicators
+import apprise, inspect, math, time
 
-# Load internal libraries
-import defs, indicators
-
-# Parse command line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', '--config', default='config.py')
-args = parser.parse_args()
-
-# Resolve config file path
-config_path = Path(args.config).resolve()
-if not config_path.exists():
-    print(f"Config file not found at {config_path}, aborting...\n")
-    sys.exit()
-
-# Dynamically load the config module
-sys.path.append(str(config_path.parent))
-config_module_name = config_path.stem
-config = importlib.import_module(config_module_name)
+# Load config
+config = load_config()
 
 # Create an Apprise instance
 apobj = apprise.Apprise()
@@ -122,9 +107,9 @@ def check_spread(all_buys, spot, spread):
          
     if debug:
         if can_buy:
-            print(defs.now_utc()[1] + "Defs: check_spread: No adjacent order found, we can buy")
+            defs.announce("No adjacent order found, we can buy")
         else:
-            print(defs.now_utc()[1] + "Defs: check_spread: Adjacent order found, we can't buy")
+            defs.announce("Adjacent order found, we can't buy")
 
     # Return buy advice
     return can_buy, near
@@ -165,7 +150,7 @@ def log_error(exception):
 
     # Output debug
     if debug:
-        print(defs.now_utc()[1] + "Defs: log_error: Debug")
+        defs.announce("Debug")
         print("Exception RAW:")
         print(exception)
         print()
@@ -183,7 +168,7 @@ def log_error(exception):
     exception = now_utc()[1] + exception + "\n"
 
     if ("(ErrCode: 12940)" in exception) or ("RemoteDisconnected" in exception):
-        print(defs.now_utc()[1] + "Defs: log_error: *** Warning: Remote Disconnected! ***\n")
+        defs.announce("*** Warning: Remote Disconnected! ***")
         halt_execution = False
     
     # Write to error log file
@@ -191,18 +176,15 @@ def log_error(exception):
         file.write(exception)
     
     # Output to stdout
-    print(defs.now_utc()[1] + "Defs: log_error: Displaying exception:\n")
-    print(exception)
+    defs.announce(f"Displaying exception: {exception}")
     
     # Terminate hard
     if halt_execution:
-        print(defs.now_utc()[1] + "Defs: error: *** Terminating Sunflow, error to severe! ***\n")
-        print(exception)
-        defs.notify("Terminating Sunflow, error to severe!", 1)
-        defs.notify(exception, 1)
+        defs.announce("*** Terminating Sunflow, error to severe! ***", True, 1)
+        defs.announce(exception, True, 1)
         exit()
 
-# Outputs a (Pass) or (Fail)
+# Outputs a (Pass) or (Fail) for decide_buy()
 def report_result(result):
 
     # Initialize variable
@@ -216,239 +198,6 @@ def report_result(result):
 
     # Return result
     return pafa
-
-# Determines buy decission and outputs to stdout
-def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals):
-            
-    # Debug
-    debug = False
-
-    # Initialize variables
-    do_buy    = {}
-    do_buy[1] = False
-    do_buy[2] = False
-    do_buy[3] = False
-    do_buy[4] = False
-    do_buy[5] = False    
-    can_buy   = False
-    message   = ""
-   
-    # Regular update or grid bot style
-    if interval != 0:
-        message = "Update " + str(interval) + "m: "
-
-    # Report and check indicators
-    if use_indicators['enabled']:    
-        if intervals[1] != 0:
-            if indicators_advice[intervals[1]]['result']:
-                do_buy[1] = True
-            message += str(intervals[1]) + "m: " + str(round(indicators_advice[intervals[1]]['value'], 2)) + " "
-            message += report_result(indicators_advice[intervals[1]]['result']) + ", "
-        else:
-            do_buy[1] = True
-        if intervals[2] != 0:
-            if indicators_advice[intervals[2]]['result']:
-                do_buy[2] = True
-            message += str(intervals[2]) + "m: " + str(round(indicators_advice[intervals[2]]['value'], 2)) + " "
-            message += report_result(indicators_advice[intervals[2]]['result']) + ", "
-        else:
-            do_buy[2] = True
-        if intervals[3] != 0:
-            if indicators_advice[intervals[3]]['result']:
-                do_buy[3] = True
-            message += str(intervals[3]) + "m: " + str(round(indicators_advice[intervals[3]]['value'], 2)) + " "
-            message += report_result(indicators_advice[intervals[3]]['result']) + ", "                
-        else:
-            do_buy[3] = True
-    else:
-        do_buy[1] = True
-        do_buy[2] = True
-        do_buy[3] = True
-
-    # Report spread
-    if use_spread['enabled']:
-        if spread_advice['result']:
-            do_buy[4] = True
-        message += "Spread: " + str(spread_advice['nearest']) + "% "
-        message += report_result(spread_advice['result']) + ", "
-    else:
-        do_buy[4] = True
-    
-    # Report orderbook
-    if use_orderbook['enabled']:
-        if orderbook_advice['result']:
-            do_buy[5] = True
-        message += "Orderbook: " + str(orderbook_advice['value']) + "% "
-        message += report_result(orderbook_advice['result']) + ", "
-    else:
-        do_buy[5] = True
-
-    # Determine buy decission
-    if do_buy[1] and do_buy[2] and do_buy[3] and do_buy[4] and do_buy[5]:
-        can_buy = True
-        message += "BUY!"
-    else:
-        can_buy = False
-        message += "NO BUY"
-
-    # Debug
-    if debug:
-        print("\n\n*** Simplified buy reporting ***\n")
-
-        print("Intervals:")
-        print(intervals, "\n")
-
-        print("Indicator advice:")
-        print(indicators_advice, "\n")
-        
-        print("Spread advice:")
-        print(spread_advice, "\n")
-        
-        print("Orderbook advice:")
-        print(orderbook_advice, "\n")
-
-    # Return result
-    return can_buy, message
-
-# Calculates the closest index
-def get_closest_index(prices, span):
-    
-    # Find the closest index in the time {timeframe}
-    closest_index = None
-    min_diff = float('inf')
-
-    for i, t in enumerate(prices['time']):
-        diff = abs(t - span)
-        if diff < min_diff:
-            min_diff = diff
-            closest_index = i
-
-    # Return closest index
-    return closest_index
-
-# Calculate price changes to get wave length 
-def waves(prices, use_waves):
-
-    # Initialize variables
-    debug   = False
-    spiking = False
-
-    # Time calculations
-    latest_time = prices['time'][-1]              # Get the latest time
-    span = latest_time - use_waves['timeframe']   # timeframe in milliseconds
-
-    # Get the closest index in the time {timeframe}
-    closest_index = get_closest_index(prices, span)
-
-    # Calculate the change in price
-    price_change      = 0
-    price_change_perc = 0
-    if closest_index is not None and prices['time'][-1] > span:
-        price_change      = prices['price'][-1] - prices['price'][closest_index]
-        price_change_perc = (price_change / prices['price'][closest_index]) * 100
-
-    # Apply wave multiplier
-    price_change_perc = price_change_perc * use_waves['multiplier']
-
-    if debug:
-        print(defs.now_utc()[1] + "Defs: wave: Price change in the last " + str(round((use_waves['timeframe'] / 1000), 2)) +  " seconds is " + str(round(price_change_perc, 2)) + "%\n")
-
-    # Return price change percentage
-    return price_change_perc
-
-# Deal with API rate limit
-def rate_limit(response):
-    
-    # Debug
-    debug = False
-    
-    # Initialize variables
-    delay  = 0
-    status = 0
-    limit  = 0
-    skip   = False
-
-    # Get Status and Limit
-    try:
-        status = float(response[2]['X-Bapi-Limit-Status'])
-        limit  = float(response[2]['X-Bapi-Limit'])
-    except:
-        if debug:
-            print(defs.now_utc()[1] + "Defs: rate_limit: Warning: API Rate Limit info does not exist in data, probably public request\n")
-        skip = True
-
-    # Continue when API Rate Limit is presence
-    if not skip:
-   
-        # Delay logic
-        ratio = (limit - status) / limit
-        if ratio > 0.5:
-            delay = delay + 0.1
-        if ratio > 0.7:
-            delay = delay + 0.3
-        if ratio > 0.8:
-            delay = delay + 0.6
-        if ratio > 0.9:
-            delay = delay + 1
-
-        # Debug
-        if debug:
-            print(defs.now_utc()[1] + "Defs: rate_limit: Status is " + str(status) + " and limit is " + str(limit) + ", therefore API delay is set to " + str(round(delay, 1)) + " seconds\n")
-        
-        # Hard exit
-        if ratio > 1:
-            print(defs.now_utc()[1] + "Defs: rate_limit: *** ERROR: API RATE LIMIT EXCEED, STOPPED TO PREVENT PERMANENT BAN! ***\n")
-            exit()
-        
-        # Inform of delay
-        if delay:
-            print(defs.now_utc()[1] + "Defs: rate_limit: *** WARNING: API RATE LIMIT HIT, DELAYING SUNFLOW " + str(delay) + " SECONDS ***\n")
-            time.sleep(delay)
-    
-    # Clean response data
-    data = response[0]
-
-    # Return cleaned response
-    return data
-
-# Do a smart round because we are lazy :)
-def smart_round(number):
-
-    # Initialize variables
-    num_str = f"{number:.20f}"
-    
-    # Search for the first occurrence of at least three consecutive zeros
-    match = re.search(r'0{3,}', num_str)
-    
-    # Rounding logic
-    if match:
-        zero_start = match.start()
-        rounded_number = round(number, zero_start - 2)
-    else:
-        rounded_number = number
-    
-    return rounded_number
-
-# Report ticker info to stdout
-def ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info):
-
-    print(defs.now_utc()[1] + "Sunflow: handle_ticker: Price went ", end="")
-    if new_spot > spot:
-        print("up", end="")
-    else:
-        print("down", end="")
-    print(" from " + str(spot) + " to " + str(new_spot) + " " + info['quoteCoin'], end="")
-    if active_order['active']:
-        trigger_distance = abs(new_spot - active_order['trigger'])
-        trigger_distance = defs.precision(trigger_distance, info['tickSize'])
-        print(", distance is " + str(trigger_distance) + " " + info['quoteCoin'], end="")
-    if not active_order['active']:
-        if rise_to:
-            print(", needs to rise " + rise_to + ", NO SELL", end="")
-        else:
-            if len(all_buys) > 0:
-                print(", SELL", end="")
-    print("\n")
 
 # Give an advice via the buy matrix
 def advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval):
@@ -503,16 +252,231 @@ def advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spo
     # Return all data
     return indicators_advice, spread_advice, orderbook_advice
 
-# Send out a notification via Apprise
-def notify(message, level):
+# Determines buy decission and outputs to stdout
+def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals):
+            
+    # Debug
+    debug = False
 
-    # Check if enabled
-    if not config.notify_enabled:
-        return
+    # Initialize variables
+    do_buy    = {}
+    do_buy[1] = False
+    do_buy[2] = False
+    do_buy[3] = False
+    do_buy[4] = False
+    do_buy[5] = False    
+    can_buy   = False
+    message   = ""
+   
+    # Regular update or grid bot style
+    if interval != 0:
+        message = f"Update {interval}m: "
 
-    # Messaging suitable for level
-    if level >= config.notify_level:
-        apobj.notify(
-            body  = message,
-            title = "Sunflow Cryptobot"
-        )
+    # Report and check indicators
+    if use_indicators['enabled']:    
+        if intervals[1] != 0:
+            if indicators_advice[intervals[1]]['result']:
+                do_buy[1] = True
+            message += f"{intervals[1]}m: f{indicators_advice[intervals[1]]['value']:.2f} "
+            message += report_result(indicators_advice[intervals[1]]['result']) + ", "
+        else:
+            do_buy[1] = True
+        if intervals[2] != 0:
+            if indicators_advice[intervals[2]]['result']:
+                do_buy[2] = True
+            message += f"{intervals[2]}m: f{indicators_advice[intervals[2]]['value']:.2f} "
+            message += report_result(indicators_advice[intervals[2]]['result']) + ", "
+        else:
+            do_buy[2] = True
+        if intervals[3] != 0:
+            if indicators_advice[intervals[3]]['result']:
+                do_buy[3] = True
+            message +=f"{intervals[3]}m: f{indicators_advice[intervals[3]]['value']:.2f} "
+            message += report_result(indicators_advice[intervals[3]]['result']) + ", "                
+        else:
+            do_buy[3] = True
+    else:
+        do_buy[1] = True
+        do_buy[2] = True
+        do_buy[3] = True
+
+    # Report spread
+    if use_spread['enabled']:
+        if spread_advice['result']:
+            do_buy[4] = True
+        message += f"Spread: {defs.format_price(spread_advice['nearest'], 0.01)} % "
+        message += report_result(spread_advice['result']) + ", "
+    else:
+        do_buy[4] = True
+    
+    # Report orderbook
+    if use_orderbook['enabled']:
+        if orderbook_advice['result']:
+            do_buy[5] = True
+        message += f"Orderbook: {orderbook_advice['value']} % "
+        message += report_result(orderbook_advice['result']) + ", "
+    else:
+        do_buy[5] = True
+
+    # Determine buy decission
+    if do_buy[1] and do_buy[2] and do_buy[3] and do_buy[4] and do_buy[5]:
+        can_buy = True
+        message += "BUY!"
+    else:
+        can_buy = False
+        message += "NO BUY"
+
+    # Debug
+    if debug:
+        print("\n\n*** Simplified buy reporting ***\n")
+
+        print("Intervals:")
+        print(intervals, "\n")
+
+        print("Indicator advice:")
+        print(indicators_advice, "\n")
+        
+        print("Spread advice:")
+        print(spread_advice, "\n")
+        
+        print("Orderbook advice:")
+        print(orderbook_advice, "\n")
+
+    # Return result
+    return can_buy, message
+
+# Deal with API rate limit
+def rate_limit(response):
+    
+    # Debug
+    debug = False
+    
+    # Initialize variables
+    delay  = 0
+    status = 0
+    limit  = 0
+    skip   = False
+
+    # Get Status and Limit
+    try:
+        status = float(response[2]['X-Bapi-Limit-Status'])
+        limit  = float(response[2]['X-Bapi-Limit'])
+    except:
+        if debug:
+            defs.announce("Warning: API Rate Limit info does not exist in data, probably public request")
+        skip = True
+
+    # Continue when API Rate Limit is presence
+    if not skip:
+   
+        # Delay logic
+        ratio = (limit - status) / limit
+        if ratio > 0.5:
+            delay = delay + 0.1
+        if ratio > 0.7:
+            delay = delay + 0.3
+        if ratio > 0.8:
+            delay = delay + 0.6
+        if ratio > 0.9:
+            delay = delay + 1
+
+        # Debug
+        if debug:
+            defs.announce(f"Status is {status} and limit is {limit}, therefore API delay is set to {delay:.1f} seconds\n")
+        
+        # Hard exit
+        if ratio > 1:
+            defs.announce("f*** ERROR: API RATE LIMIT EXCEED, STOPPED TO PREVENT PERMANENT BAN! ***")
+            exit()
+        
+        # Inform of delay
+        if delay:
+            defs.announce(f"*** WARNING: API RATE LIMIT HIT, DELAYING SUNFLOW {delay} SECONDS ***")
+            time.sleep(delay)
+    
+    # Clean response data
+    data = response[0]
+
+    # Return cleaned response
+    return data
+
+# Report ticker info to stdout
+def ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info):
+
+    message = "Price went "
+    if new_spot > spot:
+        message += "up"
+    else:
+        message += "down"
+    
+    message += f" from {format_price(spot, info['tickSize'])} to {format_price(new_spot, info['tickSize'])} {info['quoteCoin']}"
+
+    if active_order['active']:
+        trigger_distance = abs(new_spot - active_order['trigger'])
+        trigger_distance = defs.format_price(trigger_distance, info['tickSize'])
+        message += f", distance is {trigger_distance} {info['quoteCoin']}"
+
+    if not active_order['active']:
+        if rise_to:
+            message += f", needs to rise {rise_to}, NO SELL"
+        else:
+            if len(all_buys) > 0:
+                message += ", SELL"
+    
+    # Return message
+    return message
+
+# Send out a notification via stdout or Apprise
+def announce(message, to_apprise=False, level=1):
+    
+    # Initialize variables
+    stack        = inspect.stack()
+    call_frame   = stack[1]
+    filename     = Path(call_frame.filename).name
+    functionname = call_frame.function
+    timestamp    = now_utc()[1]
+      
+    # Compose messages
+    screen_message  = timestamp + f"{filename}: {functionname}: {message}"
+    apprise_message = f"{message} ({config.symbol})"
+    
+    # Output to Screen
+    print(screen_message + "\n")
+    
+    # Output to Apprise
+    if to_apprise:
+        if config.notify_enabled and level >= config.notify_level:
+            apobj.notify(
+                body  = apprise_message,
+                title = "Sunflow Cryptobot"
+            )
+    
+    # Return message
+    return screen_message
+
+# Formats the price according to the ticksize.
+def format_price(price, tickSize):
+
+    # Calculate the number of decimal places from ticksize
+    decimal_places = get_decimal_places(tickSize)
+    
+    # Format the price with the calculated decimal places
+    formatted_price = f"{price:.{decimal_places}f}"
+    
+    # Return formatted price
+    return formatted_price
+
+# Returns the number of decimal places based on the ticksize value.
+def get_decimal_places(ticksize):
+
+    ticksize_str = str(ticksize)
+
+    if '.' in ticksize_str:
+        decimal_places = len(ticksize_str.split('.')[1])
+    else:
+        decimal_places = 0
+
+    # Return decimal places
+    return decimal_places
+
+    

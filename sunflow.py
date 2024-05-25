@@ -12,7 +12,7 @@ from http.client import RemoteDisconnected
 import argparse, importlib, sys, traceback
 
 # Load internal libraries
-import database, defs, preload, trailing, orders
+import database, defs, distance, preload, trailing, orders
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="Run the Sunflow Cryptobot with a specified config.")
@@ -73,13 +73,6 @@ if config.wiggle == "Wave"   : use_waves['enabled'] = True    # Automatically se
 use_waves['timeframe']       = config.wave_timeframe          # Timeframe in ms to measure wave, used when wiggle is set to Wave
 use_waves['multiplier']      = config.wave_multiplier         # Multiply wave percentage by this multiplier
 
-# Delay
-use_delay                    = {}
-use_delay['enabled']         = config.delay_enabled           # Use delay after buy
-use_delay['timeframe']       = config.delay_timeframe         # Timeframe in ms to delay buy
-use_delay['start']           = 0                              # Miliseconds since epoch when delay started
-use_delay['end']             = 0                              # Miliseconds since epoch when delay ends
-
 # Trailing order
 active_order                 = {}                             # Trailing order data
 active_order['side']         = ""                             # Trailing buy
@@ -119,8 +112,11 @@ indicators_advice[intervals[1]] = {'result': True, 'value': 0, 'level': 'Neutral
 indicators_advice[intervals[2]] = {'result': True, 'value': 0, 'level': 'Neutral'}
 indicators_advice[intervals[3]] = {'result': True, 'value': 0, 'level': 'Neutral'}
 
-# Prevent race condition
-def_buy_matrix_active           = False
+# Locking handle_ticker function to prevent race conditions
+lock_ticker                     = {}
+lock_ticker['time']             = defs.now_utc()[4]
+lock_ticker['enabled']          = False
+
 
 ### Functions ###
 
@@ -134,22 +130,21 @@ def handle_ticker(message):
     try:
    
         # Declare some variables global
-        global spot, ticker, active_order, all_buys, all_sells, prices, use_delay, indicators_advice
+        global spot, ticker, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker
 
         # Initialize variables
         ticker                 = {}
         amend_code             = 0
         amend_error            = ""
         result                 = ()
+        lock_ticker['time']    = defs.now_utc()[4]
         
-        # Debug show incoming message
-        if debug:
-            print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Incoming ticker ***")
-            print(str(message) + "\n")
-
         # Get ticker update
         ticker['time']      = int(message['ts'])
         ticker['lastPrice'] = float(message['data']['lastPrice'])
+        ticker['simulated'] = False
+        if message['data'].get('simulated', False):
+            ticker['simulated'] = True
 
         # Popup new price
         prices['time'].append(ticker['time'])
@@ -157,18 +152,30 @@ def handle_ticker(message):
         prices['time'].pop(0)
         prices['price'].pop(0)
 
+        # Show incoming message
+        if debug:
+            defs.announce(f"*** Incoming ticker with price {ticker['lastPrice']} {info['baseCoin']}, simulated = {ticker['simulated']} ***")
+
+        # Prevent race conditions
+        if lock_ticker['enabled']:
+            spot = ticker['lastPrice']
+            defs.announce("Function is busy, Sunflow will catch up with next tick")
+            return
+        
+        # Lock handle_ticker function
+        lock_ticker['enabled'] = True        
+
         # Calculate wave, also used in trailing when distance set to wave
         if use_waves['enabled']:
-            active_order['wave'] = defs.waves(prices, use_waves)
+            active_order['wave'] = distance.waves(prices, use_waves)
            
         # Run trailing if active
         if active_order['active']:
             active_order['current'] = ticker['lastPrice']
             active_order['status']  = 'Trailing'
-            result       = trailing.trail(symbol, ticker['lastPrice'], active_order, info, all_buys, all_sells, prices, use_delay)
+            result       = trailing.trail(symbol, ticker['lastPrice'], active_order, info, all_buys, all_sells, prices)
             active_order = result[0]
             all_buys     = result[1]
-            use_delay    = result[2]
 
         # Has price changed, then run all kinds of actions
         if spot != ticker['lastPrice']:
@@ -182,14 +189,14 @@ def handle_ticker(message):
             rise_to                 = result[3]
 
             # Output to stdout
-            defs.ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info)
+            message = defs.ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info)
+            defs.announce(message)
             
             # If trailing buy is already running while we can sell
             if active_order['active'] and active_order['side'] == "Buy" and can_sell:
                 
                 # Output to stdout and Apprise
-                print(defs.now_utc()[1] + "Sunflow: handle_ticker: *** Warning loosing money, we can sell while we are buying, canceling buy order! ***\n")
-                defs.notify(f"Warning: loosing money, we can sell while we are buying for {symbol}, canceling buy order!", 1)
+                defs.announce("*** Warning loosing money, we can sell while we are buying, canceling buy order! ***", True, 1)
                 
                 # *** CHECK *** Needs testing: Cancel trailing buy, remove from all_buys database
                 active_order['active'] = False
@@ -198,7 +205,7 @@ def handle_ticker(message):
                 
                 if error_code == 0:
                     # Situation normal, just remove the order
-                    all_buys = database.remove(active_order['orderid'], all_buys)
+                    all_buys = database.remove(active_order['orderid'], all_buys, info)
 
                 if error_code == 1:
                     # Trailing buy was bought
@@ -233,34 +240,31 @@ def handle_ticker(message):
                     if amend_code == 0:
                         # Everything went fine, we can continue trailing
                         message = f"Adjusted quantity from {active_order['qty']} to {active_order['qty_new']} {info['baseCoin']} in {active_order['side'].lower()} order"
-                        print(defs.now_utc()[1] + "Sunflow: handle_ticker: " + message + "\n")
-                        defs.notify(message + f" for {symbol}", 0)
+                        defs.announce(message, True, 0)
                         active_order['qty'] = active_order['qty_new']
                         all_sells           = all_sells_new
 
                     if amend_code == 1:
                         # Order slipped, close trailing process
-                        print(defs.now_utc()[1] + "Trailing: trail: Sell order slipped, we keep all buys database as is and stop trailing\n")
-                        defs.notify(f"Sell order slipped, we keep all buys database as is and stop trailing for {symbol}", 1)
+                        message = "Sell order slipped, we keep all buys database as is and stop trailing"
+                        defs.announce(message, True, 1)
                         result       = trailing.close_trail(active_order, all_buys, all_sells, info)
                         active_order = result[0]
                         all_buys     = result[1]
                         all_sells    = result[2]
                         # Revert old situation
                         all_sells_new = all_sells
-                        # Just for safety remove the order although it might not exist anymore *** CHECK *** Might not be correct this action, test!
-                        orders.cancel(symbol, active_order['orderid'])
                         
                     if amend_code == 2:
                         # Quantity could not be changed, do nothing
-                        print(defs.now_utc()[1] + "Trailing: trail: Sell order quantity could not be changed, doing nothing\n")
-                        defs.notify(f"Trailing: trail: Sell order quantity could not be changed, doing nothing for {symbol}", 1)
+                        message = "Sell order quantity could not be changed, doing nothing"
+                        defs.announce(message, True, 1)
 
                     if amend_code == 100:
                         # Critical error, let's log it and revert
                         all_sells_new = all_sells
-                        print(defs.now_utc()[1] + "Trailing: trail: Critical error, logging to file\n")
-                        defs.notify(f"While trailing a critical error occurred for {symbol}", 1)
+                        message = "Critical error while trailing"
+                        defs.announce(message, True, 1)
                         defs.log_error(amend_error)
 
                 # Reset all sells
@@ -270,25 +274,31 @@ def handle_ticker(message):
             if use_spread['enabled'] and not use_indicators['enabled'] and not use_orderbook['enabled'] and not active_order['active']:
                 active_order = buy_matrix(new_spot, active_order, all_buys, intervals[1])
 
-        # Always set new spot price
-        spot = ticker['lastPrice']
-
     # Report error
     except Exception as e:
         tb_info = traceback.extract_tb(e.__traceback__)
         filename, line, func, text = tb_info[-1]
-        print(defs.now_utc()[1] + f"Sunflow: handle_ticker: An error occurred in {filename} on line {line}: {e}")
-        print("Full traceback:")
+        defs.announce(f"An error occurred in {filename} on line {line}: {e}")
         traceback.print_tb(e.__traceback__)
+
+    # Always set new spot price and unlock function
+    spot = ticker['lastPrice']
+    lock_ticker['enabled'] = False
+    
+    # Close function
+    return
 
 def handle_kline_1(message):
     handle_kline(message, intervals[1])
+    return
 
 def handle_kline_2(message):
     handle_kline(message, intervals[2])
+    return
 
 def handle_kline_3(message):
     handle_kline(message, intervals[3])
+    return
 
 # Handle messages to keep klines up to date
 def handle_kline(message, interval):
@@ -299,13 +309,12 @@ def handle_kline(message, interval):
         # Declare some variables global
         global klines, active_order, all_buys, indicators_advice
 
-        # Initialize kline
+        # Initialize variables
         kline = {}
      
         # Show incoming message
         if debug:
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: *** Incoming kline with interval" + str(interval) + "m ***")
-            print(message)
+            defs.announce(f"*** Incoming kline with interval {interval}m ***")
 
         # Get newest kline
         kline['time']     = int(message['data'][0]['start'])
@@ -323,7 +332,7 @@ def handle_kline(message, interval):
             klines_count = len(klines[interval]['close'])
             if klines_count != limit:
                 klines[interval] = preload.get_klines(symbol, interval, limit)
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: Added new "  + str(interval) + "m interval onto existing " + str(klines_count) + " klines\n")
+            defs.announce(f"Added new {interval}m interval onto existing {klines_count} klines")
             klines[interval] = defs.new_kline(kline, klines[interval])
       
         else:            
@@ -337,9 +346,11 @@ def handle_kline(message, interval):
     except Exception as e:
         tb_info = traceback.extract_tb(e.__traceback__)
         filename, line, func, text = tb_info[-1]
-        print(defs.now_utc()[1] + f"An error occurred in {filename} on line {line}: {e}")
-        print("Full traceback:")
+        defs.announce(f"An error occurred in {filename} on line {line}: {e}")
         traceback.print_tb(e.__traceback__)
+    
+    # Close function
+    return
 
 # Handle messages to keep orderbook up to date
 def handle_orderbook(message):
@@ -349,8 +360,7 @@ def handle_orderbook(message):
       
         # Show incoming message
         if debug:
-            print(defs.now_utc()[1] + "Sunflow: handle_orderbook: *** Incoming orderbook ***")
-            print(message)
+            defs.announce("*** Incoming orderbook ***")
         
         # Recalculate depth to numerical value
         depthN = ((2 * depth) / 100) * spot
@@ -384,7 +394,7 @@ def handle_orderbook(message):
 
         # Output the stdout
         if debug:        
-            print(defs.now_utc()[1] + "Sunflow: handle_orderbook: Orderbook")
+            defs.announce("Sunflow: handle_orderbook: Orderbook")
             print(f"Spot price        : {spot}")
             print(f"Lower depth       : {spot - depth}")
             print(f"Upper depth       : {spot + depth}\n")
@@ -393,57 +403,41 @@ def handle_orderbook(message):
             print(f"Total Sell quantity: {total_sell_within_depth}")
             print(f"Total quantity     : {total_quantity_within_depth}\n")
 
-            print(f"Buy within depth  : {buy_percentage:.2f}%")
-            print(f"Sell within depth : {sell_percentage:.2f}%")
+            print(f"Buy within depth  : {buy_percentage:.2f} %")
+            print(f"Sell within depth : {sell_percentage:.2f} %")
 
-        print(defs.now_utc()[1] + f"Sunflow: handle_orderbook: Orderbook: Market depth (Buy / Sell | depth (Advice)): {buy_percentage:.2f}% / {sell_percentage:.2f}% | {depth}% ", end="")
+        # Create message
+        message = f"Sunflow: handle_orderbook: Orderbook: Market depth (Buy / Sell | depth (Advice)): {buy_percentage:.2f} % / {sell_percentage:.2f} % | {depth} % "
         if buy_percentage >= sell_percentage:
-            print("(BUY)\n")
+            message = message + "(BUY)"
         else:
-            print("(SELL)\n")
+            message = message + "(SELL)"
+        defs.announce(message)
 
     # Report error
     except Exception as e:
         tb_info = traceback.extract_tb(e.__traceback__)
         filename, line, func, text = tb_info[-1]
-        print(defs.now_utc()[1] + f"An error occurred in {filename} on line {line}: {e}")
-        print("Full traceback:")
+        defs.announce(f"An error occurred in {filename} on line {line}: {e}")
         traceback.print_tb(e.__traceback__)
+    
+    # Close function
+    return
 
 # Check if we can buy the based on signals
 def buy_matrix(spot, active_order, all_buys, interval):
 
     # Declare some variables global
-    global indicators_advice, def_buy_matrix_active
+    global indicators_advice
     
-    # Prevent race condition
-    if def_buy_matrix_active:
-        print(defs.now_utc()[1] + "Sunflow: buy_matrix: function is busy, no further action required\n") 
-
-    # Set race condition
-    def_buy_matrix_active = True
-
     # Initialize variables
     can_buy                = False
     spread_advice          = {}
     orderbook_advice       = {}
-    initiate_buy           = {}
-    initiate_buy['delay']  = False
-    initiate_buy['order']  = False
     result                 = ()    
-   
-    # Only initiate buy when there is no delay
-    if use_delay['enabled']:
-        if defs.now_utc()[4] < use_delay['end']:
-            print(defs.now_utc()[1] + "Sunflow: handle_kline: Buy delay is currently enabled, pausing for " + str(use_delay['end'] - defs.now_utc()[4]) + "ms \n")
-            initiate_buy['delay'] = True
-    
+          
     # Only initiate buy and do complex calculations when not already trailing
-    if active_order['active']:
-        initiate_buy['order'] = True
-    
-    # Only initiate buy and do complex calculations when not already trailing
-    if not initiate_buy['delay'] and not initiate_buy['order']:
+    if not active_order['active']:
         
         # Get buy advice
         result            = defs.advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval)
@@ -455,16 +449,13 @@ def buy_matrix(spot, active_order, all_buys, interval):
         result  = defs.decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals)
         can_buy = result[0]
         message = result[1]
-        print(defs.now_utc()[1] + "Sunflow: buy_matrix: " + message + "\n")
+        defs.announce(message)
 
         # Determine distance of trigger price and execute buy decission
         if can_buy:
             result       = orders.buy(symbol, spot, active_order, all_buys, prices, info)
             active_order = result[0]
             all_buys     = result[1]
-
-    # Reset race condition
-    def_buy_matrix_active = False
     
     # Return active_order
     return active_order
@@ -481,60 +472,53 @@ def prechecks():
     # Do checks
     if intervals[3] != 0 and intervals[2] == 0:
         goahead = False
-        print(defs.now_utc()[1] + "Sunflow: prechecks: Interval 2 must be set if you use interval 3 for confirmation")
+        defs.announce("Interval 2 must be set if you use interval 3 for confirmation")
         
     if not use_spread['enabled'] and not use_indicators['enabled']:
         goahead = False
-        print(defs.now_utc()[1] + "Sunflow: prechecks: Need at least either Technical Indicators enabled or Spread to determine buy action")
+        defs.announce("Need at least either Technical Indicators enabled or Spread to determine buy action")
     
     # Return result
     return goahead
 
+
 ### Start main program ###
 
 # Check if we can start
-if prechecks():
-
-    # Welcome screen
-    print("\n*************************")
-    print("*** Sunflow Cryptobot ***")
-    print("*************************\n")
-    print("Symbol    : " + symbol)
-    if use_indicators['enabled']:
-        print("Interval 1: " + str(intervals[1]) + "m")
-        print("Interval 2: " + str(intervals[2]) + "m")
-        print("Interval 3: " + str(intervals[3]) + "m")
-    if use_spread['enabled']:
-        print("Spread    : " + str(use_spread['distance']) + "%")
-    print("Limit     : " + str(limit))
-    print()
-    
-    # Preload all requirements
-    print("*** Preloading ***\n")
-
-    preload.check_files()
-    if intervals[1] !=0  : klines[intervals[1]] = preload.get_klines(symbol, intervals[1], limit)
-    if intervals[2] !=0  : klines[intervals[2]] = preload.get_klines(symbol, intervals[2], limit)
-    if intervals[3] !=0  : klines[intervals[3]] = preload.get_klines(symbol, intervals[3], limit) # **** CHECK *** Eigenlijk ook technical indicators preloaden zie buy matrix!
-    ticker               = preload.get_ticker(symbol)
-    spot                 = ticker['lastPrice']
-    info                 = preload.get_info(symbol, spot, multiplier)
-    all_buys             = preload.get_buys(config.dbase_file) 
-    all_buys             = preload.check_orders(all_buys)
-    prices               = preload.get_prices(symbol, limit)
-
-    # Delay buy for starting
-    if use_delay['enabled']:
-        use_delay['start'] = defs.now_utc()[4]
-        use_delay['end']   = use_delay['start'] + use_delay['timeframe']
-        print(defs.now_utc()[1] + "Sunflow: prechecks: Delaying buy cycle on startup with " + str(use_delay['timeframe']) + "ms\n")
-
-    print("*** Starting ***\n")
-    defs.notify(f"Started Sunflow Cryptobot for {symbol}", 1)
-
-else:
-    print("*** COULD NOT START ***\n")
+if not prechecks():
+    defs.announce("*** NO START ***", True, 1)
     exit()
+    
+# Display welcome screen
+print("\n*************************")
+print("*** Sunflow Cryptobot ***")
+print("*************************\n")
+print(f"Symbol    : {symbol}")
+if use_indicators['enabled']:
+    print(f"Interval 1: {intervals[1]}m")
+    print(f"Interval 2: {intervals[2]}m")
+    print(f"Interval 3: {intervals[3]}m")
+if use_spread['enabled']:
+    print(f"Spread    : {use_spread['distance']} %")
+print(f"Limit     : {limit}\n")
+
+# Preload all requirements
+print("*** Preloading ***\n")
+
+preload.check_files()
+if intervals[1] !=0  : klines[intervals[1]] = preload.get_klines(symbol, intervals[1], limit)
+if intervals[2] !=0  : klines[intervals[2]] = preload.get_klines(symbol, intervals[2], limit)
+if intervals[3] !=0  : klines[intervals[3]] = preload.get_klines(symbol, intervals[3], limit) # **** CHECK *** Eigenlijk ook technical indicators preloaden zie buy matrix!
+ticker               = preload.get_ticker(symbol)
+spot                 = ticker['lastPrice']
+info                 = preload.get_info(symbol, spot, multiplier)
+all_buys             = database.load(config.dbase_file, info) 
+all_buys             = preload.check_orders(all_buys, info)
+prices               = preload.get_prices(symbol, limit)
+
+# Announce start
+defs.announce("*** Starting ***", True, 1)
+
 
 ### Websockets ###
 
@@ -545,6 +529,8 @@ def connect_websocket():
 
 # Continuously get tickers from websocket
 def subscribe_streams(ws):
+    
+    # Always stream ticker information
     ws.ticker_stream(symbol=symbol, callback=handle_ticker)
 
     # At request get klines from websocket
@@ -566,7 +552,8 @@ def simulated_ticker():
     return {
         'ts': defs.now_utc()[4],
         'data': {
-            'lastPrice': str(spot)
+            'lastPrice': str(spot),
+            'simulated': "True"
         }
     }
 
@@ -577,13 +564,14 @@ def main():
     while True:
         try:
             # Simulate or fetch the latest ticker message
+            current_time      = defs.now_utc()[4]
             simulated_message = simulated_ticker()
-            handle_ticker(simulated_message)
+            if current_time - lock_ticker['time'] > 1000:
+                handle_ticker(simulated_message)
             sleep(1)
         except (RemoteDisconnected, ProtocolError, ChunkedEncodingError) as e:
-            message = f"Sunflow: main: Exchange connection lost. Reconnecting due to: {e}"
-            print(defs.now_utc()[1] + message + "\n")
-            defs.notify(message + f" for {symbol}", 1)
+            message = f"Exchange connection lost. Reconnecting due to: {e}"
+            defs.announce(message, True, 1)
             sleep(5)
             ws = connect_websocket()
             subscribe_streams(ws)

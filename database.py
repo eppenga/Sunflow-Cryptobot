@@ -2,49 +2,27 @@
 #
 # Do database stuff
 
-# Load external libraries
-from pathlib import Path
-import importlib, json, sys
+# Load libraries
+from config_loader import load_config
+import defs
+import json
 
-# Load internal libraries
-import argparse, defs
-
-# Parse command line arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', '--config', default='config.py')
-args = parser.parse_args()
-
-# Resolve config file path
-config_path = Path(args.config).resolve()
-if not config_path.exists():
-    print(f"Config file not found at {config_path}, aborting...\n")
-    sys.exit()
-
-# Dynamically load the config module
-sys.path.append(str(config_path.parent))
-config_module_name = config_path.stem
-config = importlib.import_module(config_module_name)
-
-# Initialize variables
-debug = False
+# Load config
+config = load_config()
 
 # Create a new all buy database file
-def save(all_buys):
+def save(all_buys, info):
 
     # Write the file
     with open(config.dbase_file, 'w', encoding='utf-8') as json_file:
         json.dump(all_buys, json_file)
 
-    # Get number of orders 
-    order_count = len(all_buys)
-    total_qty   = sum(item['cumExecQty'] for item in all_buys)
-    total_qty   = defs.smart_round(total_qty)
+    # Get statistics and output to stdout
+    result = order_count(all_buys, info)
+    defs.announce(f"Database contains {result[0]} buy transactions and {result[1]} {info['baseCoin']} was bought")
     
-    # Output to stdout
-    print(defs.now_utc()[1] + "Database: save: Saved database with " + str(order_count) + " buy orders and " + str(total_qty) + " executed in base currency to file\n")
-
 # Load the database with all buys
-def load(dbase_file):
+def load(dbase_file, info):
 
     # Initialize variables
     all_buys = []
@@ -54,16 +32,20 @@ def load(dbase_file):
         with open(dbase_file, 'r', encoding='utf-8') as json_file:
             all_buys = json.load(json_file)
     except FileNotFoundError:
-        print(defs.now_utc()[1] + "Database: load: Database with all buys not found, exiting...\n")
+        defs.announce("Database with all buys not found, exiting...")
         exit()
     except json.decoder.JSONDecodeError:
-        print(defs.now_utc()[1] + "Database: load: Database with all buys not yet filled, may come soon!\n")
+        defs.announce("Database with all buys not yet filled, may come soon!")
+
+    # Get statistics and output to stdout
+    result = order_count(all_buys, info)
+    defs.announce(f"Database contains {result[0]} buy transactions and {result[1]} {info['baseCoin']} was executed")
 
     # Return database
     return all_buys
 
 # Remove an order from the all buys database file
-def remove(orderid, all_buys):
+def remove(orderid, all_buys, info):
       
     # Initialize variables
     all_buys_new = []
@@ -77,19 +59,18 @@ def remove(orderid, all_buys):
 
     # Output to stdout
     if not found_order:
-        message = "Database: remove: The order with ID " + str(orderid) + " which we were about to remove was not found!"
-        print(defs.now_utc()[1] + message + "\n")
+        defs.announce(f"The order with ID {orderid} which we were about to remove was not found!")
     else:
-        print(defs.now_utc()[1] + "Database: remove: Order with ID " + str(orderid) + " removed from all buys database!\n")
+        defs.announce(f"Database: remove: Order with ID {orderid} removed from all buys database!")
     
     # Save to database
-    save(all_buys_new)   
+    save(all_buys_new, info)
     
     # Retrun database
     return all_buys_new
 
 # Register all buys in a database file
-def register_buy(buy_order, all_buys):
+def register_buy(buy_order, all_buys, info):
 
     # Debug
     debug = False
@@ -114,18 +95,18 @@ def register_buy(buy_order, all_buys):
         counter = counter + 1
       
     if debug:
-        print(defs.now_utc()[1] + "Database: register_buy: New database with " + str(counter) + " buy orders")
+        defs.announce(f"Database: register_buy: New database with {counter} buy orders")
         print(all_buys_new)
         print()
 
     # Save to database
-    save(all_buys_new)    
+    save(all_buys_new, info)    
     
     # Return new buy database
     return all_buys_new
 
 # Remove all sold buy transaction from the database file
-def register_sell(all_buys, all_sells):
+def register_sell(all_buys, all_sells, info):
     
     # Debug
     debug = False
@@ -141,12 +122,9 @@ def register_sell(all_buys, all_sells):
 
     # Count unique order ids
     unique_ids = len(sell_order_ids)
-        
-    if unique_ids == 0:
-        print(defs.now_utc()[1] + "Database: register_sell: No orders in trailing sell when trying to register\n")
     
     # Save to database
-    save(filtered_buys)
+    save(filtered_buys, info)
     
     if debug:
         print("All sell orders")
@@ -161,7 +139,18 @@ def register_sell(all_buys, all_sells):
         print()
     
     # Output to stdout
-    print(defs.now_utc()[1] + "Database: register_sell: Sold " + str(unique_ids) + " orders via trailing sell\n")
+    defs.announce(f"Sold {unique_ids} orders via trailing sell")
     
     # Return the cleaned buys
     return filtered_buys
+
+# Determine number of orders and qty
+def order_count(all_buys, info):
+    
+    # Get number of transactions
+    order_count = len(all_buys)
+    total_qty   = sum(item['cumExecQty'] for item in all_buys)
+    total_qty   = defs.precision(total_qty, info['basePrecision'])
+    
+    # Return data
+    return order_count, total_qty

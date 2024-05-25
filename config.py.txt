@@ -34,10 +34,6 @@ orderbook_maximum  = 60.00        # Maximum orderbook percentage
 wave_timeframe     = 10000        # Timeframe in ms to measure wave length, used when wiggle is set to Wave
 wave_multiplier    = 1            # Multiply wave percentage by this multiplier
 
-# Buy delay
-delay_enabled      = False        # Use delay after buy
-delay_timeframe    = 60000        # Timeframe in ms to delay buy
-
 # Exchange keys (ALWAYS KEEP THESE SECRET)
 api_key            = "123456"                                   # API Key
 api_secret         = "123456"                                   # API Secret
