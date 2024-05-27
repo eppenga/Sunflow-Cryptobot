@@ -183,7 +183,7 @@ def handle_ticker(message):
 
             # Check if and how much we can sell
             result                  = orders.check_sell(new_spot, profit, active_order, all_buys, info)
-            all_sells_new           = result[0]
+            all_sells               = result[0]
             active_order['qty_new'] = result[1]
             can_sell                = result[2]
             rise_to                 = result[3]
@@ -196,19 +196,21 @@ def handle_ticker(message):
             if active_order['active'] and active_order['side'] == "Buy" and can_sell:
                 
                 # Output to stdout and Apprise
-                defs.announce("*** Warning loosing money, we can sell while we are buying, canceling buy order! ***", True, 1)
+                defs.announce("*** Warning loosing money, we can sell while we are buying, trying to cancel buy order! ***", True, 1)
                 
-                # *** CHECK *** Needs testing: Cancel trailing buy, remove from all_buys database
+                # Cancel trailing buy, remove from all_buys database
                 active_order['active'] = False
                 result     = orders.cancel(symbol, active_order['orderid'])
                 error_code = result[0]
                 
                 if error_code == 0:
                     # Situation normal, just remove the order
+                    defs.announce("Buy order cancelled successfully")
                     all_buys = database.remove(active_order['orderid'], all_buys, info)
 
                 if error_code == 1:
                     # Trailing buy was bought
+                    defs.announce("Buy order could not be cancelled, closing trailing buy")
                     result       = trailing.close_trail(active_order, all_buys, all_sells, info)
                     active_order = result[0]
                     all_buys     = result[1]
@@ -222,8 +224,6 @@ def handle_ticker(message):
             if not active_order['active'] and can_sell:
                 # There is no old quantity on first sell
                 active_order['qty'] = active_order['qty_new']
-                # Fill all_sells for the first time
-                all_sells = all_sells_new
                 # Place the first sell order
                 active_order = orders.sell(symbol, new_spot, active_order, prices, info)
                 
@@ -239,36 +239,23 @@ def handle_ticker(message):
                     # Determine what to do based on error code of amend result
                     if amend_code == 0:
                         # Everything went fine, we can continue trailing
-                        message = f"Adjusted quantity from {active_order['qty']} to {active_order['qty_new']} {info['baseCoin']} in {active_order['side'].lower()} order"
+                        message = f"Adjusted quantity from {defs.format_price(active_order['qty'], info['basePrecision'])} "
+                        message = message + f"to {defs.format_price(active_order['qty_new'], info['basePrecision'])} {info['baseCoin']} in {active_order['side'].lower()} order"
                         defs.announce(message, True, 0)
                         active_order['qty'] = active_order['qty_new']
-                        all_sells           = all_sells_new
 
                     if amend_code == 1:
-                        # Order slipped, close trailing process
-                        message = "Sell order slipped, we keep all buys database as is and stop trailing"
-                        defs.announce(message, True, 1)
-                        result       = trailing.close_trail(active_order, all_buys, all_sells, info)
-                        active_order = result[0]
-                        all_buys     = result[1]
-                        all_sells    = result[2]
-                        # Revert old situation
-                        all_sells_new = all_sells
+                        # Order does not exist, trailing order was sold in between
+                        defs.announce("Adjusting trigger quantity no possible, sell order already hit", True, 1)
                         
                     if amend_code == 2:
                         # Quantity could not be changed, do nothing
-                        message = "Sell order quantity could not be changed, doing nothing"
-                        defs.announce(message, True, 1)
+                        defs.announce("Sell order quantity could not be changed, doing nothing", True, 1)
 
                     if amend_code == 100:
                         # Critical error, let's log it and revert
-                        all_sells_new = all_sells
-                        message = "Critical error while trailing"
-                        defs.announce(message, True, 1)
+                        defs.announce("Critical error while trailing", True, 1)
                         defs.log_error(amend_error)
-
-                # Reset all sells
-                #all_sells = all_sells_new
 
             # Work as a true gridbot when only spread is used
             if use_spread['enabled'] and not use_indicators['enabled'] and not use_orderbook['enabled'] and not active_order['active']:

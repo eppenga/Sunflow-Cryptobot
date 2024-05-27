@@ -19,7 +19,7 @@ def save(all_buys, info):
 
     # Get statistics and output to stdout
     result = order_count(all_buys, info)
-    defs.announce(f"Database contains {result[0]} buy transactions and {result[1]} {info['baseCoin']} was bought")
+    defs.announce(f"Database contains {result[0]} buy transactions and {defs.format_price(result[1], info['basePrecision'])} {info['baseCoin']} was bought")
     
 # Load the database with all buys
 def load(dbase_file, info):
@@ -39,7 +39,7 @@ def load(dbase_file, info):
 
     # Get statistics and output to stdout
     result = order_count(all_buys, info)
-    defs.announce(f"Database contains {result[0]} buy transactions and {result[1]} {info['baseCoin']} was executed")
+    defs.announce(f"Database contains {result[0]} buy transactions and {defs.format_price(result[1], info['basePrecision'])} {info['baseCoin']} was bought")
 
     # Return database
     return all_buys

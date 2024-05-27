@@ -199,7 +199,7 @@ def check_sell(spot, profit, active_order, all_buys, info):
     # Can sell or not
     if all_sells and qty > 0:
         can_sell = True
-        defs.announce(f"Can sell {counter} orders for a total of {defs.format_price(qty, info['basePrecision'])} {info['baseCoin']}")
+        defs.announce(f"Trying to sell {counter} orders for a total of {defs.format_price(qty, info['basePrecision'])} {info['baseCoin']}")
     else:
         if nearest:
             rise_to = f"{defs.format_price(min(nearest), info['tickSize'])} {info['quoteCoin']}"
@@ -258,7 +258,8 @@ def buy(symbol, spot, active_order, all_buys, prices, info):
     
     # Set the status
     transaction['status'] = "Open"
-    message = f"Buy order opened for {active_order['qty']} {info['quoteCoin']} at trigger price {active_order['trigger']} {info['quoteCoin']}"
+    message = f"Buy order opened for {defs.format_price(active_order['qty'], info['quotePrecision'])} {info['quoteCoin']} "
+    message = message + f"at trigger price {defs.format_price(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
     defs.announce(message, True)
     
     # Store the transaction in the database buys file
@@ -312,7 +313,8 @@ def sell(symbol, spot, active_order, prices, info):
     active_order['orderid'] = int(order['result']['orderId'])
     
     # Output to stdout and Apprise
-    message = f"Sell order opened for {active_order['qty']} {info['baseCoin']} at trigger price {active_order['trigger']} {info['quoteCoin']}"
+    message = f"Sell order opened for {defs.format_price(active_order['qty'], info['basePrecision'])} {info['baseCoin']} "
+    message = message + f"at trigger price {defs.format_price(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
     defs.announce(message, True)
    
     # Return data

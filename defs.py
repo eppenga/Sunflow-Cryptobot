@@ -232,7 +232,7 @@ def advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spo
     if use_spread['enabled']:
         result                   = defs.check_spread(all_buys, spot, use_spread['distance'])
         spread_advice['result']  = result[0]
-        spread_advice['nearest'] = round(result[1], 2)
+        spread_advice['nearest'] = result[1]
     else:
         # If spread is not enabled, always true
         spread_advice['result'] = True
@@ -304,7 +304,7 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
     if use_spread['enabled']:
         if spread_advice['result']:
             do_buy[4] = True
-        message += f"Spread: {defs.format_price(spread_advice['nearest'], 0.01)} % "
+        message += f"Spread: {defs.format_price(spread_advice['nearest'], 0.0001)} % "
         message += report_result(spread_advice['result']) + ", "
     else:
         do_buy[4] = True
@@ -415,7 +415,7 @@ def ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info):
     if active_order['active']:
         trigger_distance = abs(new_spot - active_order['trigger'])
         trigger_distance = defs.format_price(trigger_distance, info['tickSize'])
-        message += f", distance is {trigger_distance} {info['quoteCoin']}"
+        message += f", trigger price distance is {trigger_distance} {info['quoteCoin']}"
 
     if not active_order['active']:
         if rise_to:
@@ -458,8 +458,11 @@ def announce(message, to_apprise=False, level=1):
 # Formats the price according to the ticksize.
 def format_price(price, tickSize):
 
+    # Check for number format
+    modified_tickSize = scientific_to_decimal_str(tickSize)
+
     # Calculate the number of decimal places from ticksize
-    decimal_places = get_decimal_places(tickSize)
+    decimal_places = get_decimal_places(modified_tickSize)
     
     # Format the price with the calculated decimal places
     formatted_price = f"{price:.{decimal_places}f}"
@@ -468,9 +471,7 @@ def format_price(price, tickSize):
     return formatted_price
 
 # Returns the number of decimal places based on the ticksize value.
-def get_decimal_places(ticksize):
-
-    ticksize_str = str(ticksize)
+def get_decimal_places(ticksize_str):
 
     if '.' in ticksize_str:
         decimal_places = len(ticksize_str.split('.')[1])
@@ -480,4 +481,17 @@ def get_decimal_places(ticksize):
     # Return decimal places
     return decimal_places
 
+def scientific_to_decimal_str(number):
+    # Convert the number to string
+    number_str = str(number)
+    
+    # Check if it contains 'e' or 'E', which indicates scientific notation
+    if 'e' in number_str or 'E' in number_str:
+        # Convert the scientific notation number to a float and then to a decimal string
+        decimal_str = f"{float(number):.10f}".rstrip('0').rstrip('.')
+    else:
+        # If it's not in scientific notation, just return it as a string with appropriate formatting
+        decimal_str = f"{number:.10f}".rstrip('0').rstrip('.')
+    
+    return decimal_str
     

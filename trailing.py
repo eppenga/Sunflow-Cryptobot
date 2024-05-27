@@ -23,7 +23,8 @@ stuck          = {}
 stuck['check']    = True
 stuck['time']     = 0
 stuck['interval'] = 10000
-spike_counter  = 0
+spike_counter     = 0
+spike_max         = 1
    
 # Check if we can do trailing buy or sell
 def check_order(symbol, spot, active_order, all_buys, all_sells, info):
@@ -83,10 +84,13 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
             # Prepare message for stdout and Apprise
             defs.announce(f"Trailing {active_order['side'].lower()}: *** Order has been filled! ***")
             if active_order['side'] == "Buy":
-                currency = info['quoteCoin']
+                currency        = info['quoteCoin']
+                currency_format = info['quotePrecision']
             else:
-                currency = info['baseCoin']
-            message = f"{active_order['side']} order closed for {active_order['qty']} {currency} at trigger price {active_order['trigger']} {info['quoteCoin']}"
+                currency        = info['baseCoin']
+                currency_format = info['basePrecision']
+            message = f"{active_order['side']} order closed for {defs.format_price(active_order['qty'], currency_format)} {currency} "
+            message = message + f"at trigger price {defs.format_price(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
             
             # Reset counters
             stuck['check']= True
@@ -103,9 +107,9 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
         
             # Fill in average price and report message
             if active_order['side'] == "Buy":
-                message = message + f" and average fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']}"
+                message = message + f" and fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']}"
             else:
-                message = message + f", average fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} and profit {profit} {info['quoteCoin']}"
+                message = message + f", fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} and profit {profit} {info['quoteCoin']}"
             defs.announce(message, True, 1)
             
         # Check if symbol is spiking
@@ -121,7 +125,7 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
 def check_spike(symbol, spot, active_order, order, all_buys, info):
 
     # Declare some variables global
-    global spike_counter
+    global spike_counter, spike_max
 
     # Initialize variables
     error_code = 0
@@ -134,7 +138,7 @@ def check_spike(symbol, spot, active_order, order, all_buys, info):
         if transaction['triggerPrice'] > spot:
             spike_counter = spike_counter + 1
             # It spiked when selling
-            if spike_counter > 3:
+            if spike_counter > spike_max:
                 defs.announce(f"*** {active_order['side']} order spiked, yakes! ***", True, 1)
                 # Reset trailing sell
                 active_order['active'] = False
@@ -146,7 +150,7 @@ def check_spike(symbol, spot, active_order, order, all_buys, info):
         if transaction['triggerPrice'] < spot:
             spike_counter = spike_counter + 1
             # It spiked when buying
-            if spike_counter > 3:
+            if spike_counter > spike_max:
                 defs.announce(f"*** {active_order['side']} order spiked, yakes! ***", True, 1)
                 # Reset trailing buy
                 active_order['active'] = False
@@ -255,7 +259,7 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices):
     # Check if the order still exists
     result       = check_order(symbol, spot, active_order, all_buys, all_sells, info)
     active_order = result[0]
-    all_buys_new = result[1]
+    all_buys     = result[1]
 
     # Order still exists, we can do trailing buy or sell
     if active_order['active']:
@@ -292,30 +296,15 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices):
                 message = f"Adjusted trigger price from {active_order['trigger']} to {active_order['trigger_new']} {info['quoteCoin']} in {active_order['side'].lower()} order"
                 defs.announce(message, True, 0)
                 active_order['trigger'] = active_order['trigger_new']
-                all_buys                = all_buys_new
 
             if amend_code == 1:
-                # Order slipped, close trailing process
-                message = f"{active_order['side']} order slipped, we keep buys database as is and stop trailing"
-                defs.announce(message, True, 1)
-                database.remove(active_order['orderid'], all_buys, info)
-                result       = close_trail(active_order, all_buys, all_sells, info)
-                active_order = result[0]
-                all_buys     = result[1]
-                all_sells    = result[2]
-                # Revert old situation
-                all_buys_new = all_buys
-                # Just for safety remove the order although it might not exist anymore *** CHECK *** Might not be correct this action, test!
-                orders.cancel(symbol, active_order['orderid'])
+                # Order does not exist, trailing order sold or bought in between
+                defs.announce(f"Adjusting trigger price not possible, {active_order['side'].lower()} order already hit", True, 0)
 
             if amend_code == 100:
                 # Critical error, let's log it and revert
-                all_buys_new = all_buys
                 defs.announce("Critical error while trailing", True, 1)
                 defs.log_error(amend_error)
-
-    # Reset all_buys and allow function to be run again
-    all_buys = all_buys_new
         
     # Return modified data
     return active_order, all_buys
@@ -329,7 +318,9 @@ def amend_quantity_sell(symbol, active_order, info):
     exception  = ""
 
     # Output to stdout
-    defs.announce(f"Trying to adjust quantity from {active_order['qty']} to {active_order['qty_new']} {info['baseCoin']}")
+    message = f"Trying to adjust quantity from {defs.format_price(active_order['qty'], info['basePrecision'])} "
+    message = message + f" to {defs.format_price(active_order['qty_new'], info['basePrecision'])} {info['baseCoin']}"
+    defs.announce(message)
 
     # Ammend order
     order = {}
@@ -344,7 +335,7 @@ def amend_quantity_sell(symbol, active_order, info):
     except Exception as e:
         exception = str(e)
         if "(ErrCode: 170213)" in exception:
-            # Order slipped
+            # Order does not exist
             error_code = 1
         elif "(ErrCode: 10001)" in exception:
             error_code = 2
@@ -384,7 +375,7 @@ def amend_trigger_price(symbol, active_order, info):
     except Exception as e:
         exception = str(e)
         if "(ErrCode: 170213)" in exception:
-            # Order slipped
+            # Order does not exist
             error_code = 1
         else:
             # Any other error
