@@ -7,7 +7,7 @@ from loader import load_config
 from pathlib import Path
 from datetime import datetime, timezone
 import defs, indicators
-import apprise, inspect, math, time
+import apprise, inspect, math, os, time
 
 # Load config
 config = load_config()
@@ -192,6 +192,7 @@ def log_error(exception):
         defs.announce("*** Terminating Sunflow, error to severe! ***", True, 1)
         defs.announce(exception, True, 1)
         exit()
+        os._exit(1)
 
 # Outputs a (Pass) or (Fail) for decide_buy()
 def report_buy(result):
