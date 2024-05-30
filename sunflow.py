@@ -492,6 +492,7 @@ if use_indicators['enabled']:
     print(f"Interval 3: {intervals[3]}m")
 if use_spread['enabled']:
     print(f"Spread    : {use_spread['distance']} %")
+print(f"Profit    : {profit}\n")
 print(f"Limit     : {limit}\n")
 
 # Preload all requirements
