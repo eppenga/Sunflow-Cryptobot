@@ -183,13 +183,13 @@ def handle_ticker(message):
 
             # Check if and how much we can sell
             result                  = orders.check_sell(new_spot, profit, active_order, all_buys, info)
-            all_sells               = result[0]
+            all_sells_new           = result[0]
             active_order['qty_new'] = result[1]
             can_sell                = result[2]
             rise_to                 = result[3]
 
             # Output to stdout
-            message = defs.ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info)
+            message = defs.report_ticker(spot, new_spot, rise_to, active_order, all_buys, info)
             defs.announce(message)
             
             # If trailing buy is already running while we can sell
@@ -224,6 +224,8 @@ def handle_ticker(message):
             if not active_order['active'] and can_sell:
                 # There is no old quantity on first sell
                 active_order['qty'] = active_order['qty_new']
+                # Fill all_sells for the first time
+                all_sells = all_sells_new                
                 # Place the first sell order
                 active_order = orders.sell(symbol, new_spot, active_order, prices, info)
                 
@@ -242,14 +244,17 @@ def handle_ticker(message):
                         message = f"Adjusted quantity from {defs.format_price(active_order['qty'], info['basePrecision'])} "
                         message = message + f"to {defs.format_price(active_order['qty_new'], info['basePrecision'])} {info['baseCoin']} in {active_order['side'].lower()} order"
                         defs.announce(message, True, 0)
+                        all_sells           = all_sells_new
                         active_order['qty'] = active_order['qty_new']
 
                     if amend_code == 1:
                         # Order does not exist, trailing order was sold in between
+                        all_sells_new = all_sells
                         defs.announce("Adjusting trigger quantity no possible, sell order already hit", True, 1)
                         
                     if amend_code == 2:
                         # Quantity could not be changed, do nothing
+                        all_sells_new = all_sells
                         defs.announce("Sell order quantity could not be changed, doing nothing", True, 1)
 
                     if amend_code == 100:

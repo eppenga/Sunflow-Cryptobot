@@ -167,8 +167,17 @@ def log_error(exception):
     # Add timestamp to exception
     exception = now_utc()[1] + exception + "\n"
 
+    # Error: Remote disconnected
     if ("(ErrCode: 12940)" in exception) or ("RemoteDisconnected" in exception):
         defs.announce("*** Warning: Remote Disconnected! ***")
+        halt_execution = False
+    
+    # Error: Read time out
+    if "HTTPSConnectionPool" in exception:
+        defs.announce("*** Warning: Read time out, waiting 20 seconds")
+        for number in range(20, 0, -1):
+            print(number, end=" ", flush=True)
+            time.sleep(1)
         halt_execution = False
     
     # Write to error log file
@@ -185,7 +194,7 @@ def log_error(exception):
         exit()
 
 # Outputs a (Pass) or (Fail) for decide_buy()
-def report_result(result):
+def report_buy(result):
 
     # Initialize variable
     pafa = "(No buy)"
@@ -278,21 +287,21 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
             if indicators_advice[intervals[1]]['result']:
                 do_buy[1] = True
             message += f"{intervals[1]}m: {indicators_advice[intervals[1]]['value']:.2f} "
-            message += report_result(indicators_advice[intervals[1]]['result']) + ", "
+            message += report_buy(indicators_advice[intervals[1]]['result']) + ", "
         else:
             do_buy[1] = True
         if intervals[2] != 0:
             if indicators_advice[intervals[2]]['result']:
                 do_buy[2] = True
             message += f"{intervals[2]}m: {indicators_advice[intervals[2]]['value']:.2f} "
-            message += report_result(indicators_advice[intervals[2]]['result']) + ", "
+            message += report_buy(indicators_advice[intervals[2]]['result']) + ", "
         else:
             do_buy[2] = True
         if intervals[3] != 0:
             if indicators_advice[intervals[3]]['result']:
                 do_buy[3] = True
             message +=f"{intervals[3]}m: {indicators_advice[intervals[3]]['value']:.2f} "
-            message += report_result(indicators_advice[intervals[3]]['result']) + ", "                
+            message += report_buy(indicators_advice[intervals[3]]['result']) + ", "                
         else:
             do_buy[3] = True
     else:
@@ -305,7 +314,7 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
         if spread_advice['result']:
             do_buy[4] = True
         message += f"Spread: {defs.format_price(spread_advice['nearest'], 0.0001)} % "
-        message += report_result(spread_advice['result']) + ", "
+        message += report_buy(spread_advice['result']) + ", "
     else:
         do_buy[4] = True
     
@@ -314,7 +323,7 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
         if orderbook_advice['result']:
             do_buy[5] = True
         message += f"Orderbook: {orderbook_advice['value']} % "
-        message += report_result(orderbook_advice['result']) + ", "
+        message += report_buy(orderbook_advice['result']) + ", "
     else:
         do_buy[5] = True
 
@@ -401,7 +410,7 @@ def rate_limit(response):
     return data
 
 # Report ticker info to stdout
-def ticker_stdout(spot, new_spot, rise_to, active_order, all_buys, info):
+def report_ticker(spot, new_spot, rise_to, active_order, all_buys, info):
 
     # Create message
     message = "Price went "

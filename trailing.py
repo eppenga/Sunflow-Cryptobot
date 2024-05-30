@@ -5,7 +5,7 @@
 # Load libraries
 from loader import load_config
 from pybit.unified_trading import HTTP
-import database, defs, distance, orders
+import database, defs, distance, orders, pprint
 
 # Load config
 config = load_config()
@@ -58,9 +58,6 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
     # Current price crossed trigger price
     if do_check_order:
 
-        # Output to stdout
-        defs.announce("Get open order from exchange")
-
         # Has trailing endend, check if order does still exist
         order = {}
         message = defs.announce("session: get_open_orders")
@@ -109,7 +106,8 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
             if active_order['side'] == "Buy":
                 message = message + f" and fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']}"
             else:
-                message = message + f", fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} and profit {profit} {info['quoteCoin']}"
+                message = message + f", fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} "
+                message = message + f"and profit {defs.format_price(profit, info['quotePrecision'])} {info['quoteCoin']}"
             defs.announce(message, True, 1)
             
         # Check if symbol is spiking
@@ -172,10 +170,12 @@ def calculate_profit(transaction, all_sells, info):
     debug = False
     
     # Initialize variables
-    sells  = 0
-    buys   = 0
-    profit = 0
+    sells         = 0
+    buys          = 0
+    profit        = 0
     fees          = {}
+    fees['buy']   = 0
+    fees['sell']  = 0
     fees['total'] = 0
     
     # Logic
@@ -209,6 +209,10 @@ def close_trail(active_order, all_buys, all_sells, info):
     # Close the transaction on either buy or sell trailing order
     transaction = orders.transaction_from_id(active_order['orderid'])
     transaction['status'] = "Closed"
+    if debug:
+        defs.announce(f"{active_order['side']} order")
+        pprint.pprint(transaction)
+        print()
           
     # Order was bought, create new all buys database
     if transaction['side'] == "Buy":
@@ -219,8 +223,8 @@ def close_trail(active_order, all_buys, all_sells, info):
 
         # Output to stdout for debug
         if debug:
-            print("All sell orders at close_trail")
-            print(all_sells)
+            defs.announce("All buy orders matching sell order")
+            pprint.pprint(all_sells)
             print()
 
         # Calculate profit
@@ -319,7 +323,7 @@ def amend_quantity_sell(symbol, active_order, info):
 
     # Output to stdout
     message = f"Trying to adjust quantity from {defs.format_price(active_order['qty'], info['basePrecision'])} "
-    message = message + f" to {defs.format_price(active_order['qty_new'], info['basePrecision'])} {info['baseCoin']}"
+    message = message + f"to {defs.format_price(active_order['qty_new'], info['basePrecision'])} {info['baseCoin']}"
     defs.announce(message)
 
     # Ammend order
