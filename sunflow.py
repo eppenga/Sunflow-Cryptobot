@@ -574,4 +574,6 @@ def main():
 if __name__ == "__main__" and not defs.halt_sunflow:
     main()
 
+
+### Say goodbye ###
 defs.announce(f"*** Sunflow terminated at {defs.now_utc()[0]} UTC ***", True, 1)

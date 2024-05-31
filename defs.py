@@ -135,15 +135,16 @@ def now_utc():
 def log_exchange(response, message):
     
     # Create log message   
-    to_log = now_utc()[1] + message
+    to_log = now_utc()[1] + message + "\n"
     
     # Extend log message based on error level
     if config.error_level == 0:
         to_log = message + "\n" + str(response) + "\n\n"
     
     # Write to exchange log file
-    with open(config.exchange_file, 'a', encoding='utf-8') as file:
-        file.write(to_log)
+    if config.exchange_log:    
+        with open(config.exchange_file, 'a', encoding='utf-8') as file:
+            file.write(to_log)
 
 # Log all errors
 def log_error(exception):

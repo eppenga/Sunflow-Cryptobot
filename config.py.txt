@@ -62,4 +62,5 @@ notify_level       = 1                                          # Notify level 0
 
 # Debug
 debug              = False                                      # Turn debug on or off
+exchange_log       = True                                       # Keep a log of all exchange sessions
 error_level        = 1                                          # Error level 0 is extended, 1 is normal
