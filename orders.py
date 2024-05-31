@@ -397,3 +397,41 @@ def rebalance(all_buys, info):
 
     # Return all buys
     return all_buys
+
+# Report wallet info to stdout
+def report_wallet(all_buys, info):
+
+    # Initialize variables
+    message    = ""
+    wallet     = {}
+    order_info = ()
+
+    # Get order count and quantity
+    order_info = database.order_count(all_buys, info)
+    
+    # Get wallet values
+    message = defs.announce("session: get_wallet_balance")
+    try:
+        wallet = session.get_wallet_balance(
+            accountType="UNIFIED",
+            coin="USDC"
+        )
+    except Exception as e:
+        defs.log_error(e)
+        
+    # Check API rate limit and log data if possible
+    if wallet:
+        wallet = defs.rate_limit(wallet)
+        defs.log_exchange(wallet, message)
+
+    # Get results
+    total_equity = wallet['result']['list'][0]['totalEquity']
+    total_quote  = wallet['result']['list'][0]['coin'][0]['equity']
+
+    message = f"Wallet has {total_equity} {info['quoteCoin']}, "
+    message = message + f"database has {order_info[0]} buy transactions "
+    message = message + f"worth {defs.format_price(order_info[1], info['basePrecision'])} {info['baseCoin']} and "
+    message = message + f"{total_quote} {info['quoteCoin']} is free"
+  
+    # Return message
+    return message

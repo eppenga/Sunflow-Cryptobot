@@ -7,7 +7,7 @@ from loader import load_config
 from pathlib import Path
 from datetime import datetime, timezone
 import defs, indicators
-import apprise, inspect, math, os, time
+import apprise, inspect, math, time
 
 # Load config
 config = load_config()

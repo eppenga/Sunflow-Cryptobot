@@ -109,6 +109,10 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
                 message = message + f", fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} "
                 message = message + f"and profit {defs.format_price(profit, info['quotePrecision'])} {info['quoteCoin']}"
             defs.announce(message, True, 1)
+
+            # Announce quote and base currency
+            message = orders.report_wallet(all_buys, info)
+            defs.announce(message, True, 1)
             
         # Check if symbol is spiking
         else:
