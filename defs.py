@@ -19,6 +19,9 @@ apobj = apprise.Apprise()
 for url in config.notify_urls:
     apobj.add(url)
 
+# Register halt or continue
+halt_sunflow = False
+
 # Add new kline and remove the oldest
 def new_kline(kline, klines):
 
@@ -145,6 +148,9 @@ def log_exchange(response, message):
 # Log all errors
 def log_error(exception):
     
+    # Declare global variables
+    global halt_sunflow
+    
     # Debug
     debug = False
 
@@ -191,8 +197,7 @@ def log_error(exception):
     if halt_execution:
         defs.announce("*** Terminating Sunflow, error to severe! ***", True, 1)
         defs.announce(exception, True, 1)
-        exit()
-        os._exit(1)
+        halt_sunflow = True
 
 # Outputs a (Pass) or (Fail) for decide_buy()
 def report_buy(result):

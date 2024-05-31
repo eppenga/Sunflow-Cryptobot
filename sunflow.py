@@ -556,7 +556,7 @@ def main():
     ws = connect_websocket()
     subscribe_streams(ws)
 
-    while True:
+    while not defs.halt_sunflow:
         try:
             # Simulate or fetch the latest ticker message
             current_time      = defs.now_utc()[4]
@@ -571,5 +571,7 @@ def main():
             ws = connect_websocket()
             subscribe_streams(ws)
 
-if __name__ == "__main__":
+if __name__ == "__main__" and not defs.halt_sunflow:
     main()
+else:
+    defs.announce("*** Sunflow terminated ***")
