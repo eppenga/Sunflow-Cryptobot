@@ -402,6 +402,7 @@ def rate_limit(response):
         # Hard exit
         if ratio > 1:
             defs.announce("f*** ERROR: API RATE LIMIT EXCEED, STOPPED TO PREVENT PERMANENT BAN! ***")
+            defs.halt_sunflow = True
             exit()
         
         # Inform of delay

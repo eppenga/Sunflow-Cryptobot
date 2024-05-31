@@ -33,6 +33,7 @@ def load(dbase_file, info):
             all_buys = json.load(json_file)
     except FileNotFoundError:
         defs.announce("Database with all buys not found, exiting...")
+        defs.halt_sunflow = True
         exit()
     except json.decoder.JSONDecodeError:
         defs.announce("Database with all buys not yet filled, may come soon!")
