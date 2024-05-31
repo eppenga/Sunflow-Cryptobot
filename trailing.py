@@ -110,9 +110,10 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
                 message = message + f"and profit {defs.format_price(profit, info['quotePrecision'])} {info['quoteCoin']}"
             defs.announce(message, True, 1)
 
-            # Announce quote and base currency
-            message = orders.report_wallet(all_buys, info)
-            defs.announce(message, True, 1)
+            # Report wallet, quote and base currency to stdout
+            if config.wallet_report:
+                message = orders.report_wallet(all_buys, info)
+                defs.announce(message, True, 1)
             
         # Check if symbol is spiking
         else:
@@ -238,7 +239,8 @@ def close_trail(active_order, all_buys, all_sells, info):
         all_buys = database.register_sell(all_buys, all_sells, info)
         
         # Rebalance new database
-        all_buys = orders.rebalance(all_buys, info)
+        if config.database_rebalance:
+            all_buys = orders.rebalance(all_buys, info)
         
         # Clear all sells
         all_sells = []

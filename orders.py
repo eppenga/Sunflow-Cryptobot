@@ -428,7 +428,7 @@ def report_wallet(all_buys, info):
     total_equity = wallet['result']['list'][0]['totalEquity']
     total_quote  = wallet['result']['list'][0]['coin'][0]['equity']
 
-    message = f"Wallet has {total_equity} {info['quoteCoin']}, "
+    message = f"Wallet value {total_equity} {info['quoteCoin']}, "
     message = message + f"database has {order_info[0]} buy transactions "
     message = message + f"worth {defs.format_price(order_info[1], info['basePrecision'])} {info['baseCoin']} and "
     message = message + f"{total_quote} {info['quoteCoin']} is free"

@@ -60,7 +60,9 @@ notify_enabled     = False                                      # Notify using A
 notify_urls        = ["tgram://bot_token/chat_id"]              # Fill in your bot_token and chat_id
 notify_level       = 1                                          # Notify level 0 is extended, 1 is normal
 
-# Debug
+# Debug, logs and reporting
 debug              = False                                      # Turn debug on or off
 exchange_log       = True                                       # Keep a log of all exchange sessions
+wallet_report      = True                                       # Report wallet value, database and coins
+database_rebalance = True                                       # Sync the database to the exchange
 error_level        = 1                                          # Error level 0 is extended, 1 is normal
