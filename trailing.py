@@ -19,7 +19,7 @@ session = HTTP(
 )
 
 # Initialize variables
-stuck          = {}
+stuck             = {}
 stuck['check']    = True
 stuck['time']     = 0
 stuck['interval'] = 10000

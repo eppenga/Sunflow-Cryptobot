@@ -501,7 +501,7 @@ print("\n*** Preloading ***\n")
 preload.check_files()
 if intervals[1] !=0  : klines[intervals[1]] = preload.get_klines(symbol, intervals[1], limit)
 if intervals[2] !=0  : klines[intervals[2]] = preload.get_klines(symbol, intervals[2], limit)
-if intervals[3] !=0  : klines[intervals[3]] = preload.get_klines(symbol, intervals[3], limit) # **** CHECK *** Eigenlijk ook technical indicators preloaden zie buy matrix!
+if intervals[3] !=0  : klines[intervals[3]] = preload.get_klines(symbol, intervals[3], limit)
 ticker               = preload.get_ticker(symbol)
 spot                 = ticker['lastPrice']
 info                 = preload.get_info(symbol, spot, multiplier)
