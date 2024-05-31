@@ -12,13 +12,14 @@ _Please note: Sunflow needs API Version 5 of the "unified trading account" of By
 - Can also work as gridbot
 - Load custom config via CLI
 - Uses Bybit websockets
+- Telegram reporting
 - Error handling including auto reconnect
 
 ![Buy confirmation with optional multiple intervals and technical analysis](https://github.com/eppenga/Sunflow-Cryptobot/assets/4440994/90184716-a793-4c1a-8907-4d746809c763)
 _Sunflow stops buying before price goes down via multiple intervals and technical analysis confirmation._
 
 ### Datafolder and reporting
-It automatically creates a data folder where it stores a database of all buy trades (in a human readable json format), errors and a log file when a request was made to Bybit for offline analysis. Sunflow outputs price changes, buys, sells, trailing changes and other relevant messages to screen. Debug mode increases reporting.
+It automatically creates a data folder where it stores a database of all buy trades (in a human readable json format), errors and a log file when a request was made to Bybit for offline analysis. Sunflow outputs price changes, buys, sells, trailing changes and other relevant messages to screen or via Telegram. Debug mode increases reporting.
 
 ## Install, configure and run
 
