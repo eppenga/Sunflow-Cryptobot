@@ -155,14 +155,14 @@ def transaction_from_id(orderId):
 def set_trigger(spot, active_order, info):
 
     # Debug
-    defs.announce(f"Fluctuation distance {active_order['fluctuation']:.4f} % and spot {defs.format_price(spot, info['tickSize'])} {info['quoteCoin']}")
+    defs.announce(f"Trigger price distance {active_order['fluctuation']:.4f} % and price {defs.format_number(spot, info['tickSize'])} {info['quoteCoin']}")
 
     # Check side buy or sell
     if active_order['side'] == "Buy":
         active_order['qty']     = info['minBuyQuote']
-        active_order['trigger'] = defs.precision(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
+        active_order['trigger'] = defs.round_number(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'], "up")
     else:
-        active_order['trigger'] = defs.precision(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
+        active_order['trigger'] = defs.round_number(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'], "down")
 
     # Return active_order
     return active_order
@@ -194,15 +194,15 @@ def check_sell(spot, profit, active_order, all_buys, info):
                 counter = counter + 1
     
     # Adjust quantity to exchange regulations
-    qty = defs.precision(qty, info['basePrecision'])
+    qty = defs.round_number(qty, info['basePrecision'], "down")
     
     # Can sell or not
     if all_sells and qty > 0:
         can_sell = True
-        defs.announce(f"Trying to sell {counter} orders for a total of {defs.format_price(qty, info['basePrecision'])} {info['baseCoin']}")
+        defs.announce(f"Trying to sell {counter} orders for a total of {defs.format_number(qty, info['basePrecision'])} {info['baseCoin']}")
     else:
         if nearest:
-            rise_to = f"{defs.format_price(min(nearest), info['tickSize'])} {info['quoteCoin']}"
+            rise_to = f"{defs.format_number(min(nearest), info['tickSize'])} {info['quoteCoin']}"
     
     # Return data
     return all_sells, qty, can_sell, rise_to
@@ -253,15 +253,15 @@ def buy(symbol, spot, active_order, all_buys, prices, info):
     # Get order info
     active_order['orderid'] = int(order['result']['orderId'])
 
+    # Report to stdout
+    message = f"Buy order opened for {defs.format_number(active_order['qty'], info['quotePrecision'])} {info['quoteCoin']} "
+    message = message + f"at trigger price {defs.format_number(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
+    defs.announce(message, True)
+
     # Get the transaction
     transaction = transaction_from_order(order)
-    
-    # Set the status
     transaction['status'] = "Open"
-    message = f"Buy order opened for {defs.format_price(active_order['qty'], info['quotePrecision'])} {info['quoteCoin']} "
-    message = message + f"at trigger price {defs.format_price(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
-    defs.announce(message, True)
-    
+
     # Store the transaction in the database buys file
     all_buys = database.register_buy(transaction, all_buys, info)
     defs.announce(f"Registered buy order in database {config.dbase_file}")
@@ -313,14 +313,14 @@ def sell(symbol, spot, active_order, prices, info):
     active_order['orderid'] = int(order['result']['orderId'])
     
     # Output to stdout and Apprise
-    message = f"Sell order opened for {defs.format_price(active_order['qty'], info['basePrecision'])} {info['baseCoin']} "
-    message = message + f"at trigger price {defs.format_price(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
+    message = f"Sell order opened for {defs.format_number(active_order['qty'], info['basePrecision'])} {info['baseCoin']} "
+    message = message + f"at trigger price {defs.format_number(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
     defs.announce(message, True)
    
     # Return data
     return active_order
 
-# Rebalances the database vs exchange
+# Rebalances the database vs exchange by removing orders with the highest price
 def rebalance(all_buys, info):
 
     # Debug
@@ -337,9 +337,6 @@ def rebalance(all_buys, info):
     # Report to stdout
     if debug:
         defs.announce("Trying to rebalance buys database with exchange data")
-
-    # Get all buys
-    all_buys = database.load(config.dbase_file, info)
 
     # Get wallet
     wallet   = {}
@@ -375,11 +372,11 @@ def rebalance(all_buys, info):
         # Database changed
         dbase_changed = True
         
-        # Find the item with the lowest avgPrice
-        lowest_avg_price_item = min(all_buys, key=lambda x: x['avgPrice'])
+        # Find the item with the highest avgPrice
+        highest_avg_price_item = max(all_buys, key=lambda x: x['avgPrice'])
 
         # Remove this item from the list
-        all_buys.remove(lowest_avg_price_item)
+        all_buys.remove(highest_avg_price_item)
         
         # Recalculate all buys
         equity_dbase = sum(order['cumExecQty'] for order in all_buys)    
@@ -430,7 +427,7 @@ def report_wallet(all_buys, info):
 
     message = f"Wallet value {total_equity} {info['quoteCoin']}, "
     message = message + f"database has {order_info[0]} buy orders "
-    message = message + f"worth {defs.format_price(order_info[1], info['basePrecision'])} {info['baseCoin']} and "
+    message = message + f"worth {defs.format_number(order_info[1], info['basePrecision'])} {info['baseCoin']} and "
     message = message + f"{total_quote} {info['quoteCoin']} is free"
   
     # Return message

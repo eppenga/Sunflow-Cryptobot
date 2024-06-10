@@ -86,8 +86,8 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
             else:
                 currency        = info['baseCoin']
                 currency_format = info['basePrecision']
-            message = f"{active_order['side']} order closed for {defs.format_price(active_order['qty'], currency_format)} {currency} "
-            message = message + f"at trigger price {defs.format_price(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
+            message = f"{active_order['side']} order closed for {defs.format_number(active_order['qty'], currency_format)} {currency} "
+            message = message + f"at trigger price {defs.format_number(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
             
             # Reset counters
             stuck['check']= True
@@ -100,14 +100,14 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
             all_buys     = result[1]
             all_sells    = result[2]
             transaction  = result[3]
-            profit       = result[4]
+            revenue      = result[4]
         
             # Fill in average price and report message
             if active_order['side'] == "Buy":
-                message = message + f" and fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']}"
+                message = message + f" and fill price {defs.format_number(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']}"
             else:
-                message = message + f", fill price {defs.format_price(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} "
-                message = message + f"and profit {defs.format_price(profit, info['quotePrecision'])} {info['quoteCoin']}"
+                message = message + f", fill price {defs.format_number(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} "
+                message = message + f"and revenue {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
             defs.announce(message, True, 1)
 
             # Report wallet, quote and base currency to stdout
@@ -168,8 +168,8 @@ def check_spike(symbol, spot, active_order, order, all_buys, info):
     # Return data
     return active_order, all_buys
 
-# Calculate profit from sell
-def calculate_profit(transaction, all_sells, info):
+# Calculate revenue from sell
+def calculate_revenue(transaction, all_sells, info):
     
     # Debug
     debug = False
@@ -177,7 +177,7 @@ def calculate_profit(transaction, all_sells, info):
     # Initialize variables
     sells         = 0
     buys          = 0
-    profit        = 0
+    revenue        = 0
     fees          = {}
     fees['buy']   = 0
     fees['sell']  = 0
@@ -189,15 +189,16 @@ def calculate_profit(transaction, all_sells, info):
     #fees['buy']   = sum(item['cumExecFee'] for item in all_sells)    # **** CHECK *** is trading fee in quote or base?
     #fees['sell']  = transaction['cumExecFee']
     #fees['total'] = fees['buy'] + fees['sell']
-    profit = sells - buys - fees['total']
-    profit = defs.precision(profit, info['quotePrecision'])
+    revenue = sells - buys - fees['total']
     
     # Output to stdout for debug
     if debug:
-        defs.announce(f"Total sells were {sells} {info['quoteCoin']}, buys were {buys} {info['quoteCoin']} and fees were {fees['total']} {info['quoteCoin']}, giving a profit of {profit} {info['quoteCoin']}")
+        message = f"Total sells were {sells} {info['quoteCoin']}, buys were {buys} {info['quoteCoin']} and fees were {fees['total']} {info['quoteCoin']}, "
+        message = message + f"giving a revenue of {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
+        defs.announce(message)
     
-    # Return profit
-    return profit
+    # Return revenue
+    return revenue
     
 # Trailing order does not exist anymore, close it
 def close_trail(active_order, all_buys, all_sells, info):
@@ -206,7 +207,7 @@ def close_trail(active_order, all_buys, all_sells, info):
     debug = False
     
     # Initialize variables
-    profit = 0
+    revenue = 0
     
     # Make active_order inactive
     active_order['active'] = False
@@ -232,8 +233,8 @@ def close_trail(active_order, all_buys, all_sells, info):
             pprint.pprint(all_sells)
             print()
 
-        # Calculate profit
-        profit = calculate_profit(transaction, all_sells, info)
+        # Calculate revenue
+        revenue = calculate_revenue(transaction, all_sells, info)
         
         # Create new all buys database
         all_buys = database.register_sell(all_buys, all_sells, info)
@@ -248,7 +249,7 @@ def close_trail(active_order, all_buys, all_sells, info):
     # Output to stdout
     defs.announce(f"Closed trailing {active_order['side'].lower()} order")
     
-    return active_order, all_buys, all_sells, transaction, profit
+    return active_order, all_buys, all_sells, transaction, revenue
 
 # Trailing buy or sell
 def trail(symbol, spot, active_order, info, all_buys, all_sells, prices):
@@ -282,9 +283,9 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices):
                     
         # Calculate new trigger price
         if active_order['side'] == "Sell":
-            active_order['trigger_new'] = defs.precision(active_order['current'] * (1 - (active_order['fluctuation'] / 100)), info['tickSize'])
+            active_order['trigger_new'] = defs.round_number(active_order['current'] * (1 - (active_order['fluctuation'] / 100)), info['tickSize'], "down")
         else:
-            active_order['trigger_new'] = defs.precision(active_order['current'] * (1 + (active_order['fluctuation'] / 100)), info['tickSize'])
+            active_order['trigger_new'] = defs.round_number(active_order['current'] * (1 + (active_order['fluctuation'] / 100)), info['tickSize'], "up")
 
         # Check if we can amend trigger price
         if active_order['side'] == "Sell":
@@ -303,7 +304,8 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices):
             # Determine what to do based on error code of amend result
             if amend_code == 0:
                 # Everything went fine, we can continue trailing
-                message = f"Adjusted trigger price from {active_order['trigger']} to {active_order['trigger_new']} {info['quoteCoin']} in {active_order['side'].lower()} order"
+                message = f"Adjusted trigger price from {defs.format_number(active_order['trigger'], info['tickSize'])} to "
+                message = message + f"{defs.format_number(active_order['trigger_new'], info['tickSize'])} {info['quoteCoin']} in {active_order['side'].lower()} order"
                 defs.announce(message, True, 0)
                 active_order['trigger'] = active_order['trigger_new']
 
@@ -328,8 +330,8 @@ def amend_quantity_sell(symbol, active_order, info):
     exception  = ""
 
     # Output to stdout
-    message = f"Trying to adjust quantity from {defs.format_price(active_order['qty'], info['basePrecision'])} "
-    message = message + f"to {defs.format_price(active_order['qty_new'], info['basePrecision'])} {info['baseCoin']}"
+    message = f"Trying to adjust quantity from {defs.format_number(active_order['qty'], info['basePrecision'])} "
+    message = message + f"to {defs.format_number(active_order['qty_new'], info['basePrecision'])} {info['baseCoin']}"
     defs.announce(message)
 
     # Ammend order
@@ -369,8 +371,10 @@ def amend_trigger_price(symbol, active_order, info):
     error_code = 0
     exception  = ""
     
-    # Output to stdout    
-    defs.announce(f"Trying to adjusted trigger price from {active_order['trigger']} to {active_order['trigger_new']} {info['quoteCoin']}")
+    # Output to stdout
+    message = f"Trying to adjusted trigger price from {defs.format_number(active_order['trigger'], info['tickSize'])} to "
+    message = message + f"{defs.format_number(active_order['trigger_new'], info['tickSize'])} {info['quoteCoin']}"
+    defs.announce(message)
     
     # Amend order
     order = {}

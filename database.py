@@ -19,7 +19,7 @@ def save(all_buys, info):
 
     # Get statistics and output to stdout
     result = order_count(all_buys, info)
-    defs.announce(f"Database contains {result[0]} buy transactions and {defs.format_price(result[1], info['basePrecision'])} {info['baseCoin']} was bought")
+    defs.announce(f"Database contains {result[0]} buy transactions and {defs.format_number(result[1], info['basePrecision'])} {info['baseCoin']} was bought")
     
 # Load the database with all buys
 def load(dbase_file, info):
@@ -40,7 +40,7 @@ def load(dbase_file, info):
 
     # Get statistics and output to stdout
     result = order_count(all_buys, info)
-    defs.announce(f"Database contains {result[0]} buy transactions and {defs.format_price(result[1], info['basePrecision'])} {info['baseCoin']} was bought")
+    defs.announce(f"Database contains {result[0]} buy transactions and {defs.format_number(result[1], info['basePrecision'])} {info['baseCoin']} was bought")
 
     # Return database
     return all_buys
@@ -151,7 +151,7 @@ def order_count(all_buys, info):
     # Get number of transactions
     order_count = len(all_buys)
     total_qty   = sum(item['cumExecQty'] for item in all_buys)
-    total_qty   = defs.precision(total_qty, info['basePrecision'])
+    total_qty   = defs.round_number(total_qty, info['basePrecision'], "down")
     
     # Return data
     return order_count, total_qty

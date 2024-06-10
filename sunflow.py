@@ -241,8 +241,8 @@ def handle_ticker(message):
                     # Determine what to do based on error code of amend result
                     if amend_code == 0:
                         # Everything went fine, we can continue trailing
-                        message = f"Adjusted quantity from {defs.format_price(active_order['qty'], info['basePrecision'])} "
-                        message = message + f"to {defs.format_price(active_order['qty_new'], info['basePrecision'])} {info['baseCoin']} in {active_order['side'].lower()} order"
+                        message = f"Adjusted quantity from {defs.format_number(active_order['qty'], info['basePrecision'])} "
+                        message = message + f"to {defs.format_number(active_order['qty_new'], info['basePrecision'])} {info['baseCoin']} in {active_order['side'].lower()} order"
                         defs.announce(message, True, 0)
                         all_sells           = all_sells_new
                         active_order['qty'] = active_order['qty_new']
@@ -250,12 +250,12 @@ def handle_ticker(message):
                     if amend_code == 1:
                         # Order does not exist, trailing order was sold in between
                         all_sells_new = all_sells
-                        defs.announce("Adjusting trigger quantity no possible, sell order already hit", True, 1)
+                        defs.announce("Adjusting trigger quantity no possible, sell order already hit", True, 0)
                         
                     if amend_code == 2:
                         # Quantity could not be changed, do nothing
                         all_sells_new = all_sells
-                        defs.announce("Sell order quantity could not be changed, doing nothing", True, 1)
+                        defs.announce("Sell order quantity could not be changed, doing nothing", True, 0)
 
                     if amend_code == 100:
                         # Critical error, let's log it and revert
@@ -492,7 +492,7 @@ if use_indicators['enabled']:
     print(f"Interval 3: {intervals[3]}m")
 if use_spread['enabled']:
     print(f"Spread    : {use_spread['distance']} %")
-print(f"Profit    : {profit}")
+print(f"Profit    : {profit} %")
 print(f"Limit     : {limit}\n")
 
 # Preload all requirements

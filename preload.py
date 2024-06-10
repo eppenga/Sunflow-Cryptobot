@@ -168,7 +168,7 @@ def get_info(symbol, spot, multiplier):
     info['maxOrderAmt']    = float(pre_info['result']['list'][0]['lotSizeFilter']['maxOrderAmt'])
     info['tickSize']       = float(pre_info['result']['list'][0]['priceFilter']['tickSize'])
 
-    # Calculate minimum order value and add 10 % to prevent strange errors
+    # Calculate minimum order value, add 10 % and round up to prevent strange errors
     minimumQty = info['minOrderQty'] * spot
     minimumAmt = info['minOrderAmt']
 
@@ -176,8 +176,8 @@ def get_info(symbol, spot, multiplier):
         minimumOrder = (minimumAmt / spot) * 1.1
     else:
         minimumOrder = (minimumQty / spot) * 1.1
-    info['minBuyBase']  = defs.precision(minimumOrder * multiplier, info['basePrecision'])
-    info['minBuyQuote'] = defs.precision(minimumOrder * spot * multiplier, info['quotePrecision'])
+    info['minBuyBase']  = defs.round_number(minimumOrder * multiplier, info['basePrecision'], "up")
+    info['minBuyQuote'] = defs.round_number(minimumOrder * spot * multiplier, info['quotePrecision'], "up")
 
     # Output to stdout
     if debug:

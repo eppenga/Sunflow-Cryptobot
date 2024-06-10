@@ -70,22 +70,6 @@ def update_kline(kline, klines):
     # Return klines
     return klines
 
-# Round value to the nearest step size
-def precision(value, step_size):
-    
-    # Logic
-    if step_size < 1:
-        decimal_places = -int(math.log10(step_size))
-        factor = 10 ** decimal_places
-    else:
-        factor = 1 / step_size
-
-    # Round down
-    rounded_value = math.floor(value * factor) / factor
-
-    # Return rounded value    
-    return rounded_value
-
 # Check if there are no adjacent orders already 
 def check_spread(all_buys, spot, spread):
 
@@ -320,7 +304,7 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
     if use_spread['enabled']:
         if spread_advice['result']:
             do_buy[4] = True
-        message += f"Spread: {defs.format_price(spread_advice['nearest'], 0.0001)} % "
+        message += f"Spread: {defs.format_number(spread_advice['nearest'], 0.0001)} % "
         message += report_buy(spread_advice['result']) + ", "
     else:
         do_buy[4] = True
@@ -427,11 +411,11 @@ def report_ticker(spot, new_spot, rise_to, active_order, all_buys, info):
     else:
         message += "down"
     
-    message += f" from {format_price(spot, info['tickSize'])} to {format_price(new_spot, info['tickSize'])} {info['quoteCoin']}"
+    message += f" from {format_number(spot, info['tickSize'])} to {format_number(new_spot, info['tickSize'])} {info['quoteCoin']}"
 
     if active_order['active']:
         trigger_distance = abs(new_spot - active_order['trigger'])
-        trigger_distance = defs.format_price(trigger_distance, info['tickSize'])
+        trigger_distance = defs.format_number(trigger_distance, info['tickSize'])
         message += f", trigger price distance is {trigger_distance} {info['quoteCoin']}"
 
     if not active_order['active']:
@@ -472,8 +456,33 @@ def announce(message, to_apprise=False, level=1):
     # Return message
     return screen_message
 
+# Round value to the nearest step size
+def round_number(value, step_size, rounding = ""):
+    
+    # Logic
+    if step_size < 1:
+        decimal_places = -int(math.log10(step_size))
+        factor = 10 ** decimal_places
+    else:
+        factor = 1 / step_size
+
+    # Round down
+    if rounding == "down":
+        rounded_value = math.floor(value * factor) / factor
+    
+    # Round up
+    if rounding == "up":
+        rounded_value = math.ceil(value * factor) / factor
+    
+    # Round half
+    if not rounding:
+        rounded_value = round(value * factor) / factor
+
+    # Return rounded value
+    return rounded_value
+
 # Formats the price according to the ticksize.
-def format_price(price, tickSize):
+def format_number(price, tickSize):
 
     # Check for number format
     modified_tickSize = scientific_to_decimal_str(tickSize)
