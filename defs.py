@@ -145,18 +145,12 @@ def log_error(exception):
         print("Exception RAW:")
         print(exception)
         print()
-        print("Exception STRING:")
-        print(str(exception))
-        print()
        
     # Initialize variables
     halt_execution = True
     
     # Safeguard from type errors
     exception = str(exception)
-
-    # Add timestamp to exception
-    exception = now_utc()[1] + exception + "\n"
 
     # Error: Remote disconnected
     if ("(ErrCode: 12940)" in exception) or ("RemoteDisconnected" in exception):
@@ -173,7 +167,7 @@ def log_error(exception):
     
     # Write to error log file
     with open(config.error_file, 'a', encoding='utf-8') as file:
-        file.write(exception)
+        file.write(now_utc()[1] + exception + "\n")
     
     # Output to stdout
     defs.announce(f"Displaying exception: {exception}")

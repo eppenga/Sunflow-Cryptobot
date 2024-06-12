@@ -66,13 +66,6 @@ use_orderbook['enabled']     = config.orderbook_enabled       # Use orderbook as
 use_orderbook['minimum']     = config.orderbook_minimum       # Minimum orderbook percentage
 use_orderbook['maximum']     = config.orderbook_maximum       # Maximum orderbook percentage
 
-# Wave measurement
-use_waves                    = {}                             # Waves
-use_waves['enabled']         = False                          # Use waves in trigger price distance calculation
-if config.wiggle == "Wave"   : use_waves['enabled'] = True    # Automatically set to true
-use_waves['timeframe']       = config.wave_timeframe          # Timeframe in ms to measure wave, used when wiggle is set to Wave
-use_waves['multiplier']      = config.wave_multiplier         # Multiply wave percentage by this multiplier
-
 # Trailing order
 active_order                 = {}                             # Trailing order data
 active_order['side']         = ""                             # Trailing buy
@@ -153,8 +146,7 @@ def handle_ticker(message):
         prices['price'].pop(0)
 
         # Show incoming message
-        if debug:
-            defs.announce(f"*** Incoming ticker with price {ticker['lastPrice']} {info['baseCoin']}, simulated = {ticker['simulated']} ***")
+        if debug: defs.announce(f"*** Incoming ticker with price {ticker['lastPrice']} {info['baseCoin']}, simulated = {ticker['simulated']} ***")
 
         # Prevent race conditions
         if lock_ticker['enabled']:
@@ -164,11 +156,7 @@ def handle_ticker(message):
         
         # Lock handle_ticker function
         lock_ticker['enabled'] = True        
-
-        # Calculate wave, also used in trailing when distance set to wave
-        if use_waves['enabled']:
-            active_order['wave'] = distance.waves(prices, use_waves)
-           
+          
         # Run trailing if active
         if active_order['active']:
             active_order['current'] = ticker['lastPrice']
@@ -305,8 +293,7 @@ def handle_kline(message, interval):
         kline = {}
      
         # Show incoming message
-        if debug:
-            defs.announce(f"*** Incoming kline with interval {interval}m ***")
+        if debug: defs.announce(f"*** Incoming kline with interval {interval}m ***")
 
         # Get newest kline
         kline['time']     = int(message['data'][0]['start'])
@@ -351,8 +338,7 @@ def handle_orderbook(message):
     try:
       
         # Show incoming message
-        if debug:
-            defs.announce("*** Incoming orderbook ***")
+        if debug: defs.announce("*** Incoming orderbook ***")
         
         # Recalculate depth to numerical value
         depthN = ((2 * depth) / 100) * spot
