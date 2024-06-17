@@ -63,8 +63,8 @@ use_indicators['maximum']    = config.indicators_maximum      # Maximum advice v
 # Orderbook
 use_orderbook                = {}                             # Orderbook
 use_orderbook['enabled']     = config.orderbook_enabled       # Use orderbook as buy trigger
-use_orderbook['minimum']     = config.orderbook_minimum       # Minimum orderbook percentage
-use_orderbook['maximum']     = config.orderbook_maximum       # Maximum orderbook percentage
+use_orderbook['minimum']     = config.orderbook_minimum       # Minimum orderbook buy percentage
+use_orderbook['maximum']     = config.orderbook_maximum       # Maximum orderbook buy percentage
 
 # Trailing order
 active_order                 = {}                             # Trailing order data
@@ -104,6 +104,12 @@ indicators_advice               = {}
 indicators_advice[intervals[1]] = {'result': True, 'value': 0, 'level': 'Neutral'}
 indicators_advice[intervals[2]] = {'result': True, 'value': 0, 'level': 'Neutral'}
 indicators_advice[intervals[3]] = {'result': True, 'value': 0, 'level': 'Neutral'}
+
+# Initialize orderbook advice variable
+orderbook_advice                = {}
+orderbook_advice['buy_perc']    = 0
+orderbook_advice['sell_perc']   = 0
+orderbook_advice['result']      = False
 
 # Locking handle_ticker function to prevent race conditions
 lock_ticker                     = {}
@@ -184,7 +190,7 @@ def handle_ticker(message):
             if active_order['active'] and active_order['side'] == "Buy" and can_sell:
                 
                 # Output to stdout and Apprise
-                defs.announce("*** Warning loosing money, we can sell while we are buying, trying to cancel buy order! ***", True, 1)
+                defs.announce("*** Warning: Loosing money! Buying whilest selling is possible, trying to cancel buy order! ***", True, 1)
                 
                 # Cancel trailing buy, remove from all_buys database
                 active_order['active'] = False
@@ -193,19 +199,19 @@ def handle_ticker(message):
                 
                 if error_code == 0:
                     # Situation normal, just remove the order
-                    defs.announce("Buy order cancelled successfully")
+                    defs.announce("Buy order cancelled successfully", True, 1)
                     all_buys = database.remove(active_order['orderid'], all_buys, info)
 
                 if error_code == 1:
                     # Trailing buy was bought
-                    defs.announce("Buy order could not be cancelled, closing trailing buy")
+                    defs.announce("Buy order could not be cancelled, closing trailing buy", True, 1)
                     result       = trailing.close_trail(active_order, all_buys, all_sells, info)
                     active_order = result[0]
                     all_buys     = result[1]
                     all_sells    = result[2]
                     
                 if error_code == 100:
-                    # Something went very wrong 
+                    # Something went very wrong
                     defs.log_error(result[1])
                 
             # Initiate sell
@@ -251,7 +257,7 @@ def handle_ticker(message):
                         defs.log_error(amend_error)
 
             # Work as a true gridbot when only spread is used
-            if use_spread['enabled'] and not use_indicators['enabled'] and not use_orderbook['enabled'] and not active_order['active']:
+            if use_spread['enabled'] and not use_indicators['enabled'] and not active_order['active']:
                 active_order = buy_matrix(new_spot, active_order, all_buys, intervals[1])
 
     # Report error
@@ -333,10 +339,17 @@ def handle_kline(message, interval):
 
 # Handle messages to keep orderbook up to date
 def handle_orderbook(message):
+    
+    # Debug
+    debug_1 = False
+    debug_2 = False
 
     # Errors are not reported within websocket
     try:
-      
+
+        # Declare some variables global
+        global orderbook_advice
+          
         # Show incoming message
         if debug: defs.announce("*** Incoming orderbook ***")
         
@@ -371,8 +384,8 @@ def handle_orderbook(message):
         sell_percentage = (total_sell_within_depth / total_quantity_within_depth) * 100 if total_quantity_within_depth > 0 else 0
 
         # Output the stdout
-        if debug:        
-            defs.announce("Sunflow: handle_orderbook: Orderbook")
+        if debug_1:        
+            defs.announce("Orderbook")
             print(f"Spot price        : {spot}")
             print(f"Lower depth       : {spot - depth}")
             print(f"Upper depth       : {spot + depth}\n")
@@ -385,12 +398,16 @@ def handle_orderbook(message):
             print(f"Sell within depth : {sell_percentage:.2f} %")
 
         # Create message
-        message = f"Sunflow: handle_orderbook: Orderbook: Market depth (Buy / Sell | depth (Advice)): {buy_percentage:.2f} % / {sell_percentage:.2f} % | {depth} % "
-        if buy_percentage >= sell_percentage:
-            message = message + "(BUY)"
-        else:
-            message = message + "(SELL)"
-        defs.announce(message)
+        message = f"Orderbook information (Buy / Sell | Depth): {buy_percentage:.2f} % / {sell_percentage:.2f} % | {depth} % "
+        
+        # Announce message only if it changed and debug is on
+        if debug_2:
+            if (buy_percentage != orderbook_advice['buy_perc']) or (sell_percentage != orderbook_advice['sell_perc']):
+                defs.announce(message)
+        
+        # Set orderbook_advice
+        orderbook_advice['buy_perc']  = buy_percentage
+        orderbook_advice['sell_perc'] = sell_percentage
 
     # Report error
     except Exception as e:
@@ -406,19 +423,18 @@ def handle_orderbook(message):
 def buy_matrix(spot, active_order, all_buys, interval):
 
     # Declare some variables global
-    global indicators_advice
+    global indicators_advice, orderbook_advice
     
     # Initialize variables
     can_buy                = False
     spread_advice          = {}
-    orderbook_advice       = {}
     result                 = ()    
           
     # Only initiate buy and do complex calculations when not already trailing
     if not active_order['active']:
         
         # Get buy advice
-        result            = defs.advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval)
+        result            = defs.advice_buy(indicators_advice, orderbook_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval)
         indicators_advice = result[0]
         spread_advice     = result[1]
         orderbook_advice  = result[2]
@@ -526,7 +542,7 @@ def subscribe_streams(ws):
 
     # At request get orderbook from websocket
     if ws_orderbook:
-        ws.orderbook_stream(depth=50, symbol=symbol, callback=handle_orderbook)
+        ws.orderbook_stream(depth=200, symbol=symbol, callback=handle_orderbook)
 
 # Fire ticker at least everysecond
 def simulated_ticker():

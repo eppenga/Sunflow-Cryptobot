@@ -245,6 +245,11 @@ def buy(symbol, spot, active_order, all_buys, prices, info):
     except Exception as e:
         defs.log_error(e)
         
+        # Buy order failed, reset active_order and return
+        active_order['active'] = False
+        defs.announce("Buy order failed due to error, trailing stopped")
+        return active_order, all_buys
+        
     # Check API rate limit and log data if possible
     if order:
         order = defs.rate_limit(order)
@@ -303,6 +308,11 @@ def sell(symbol, spot, active_order, prices, info):
         )
     except Exception as e:
         defs.log_error(e)
+
+        # Sell order failed, reset active_order and return
+        active_order['active'] = False
+        defs.announce("Sell order failed due to error, trailing stopped")
+        return active_order
         
     # Check API rate limit and log data if possible
     if order:

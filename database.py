@@ -62,7 +62,7 @@ def remove(orderid, all_buys, info):
     if not found_order:
         defs.announce(f"The order with ID {orderid} which we were about to remove was not found!")
     else:
-        defs.announce(f"Database: remove: Order with ID {orderid} removed from all buys database!")
+        defs.announce(f"Order with ID {orderid} removed from all buys database!")
     
     # Save to database
     save(all_buys_new, info)
@@ -96,7 +96,7 @@ def register_buy(buy_order, all_buys, info):
         counter = counter + 1
       
     if debug:
-        defs.announce(f"Database: register_buy: New database with {counter} buy orders")
+        defs.announce(f"New database with {counter} buy orders")
         print(all_buys_new)
         print()
 

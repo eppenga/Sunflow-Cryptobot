@@ -194,15 +194,14 @@ def report_buy(result):
     return pafa
 
 # Give an advice via the buy matrix
-def advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval):
+def advice_buy(indicators_advice, orderbook_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval):
     
     # Initialize variables
     spread_advice          = {}
-    orderbook_advice       = {}
     technical_indicators   = {}
     result                 = ()
 
-        
+
     '''' Check TECHNICAL INDICATORS for buy decission '''
     
     if use_indicators['enabled']:
@@ -232,12 +231,14 @@ def advice_buy(indicators_advice, use_indicators, use_spread, use_orderbook, spo
         spread_advice['result'] = True
 
 
-    ''' Check ORDERBOOK for buy decission ''' # *** CHECK *** To be implemented
+    ''' Check ORDERBOOK for buy decission '''
     
     if use_orderbook['enabled']:
         # Put orderbook logic here
-        orderbook_advice['value']  = 0
-        orderbook_advice['result'] = True
+        if (orderbook_advice['buy_perc'] >= use_orderbook['minimum']) and (orderbook_advice['buy_perc'] <= use_orderbook['maximum']):
+            orderbook_advice['result'] = True
+        else:
+            orderbook_advice['result'] = False
     else:
         # If orderbook is not enabled, always true
         orderbook_advice['result'] = True
@@ -298,7 +299,7 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
     if use_spread['enabled']:
         if spread_advice['result']:
             do_buy[4] = True
-        message += f"Spread: {defs.format_number(spread_advice['nearest'], 0.0001)} % "
+        message += f"Spread: {spread_advice['nearest']:.4f} % "
         message += report_buy(spread_advice['result']) + ", "
     else:
         do_buy[4] = True
@@ -307,7 +308,7 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
     if use_orderbook['enabled']:
         if orderbook_advice['result']:
             do_buy[5] = True
-        message += f"Orderbook: {orderbook_advice['value']} % "
+        message += f"Orderbook: {orderbook_advice['buy_perc']:.2f} % "
         message += report_buy(orderbook_advice['result']) + ", "
     else:
         do_buy[5] = True
