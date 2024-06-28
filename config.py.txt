@@ -10,15 +10,15 @@ interval_1          = 1            # Klines timeframe default interval
 interval_2          = 3            # Klines timeframe first confirmation interval, set to 0 if you do not want to use this
 interval_3          = 5            # Klines timeframe second confirmation interval, set to 0 if you do not want to use this
 limit               = 250          # Number of klines downloaded, used for calculcating technical indicators
-profit              = 0.40         # Minimum profit percentage
-distance            = 0.10         # Trigger price distance percentage when Fixed is used by wiggle
+profit              = 0.400        # Minimum profit percentage
+distance            = 0.100        # Trigger price distance percentage when Fixed is used by wiggle
 wiggle              = "Spot"       # Method for trigger price distance, Fixed, Spot, EMA or Wave
 depth               = 0.10         # Depth in percentages used to calculate market depth from orderbook
 multiplier          = 1.00         # Multiply minimum order quantity by this
 
 # Spread between orders
 spread_enabled      = True         # Use spread as buy indicator
-spread_distance     = 0.20         # Minimum spread in percentages
+spread_distance     = 0.200        # Minimum spread in percentages
 
 # Technical indicators
 indicators_enabled  = True         # Use technical indicators as buy indicator
@@ -27,18 +27,18 @@ indicators_maximum  = +0.50        # Maximum advice value
 
 # Orderbook
 orderbook_enabled   = False        # Use orderbook as buy indicator
-orderbook_minimum   = 0            # Minimum orderbook percentage
-orderbook_maximum   = 40           # Maximum orderbook percentage
+orderbook_minimum   = 0            # Minimum orderbook buy depth percentage
+orderbook_maximum   = 45           # Maximum orderbook buy depth percentage
 orderbook_average   = True         # Average out orderbook depth data or use last data point
-orderbook_limit     = 10           # Number of orderbook data elements to keep in database
-orderbook_timeframe = 1000         # Timeframe in ms for averaging out
+orderbook_limit     = 50           # Number of orderbook data elements to keep in database
+orderbook_timeframe = 5000         # Timeframe in ms for averaging out
 
 # Trade
-trade_enabled       = False         # Use trades as buy indicator
-trade_minimum       = 50           # Minimum trade buy ratio percentage
+trade_enabled       = False        # Use trades as buy indicator
+trade_minimum       = 55           # Minimum trade buy ratio percentage
 trade_maximum       = 100          # Maximum trade buy ratio percentage
 trade_limit         = 100          # Number of trade orders to keep in database
-trade_timeframe     = 5000         # Timeframe in ms to collect realtime trades
+trade_timeframe     = 25000        # Timeframe in ms to collect realtime trades
 
 # Wave length
 wave_timeframe      = 10000        # Timeframe in ms to measure wave length, used when wiggle is set to Wave
