@@ -9,10 +9,10 @@ from pybit.unified_trading import WebSocket
 from requests.exceptions import ChunkedEncodingError
 from urllib3.exceptions import ProtocolError
 from http.client import RemoteDisconnected
-import argparse, importlib, sys, traceback
+import argparse, importlib, pprint, sys, traceback
 
 # Load internal libraries
-import database, defs, distance, preload, trailing, orders
+import database, defs, preload, trailing, orders
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="Run the Sunflow Cryptobot with a specified config.")
@@ -40,6 +40,7 @@ intervals                    = {}                             # Klines intervals
 intervals[1]                 = config.interval_1              # Klines timeframe interval 1
 intervals[2]                 = config.interval_2              # Klines timeframe interval 2
 intervals[3]                 = config.interval_3              # Klines timeframe interval 3
+trades                       = {}                             # Trades for symbol
 limit                        = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
 ticker                       = {}                             # Ticker data, including lastPrice and time
 info                         = {}                             # Instrument info on symbol
@@ -48,6 +49,7 @@ profit                       = config.profit                  # Minimum profit p
 depth                        = config.depth                   # Depth in percentages used to calculate market depth from orderbook
 multiplier                   = config.multiplier              # Multiply minimum order quantity by this
 prices                       = {}                             # Last {limit} prices based on ticker
+depth_data                   = {}                             # Depth buy and sell percentage indexed by time
 
 # Minimum spread between historical buy orders
 use_spread                   = {}                             # Spread
@@ -65,6 +67,17 @@ use_orderbook                = {}                             # Orderbook
 use_orderbook['enabled']     = config.orderbook_enabled       # Use orderbook as buy trigger
 use_orderbook['minimum']     = config.orderbook_minimum       # Minimum orderbook buy percentage
 use_orderbook['maximum']     = config.orderbook_maximum       # Maximum orderbook buy percentage
+use_orderbook['average']     = config.orderbook_average       # Average out orderbook depth data or use last data point
+use_orderbook['limit']       = config.orderbook_limit         # Number of orderbook data elements to keep in database
+use_orderbook['timeframe']   = config.orderbook_timeframe     # Timeframe for averaging out
+
+# Trade
+use_trade                    = {}
+use_trade['enabled']         = config.trade_enabled           # Use realtime trades as buy trigger
+use_trade['minimum']         = config.trade_minimum           # Minimum trade buy ratio percentage
+use_trade['maximum']         = config.trade_maximum           # Maximum trade buy ratio percentage
+use_trade['limit']           = config.trade_limit             # Number of trade orders to keep in database
+use_trade['timeframe']       = config.trade_timeframe         # Timeframe in ms to collect realtime trades
 
 # Trailing order
 active_order                 = {}                             # Trailing order data
@@ -90,8 +103,10 @@ all_sells                    = {}                             # Sell order linke
 # Websockets to use
 ws_kline                     = False                          # Initialize ws_kline
 ws_orderbook                 = False                          # Initialize ws_orderbook
+ws_trade                     = False                          # Initialize ws_trade
 if config.indicators_enabled : ws_kline     = True            # Use klines websocket
 if config.orderbook_enabled  : ws_orderbook = True            # Use orderbook websocket
+if config.trade_enabled      : ws_trade     = True            # Use trade websocker
 
 # Initialize indicator advice variable
 if not config.indicators_enabled:                             # Set intervals to zero if indicators are disabled
@@ -110,6 +125,18 @@ orderbook_advice                = {}
 orderbook_advice['buy_perc']    = 0
 orderbook_advice['sell_perc']   = 0
 orderbook_advice['result']      = False
+
+# Initialize trade advice variable
+trade_advice                    = {}
+trade_advice['buy_ratio']       = 0
+trade_advice['sell_ratio']      = 0
+trade_advice['result']          = False
+
+# Initialize trades variable
+trades                          = {'time': [], 'side': [], 'size': [], 'price': []}
+
+# Initialize depth variable
+depth_data                      = {'time': [], 'buy_perc': [], 'sell_perc': []}
 
 # Locking handle_ticker function to prevent race conditions
 lock_ticker                     = {}
@@ -341,14 +368,18 @@ def handle_kline(message, interval):
 def handle_orderbook(message):
     
     # Debug
-    debug_1 = False
-    debug_2 = False
+    debug_1 = False    # Show orderbook
+    debug_2 = False    # Show buy and sell depth percentages
 
     # Errors are not reported within websocket
     try:
 
         # Declare some variables global
-        global orderbook_advice
+        global orderbook_advice, depth_data
+        
+        # Initialize variables
+        total_buy_within_depth  = 0
+        total_sell_within_depth = 0
           
         # Show incoming message
         if debug: defs.announce("*** Incoming orderbook ***")
@@ -359,10 +390,6 @@ def handle_orderbook(message):
         # Extracting bid (buy) and ask (sell) arrays
         bids = message['data']['b']
         asks = message['data']['a']
-
-        # Initialize total quantities within depth for buy and sell
-        total_buy_within_depth  = 0
-        total_sell_within_depth = 0
 
         # Calculate total buy quantity within depth
         for bid in bids:
@@ -397,17 +424,32 @@ def handle_orderbook(message):
             print(f"Buy within depth  : {buy_percentage:.2f} %")
             print(f"Sell within depth : {sell_percentage:.2f} %")
 
-        # Create message
-        message = f"Orderbook information (Buy / Sell | Depth): {buy_percentage:.2f} % / {sell_percentage:.2f} % | {depth} % "
-        
-        # Announce message only if it changed and debug is on
+        # Announce message only if it changed and debug
         if debug_2:
             if (buy_percentage != orderbook_advice['buy_perc']) or (sell_percentage != orderbook_advice['sell_perc']):
+                message = f"Orderbook information (Buy / Sell | Depth): {buy_percentage:.2f} % / {sell_percentage:.2f} % | {depth} % "
                 defs.announce(message)
         
+        # Popup new depth data
+        depth_data['time'].append(defs.now_utc()[4])
+        depth_data['buy_perc'].append(buy_percentage)
+        depth_data['sell_perc'].append(sell_percentage)
+        if len(depth_data['time']) > use_orderbook['limit']:
+            depth_data['time'].pop(0)
+            depth_data['buy_perc'].pop(0)        
+            depth_data['sell_perc'].pop(0)
+
+        # Get average buy and sell percentage for timeframe
+        new_buy_percentage  = buy_percentage
+        new_sell_percentage = sell_percentage
+        if use_orderbook['average']:
+            result              = defs.average_depth(depth_data, use_orderbook, buy_percentage, sell_percentage)
+            new_buy_percentage  = result[0]
+            new_sell_percentage = result[1]
+        
         # Set orderbook_advice
-        orderbook_advice['buy_perc']  = buy_percentage
-        orderbook_advice['sell_perc'] = sell_percentage
+        orderbook_advice['buy_perc']  = new_buy_percentage
+        orderbook_advice['sell_perc'] = new_sell_percentage
 
     # Report error
     except Exception as e:
@@ -419,11 +461,83 @@ def handle_orderbook(message):
     # Close function
     return
 
+def handle_trade(message):
+    
+    # Debug
+    debug_1 = False
+    debug_2 = False
+
+    # Declare some variables global
+    global trade_advice, trades
+    
+    # Initialize variables
+    result     = ()
+    datapoints = {}
+    compare    = {'time': [], 'side': [], 'size': [], 'price': []}
+   
+    # Errors are not reported within websocket
+    try:
+
+        # Show incoming message
+        if debug_1: 
+            defs.announce("*** Incoming trade ***")
+            print(f"{message}\n")
+                        
+        # Combine the trades
+        for trade in message['data']:
+            trades['time'].append(trade['T'])      # T: Timestamp
+            trades['side'].append(trade['S'])      # S: Side
+            trades['size'].append(trade['v'])      # v: Trade size
+            trades['price'].append(trade['p'])     # p: Trade price
+    
+        # Limit number of trades
+        if len(trades['time']) > use_trade['limit']:
+            trades['time']  = trades['time'][-use_trade['limit']:]
+            trades['side']  = trades['side'][-use_trade['limit']:]
+            trades['size']  = trades['size'][-use_trade['limit']:]
+            trades['price'] = trades['price'][-use_trade['limit']:]
+    
+        # Number of trades to use for timeframe
+        number = defs.get_index_number(trades, use_trade['timeframe'], use_trade['limit'])
+        compare['time']  = trades['time'][-number:]
+        compare['side']  = trades['side'][-number:]
+        compare['size']  = trades['size'][-number:]
+        compare['price'] = trades['price'][-number:]        
+    
+        # Get trade_advice
+        result = defs.calculate_total_values(compare)        
+        trade_advice['buy_ratio']  = result[3]
+        trade_advice['sell_ratio'] = result[4]
+        
+        # Validate data
+        datapoints['trade']   = len(trades['time'])
+        datapoints['compare'] = len(compare['time'])
+        datapoints['limit']   = use_trade['limit']
+        if (datapoints['compare'] >= datapoints['trade']) and (datapoints['trade'] >= datapoints['limit']):
+            defs.announce("*** Warning: Increase trade_limit variable in config file ***")
+        
+        # Debug
+        if debug_2:
+            message = f"There are {datapoints['trade']} / {datapoints['limit']} data points, "
+            message = message + f"using the last {datapoints['compare']} points and "
+            message = message + f"buy ratio is {trade_advice['buy_ratio']:.2f} %"
+            defs.announce(message)
+    
+    # Report error
+    except Exception as e:
+        tb_info = traceback.extract_tb(e.__traceback__)
+        filename, line, func, text = tb_info[-1]
+        defs.announce(f"An error occurred in {filename} on line {line}: {e}")
+        traceback.print_tb(e.__traceback__)
+       
+    # Close function
+    return
+
 # Check if we can buy the based on signals
 def buy_matrix(spot, active_order, all_buys, interval):
 
     # Declare some variables global
-    global indicators_advice, orderbook_advice
+    global indicators_advice, orderbook_advice, trade_advice
     
     # Initialize variables
     can_buy                = False
@@ -434,15 +548,16 @@ def buy_matrix(spot, active_order, all_buys, interval):
     if not active_order['active']:
         
         # Get buy advice
-        result            = defs.advice_buy(indicators_advice, orderbook_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval)
+        result            = defs.advice_buy(indicators_advice, orderbook_advice, trade_advice, use_indicators, use_spread, use_orderbook, use_trade, spot, klines, all_buys, interval)
         indicators_advice = result[0]
         spread_advice     = result[1]
         orderbook_advice  = result[2]
+        trade_advice      = result[3]
                     
         # Get buy decission and report
-        result  = defs.decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals)
-        can_buy = result[0]
-        message = result[1]
+        result            = defs.decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, interval, intervals)
+        can_buy           = result[0]
+        message           = result[1]
         defs.announce(message)
 
         # Determine distance of trigger price and execute buy decission
@@ -543,6 +658,10 @@ def subscribe_streams(ws):
     # At request get orderbook from websocket
     if ws_orderbook:
         ws.orderbook_stream(depth=200, symbol=symbol, callback=handle_orderbook)
+        
+    # At request get trades from websocket
+    if ws_trade:
+        ws.trade_stream(symbol=symbol, callback=handle_trade)
 
 # Fire ticker at least everysecond
 def simulated_ticker():

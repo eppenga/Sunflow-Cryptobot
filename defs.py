@@ -7,7 +7,7 @@ from loader import load_config
 from pathlib import Path
 from datetime import datetime, timezone
 import defs, indicators
-import apprise, inspect, math, time
+import apprise, inspect, math, pprint, time
 
 # Load config
 config = load_config()
@@ -194,8 +194,8 @@ def report_buy(result):
     return pafa
 
 # Give an advice via the buy matrix
-def advice_buy(indicators_advice, orderbook_advice, use_indicators, use_spread, use_orderbook, spot, klines, all_buys, interval):
-    
+def advice_buy(indicators_advice, orderbook_advice, trade_advice, use_indicators, use_spread, use_orderbook, use_trade, spot, klines, all_buys, interval):
+
     # Initialize variables
     spread_advice          = {}
     technical_indicators   = {}
@@ -234,7 +234,6 @@ def advice_buy(indicators_advice, orderbook_advice, use_indicators, use_spread, 
     ''' Check ORDERBOOK for buy decission '''
     
     if use_orderbook['enabled']:
-        # Put orderbook logic here
         if (orderbook_advice['buy_perc'] >= use_orderbook['minimum']) and (orderbook_advice['buy_perc'] <= use_orderbook['maximum']):
             orderbook_advice['result'] = True
         else:
@@ -244,11 +243,22 @@ def advice_buy(indicators_advice, orderbook_advice, use_indicators, use_spread, 
         orderbook_advice['result'] = True
 
 
+    ''' Check ORDERBOOK for buy decission '''
+    
+    if use_trade['enabled']:
+        if (trade_advice['buy_ratio'] >= use_trade['minimum']) and (trade_advice['buy_ratio'] <= use_trade['maximum']):
+            trade_advice['result'] = True
+        else:
+            trade_advice['result'] = False
+    else:
+        # If orderbook is not enabled, always true
+        trade_advice['result'] = True
+        
     # Return all data
-    return indicators_advice, spread_advice, orderbook_advice
+    return indicators_advice, spread_advice, orderbook_advice, trade_advice
 
 # Determines buy decission and outputs to stdout
-def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, interval, intervals):
+def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, interval, intervals):
             
     # Debug
     debug = False
@@ -259,7 +269,8 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
     do_buy[2] = False
     do_buy[3] = False
     do_buy[4] = False
-    do_buy[5] = False    
+    do_buy[5] = False
+    do_buy[6] = False
     can_buy   = False
     message   = ""
    
@@ -313,8 +324,17 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
     else:
         do_buy[5] = True
 
+    # Report orderbook
+    if use_trade['enabled']:
+        if trade_advice['result']:
+            do_buy[6] = True
+        message += f"Trade: {trade_advice['buy_ratio']:.2f} % "
+        message += report_buy(trade_advice['result']) + ", "
+    else:
+        do_buy[6] = True
+
     # Determine buy decission
-    if do_buy[1] and do_buy[2] and do_buy[3] and do_buy[4] and do_buy[5]:
+    if do_buy[1] and do_buy[2] and do_buy[3] and do_buy[4] and do_buy[5] and do_buy[6]:
         can_buy = True
         message += "BUY!"
     else:
@@ -516,3 +536,123 @@ def scientific_to_decimal_str(number):
     
     return decimal_str
     
+# Calculates the closest index
+def get_closest_index(data, span):
+    
+    # Find the closest index in the time {timeframe}
+    closest_index = None
+    min_diff = float('inf')
+
+    for i, t in enumerate(data['time']):
+        diff = abs(t - span)
+        if diff < min_diff:
+            min_diff = diff
+            closest_index = i
+
+    # Return closest index
+    return closest_index
+
+# Calcuate number of items to use
+def get_index_number(data, timeframe, limit):
+    
+    # Time calculations
+    latest_time  = data['time'][-1]           # Get the time for the last element
+    span         = latest_time - timeframe    # Get the time of the last element minus the timeframe
+    
+    # Calculate number of items to use
+    missing  = 0
+    elements = len(data['time'])
+    ratio = (elements / limit) * 100
+    if elements < limit:
+        missing = limit - elements
+        defs.announce(f"*** Warning: Still fetching data, message will disappear ({ratio:.0f} %) ***")
+    
+    closest_index = defs.get_closest_index(data, span)
+    number        = limit - closest_index - missing
+    
+    # Return number
+    return number
+
+# Caculate the average value in a list
+def average(numbers):
+
+    # Logic
+    if not numbers:
+        return 0
+    
+    total = sum(numbers)
+    count = len(numbers)
+    average = total / count
+
+    # Return average
+    return average
+
+# Calculate average buy and sell percentage for timeframe
+def average_depth(depth_data, use_orderbook, buy_percentage, sell_percentage):
+
+    # Debug
+    debug_1 = False
+    debug_2 = True
+
+    # Initialize variables
+    datapoints   = {}
+    
+    # Number of depth elements to use
+    number = defs.get_index_number(depth_data, use_orderbook['timeframe'], use_orderbook['limit'])
+
+    # Validate data
+    datapoints['depth']   = number
+    datapoints['compare'] = len(depth_data['time'])
+    datapoints['limit']   = use_orderbook['limit']
+    if (datapoints['depth'] >= datapoints['compare']) and (datapoints['compare'] >= datapoints['limit']):
+        defs.announce("*** Warning: Increase orderbook_limit variable in config file ***")
+
+    
+    # Debug elements
+    if debug_1:
+        print("All elements")
+        pprint.pprint(depth_data['buy_perc'])
+        print(f"Last {number} elements")
+        pprint.pprint(depth_data['buy_perc'][(-number):])
+
+    # Calculate average depth
+    if datapoints['compare'] >= datapoints['limit']:
+        new_buy_percentage  = defs.average(depth_data['buy_perc'][(-number):])
+        new_sell_percentage = defs.average(depth_data['sell_perc'][(-number):])
+    else:
+        new_buy_percentage  = buy_percentage
+        new_sell_percentage = sell_percentage
+    
+    # Debug announcement
+    if debug_2: 
+            message = f"There are {datapoints['compare']} / {datapoints['limit']} data points, "
+            message = message + f"using the last {datapoints['depth']} points and "
+            message = message + f"buy percentage is {new_buy_percentage:.2f} %"
+            defs.announce(message)
+
+    # Return data
+    return new_buy_percentage, new_sell_percentage
+
+# Calculate total buy and sell from trades
+def calculate_total_values(trades):
+
+    # Initialize variables
+    total_sell = 0.0
+    total_buy  = 0.0
+    total_all  = 0.0 
+
+    # Do logic
+    for i in range(len(trades['price'])):
+        price = float(trades['price'][i])
+        size = float(trades['size'][i])
+        value = price * size
+
+        if trades['side'][i] == 'Sell':
+            total_sell += value
+        elif trades['side'][i] == 'Buy':
+            total_buy += value
+
+    total_all = total_buy + total_sell
+    
+    # Return totals
+    return total_buy, total_sell, total_all, (total_buy / total_all) * 100, (total_sell / total_all) * 100

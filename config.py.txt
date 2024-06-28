@@ -5,38 +5,48 @@
 # CHANGE TO YOUR LIKING
 
 # Default values
-symbol             = "OPUSDT"     # Symbol bot used for trading
-interval_1         = 1            # Klines timeframe default interval
-interval_2         = 3            # Klines timeframe first confirmation interval, set to 0 if you do not want to use this
-interval_3         = 5            # Klines timeframe second confirmation interval, set to 0 if you do not want to use this
-limit              = 250          # Number of klines downloaded, used for calculcating technical indicators
-profit             = 0.40         # Minimum profit percentage
-distance           = 0.10         # Trigger price distance percentage when Fixed is used by wiggle
-wiggle             = "Spot"       # Method for trigger price distance, Fixed, Spot, EMA or Wave
-depth              = 0.10         # Depth in percentages used to calculate market depth from orderbook
-multiplier         = 1.00         # Multiply minimum order quantity by this
+symbol              = "OPUSDT"     # Symbol bot used for trading
+interval_1          = 1            # Klines timeframe default interval
+interval_2          = 3            # Klines timeframe first confirmation interval, set to 0 if you do not want to use this
+interval_3          = 5            # Klines timeframe second confirmation interval, set to 0 if you do not want to use this
+limit               = 250          # Number of klines downloaded, used for calculcating technical indicators
+profit              = 0.40         # Minimum profit percentage
+distance            = 0.10         # Trigger price distance percentage when Fixed is used by wiggle
+wiggle              = "Spot"       # Method for trigger price distance, Fixed, Spot, EMA or Wave
+depth               = 0.10         # Depth in percentages used to calculate market depth from orderbook
+multiplier          = 1.00         # Multiply minimum order quantity by this
 
 # Spread between orders
-spread_enabled     = True         # Use spread as buy indicator
-spread_distance    = 0.20         # Minimum spread in percentages
+spread_enabled      = True         # Use spread as buy indicator
+spread_distance     = 0.20         # Minimum spread in percentages
 
 # Technical indicators
-indicators_enabled = True         # Use technical indicators as buy indicator
-indicators_minimum = -0.25        # Minimum advice value
-indicators_maximum = +0.50        # Maximum advice value
+indicators_enabled  = True         # Use technical indicators as buy indicator
+indicators_minimum  = -0.25        # Minimum advice value
+indicators_maximum  = +0.50        # Maximum advice value
 
 # Orderbook
-orderbook_enabled  = False        # Use orderbook as buy indicator
-orderbook_minimum  = 0            # Minimum orderbook percentage
-orderbook_maximum  = 40           # Maximum orderbook percentage
+orderbook_enabled   = False        # Use orderbook as buy indicator
+orderbook_minimum   = 0            # Minimum orderbook percentage
+orderbook_maximum   = 40           # Maximum orderbook percentage
+orderbook_average   = True         # Average out orderbook depth data or use last data point
+orderbook_limit     = 10           # Number of orderbook data elements to keep in database
+orderbook_timeframe = 1000         # Timeframe in ms for averaging out
+
+# Trade
+trade_enabled       = False         # Use trades as buy indicator
+trade_minimum       = 50           # Minimum trade buy ratio percentage
+trade_maximum       = 100          # Maximum trade buy ratio percentage
+trade_limit         = 100          # Number of trade orders to keep in database
+trade_timeframe     = 5000         # Timeframe in ms to collect realtime trades
 
 # Wave length
-wave_timeframe     = 10000        # Timeframe in ms to measure wave length, used when wiggle is set to Wave
-wave_multiplier    = 1            # Multiply wave percentage by this multiplier
+wave_timeframe      = 10000        # Timeframe in ms to measure wave length, used when wiggle is set to Wave
+wave_multiplier     = 1            # Multiply wave percentage by this multiplier
 
 # Exchange keys (ALWAYS KEEP THESE SECRET)
-api_key            = "123456"                                   # API Key
-api_secret         = "123456"                                   # API Secret
+api_key             = "123456"                                   # API Key
+api_secret          = "123456"                                   # API Secret
 
 # ONLY FOR ADVANCED USERS
 
@@ -44,25 +54,25 @@ api_secret         = "123456"                                   # API Secret
 from pathlib import Path
 
 # Get current filename without .py
-config_path        = Path(__file__)
-config_file        = config_path.stem + "_"
-if config_file    == "config_": config_file = ""
+config_path         = Path(__file__)
+config_file         = config_path.stem + "_"
+if config_file     == "config_": config_file = ""
 
 # Data storage
-data_folder        = "data/"                                    # Where is data stored
-data_suffix        = data_folder + config_file                  # Format of data and log files
-dbase_file         = data_suffix + "buy_orders.json"            # Database file buy orders
-exchange_file      = data_suffix + "exchange.log"               # Exchange log file
-error_file         = data_suffix + "errors.log"                 # Error log file
+data_folder         = "data/"                                    # Where is data stored
+data_suffix         = data_folder + config_file                  # Format of data and log files
+dbase_file          = data_suffix + "buy_orders.json"            # Database file buy orders
+exchange_file       = data_suffix + "exchange.log"               # Exchange log file
+error_file          = data_suffix + "errors.log"                 # Error log file
 
 # Notify
-notify_enabled     = False                                      # Notify using Apprise, see https://github.com/caronc/apprise
-notify_urls        = ["tgram://bot_token/chat_id"]              # Fill in your bot_token and chat_id
-notify_level       = 1                                          # Notify level 0 is extended, 1 is normal
+notify_enabled      = False                                      # Notify using Apprise, see https://github.com/caronc/apprise
+notify_urls         = ["tgram://bot_token/chat_id"]              # Fill in your bot_token and chat_id
+notify_level        = 1                                          # Notify level 0 is extended, 1 is normal
 
 # Debug, logs and reporting
-debug              = False                                      # Turn debug on or off
-exchange_log       = True                                       # Keep a log of all exchange sessions
-wallet_report      = True                                       # Report wallet value, database and coins
-database_rebalance = True                                       # Sync the database to the exchange
-error_level        = 1                                          # Error level 0 is extended, 1 is normal
+debug               = False                                      # Turn debug on or off
+exchange_log        = True                                       # Keep a log of all exchange sessions
+wallet_report       = True                                       # Report wallet value, database and coins
+database_rebalance  = True                                       # Sync the database to the exchange
+error_level         = 1                                          # Error level 0 is extended, 1 is normal

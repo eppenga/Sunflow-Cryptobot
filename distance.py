@@ -10,22 +10,6 @@ import defs
 # Load config
 config = load_config()
 
-# Calculates the closest index
-def get_closest_index(prices, span):
-    
-    # Find the closest index in the time {timeframe}
-    closest_index = None
-    min_diff = float('inf')
-
-    for i, t in enumerate(prices['time']):
-        diff = abs(t - span)
-        if diff < min_diff:
-            min_diff = diff
-            closest_index = i
-
-    # Return closest index
-    return closest_index
-
 # Protect buy and sell
 def protect(active_order, price_distance):
     
@@ -144,13 +128,8 @@ def distance_ema(active_order, prices, price_distance):
     # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
     scaler = 1
     
-    # Time calculations
-    latest_time = prices['time'][-1]                    # Get the time for the last element
-    span        = latest_time - config.wave_timeframe   # Get the time of the last element minus the timeframe
-
-    # Calculate amount of price items to use
-    closest_index = get_closest_index(prices, span)
-    number        = config.limit - closest_index
+    # Number of prices to use
+    number = defs.get_index_number(prices, config.timeframe, config.limit)
 
     # Convert the lists to a pandas DataFrame
     df = pd.DataFrame({
@@ -189,13 +168,8 @@ def distance_hybrid(active_order, prices, price_distance):
     # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
     scaler = 2
 
-    # Time calculations
-    latest_time = prices['time'][-1]                    # Get the time for the last element
-    span        = latest_time - config.wave_timeframe   # Get the time of the last element minus the timeframe
-
-    # Calculate amount of price items to use
-    closest_index = get_closest_index(prices, span)
-    number        = config.limit - closest_index
+    # Number of prices to use
+    number = defs.get_index_number(prices, config.wave_timeframe, config.limit)
     
     # Adaptive EMA span based on volatility
     recent_prices = pd.Series(prices['price'][-number:])      # Get recent prices
@@ -238,7 +212,7 @@ def distance_wave(active_order, prices, price_distance):
     span = latest_time - config.wave_timeframe   # timeframe in milliseconds
 
     # Get the closest index in the time {timeframe}
-    closest_index = get_closest_index(prices, span)
+    closest_index = defs.get_closest_index(prices, span)
 
     # Calculate the change in price
     price_change      = 0
