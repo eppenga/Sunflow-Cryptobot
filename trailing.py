@@ -23,8 +23,6 @@ stuck             = {}
 stuck['check']    = True
 stuck['time']     = 0
 stuck['interval'] = 10000
-spike_counter     = 0
-spike_max         = 1
    
 # Check if we can do trailing buy or sell
 def check_order(symbol, spot, active_order, all_buys, all_sells, info):
@@ -127,40 +125,32 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
 # Checks if the trailing error spiked
 def check_spike(symbol, spot, active_order, order, all_buys, info):
 
-    # Declare some variables global
-    global spike_counter, spike_max
-
     # Initialize variables
     error_code = 0
 
-    # Check if the order spiked and is stuck
+    # Check if the order spiked
     transaction = orders.decode(order)
     if active_order['side'] == "Sell":
 
         # Did it spike and was forgotten when selling
         if transaction['triggerPrice'] > spot:
-            spike_counter = spike_counter + 1
-            # It spiked when selling
-            if spike_counter > spike_max:
-                defs.announce(f"*** {active_order['side']} order spiked, yakes! ***", True, 1)
-                # Reset trailing sell
-                active_order['active'] = False
-                # Remove order from exchange
-                orders.cancel(symbol, active_order['orderid'])
+            defs.announce(f"*** {active_order['side']} order spiked, yakes! ***", True, 1)
+            # Reset trailing sell
+            active_order['active'] = False
+            # Remove order from exchange
+            orders.cancel(symbol, active_order['orderid'])
+
     else:
 
         # Did it spike and was forgotten when buying
         if transaction['triggerPrice'] < spot:
-            spike_counter = spike_counter + 1
-            # It spiked when buying
-            if spike_counter > spike_max:
-                defs.announce(f"*** {active_order['side']} order spiked, yakes! ***", True, 1)
-                # Reset trailing buy
-                active_order['active'] = False
-                # Remove order from all buys
-                all_buys = database.remove(active_order['orderid'], all_buys, info)
-                # Remove order from exchange
-                orders.cancel(symbol, active_order['orderid'])
+            defs.announce(f"*** {active_order['side']} order spiked, yakes! ***", True, 1)
+            # Reset trailing buy
+            active_order['active'] = False
+            # Remove order from all buys
+            all_buys = database.remove(active_order['orderid'], all_buys, info)
+            # Remove order from exchange
+            orders.cancel(symbol, active_order['orderid'])
     
     if error_code == 1:
         defs.announce(f"Although order {active_order['orderid']} spiked, this order was not found at the exchange", True, 1)
