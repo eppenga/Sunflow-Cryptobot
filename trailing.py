@@ -313,6 +313,10 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices):
                 # Order does not exist, trailing order sold or bought in between
                 defs.announce(f"Adjusting trigger price not possible, {active_order['side'].lower()} order already hit", True, 0)
 
+            if amend_code == 10:
+                # Order does not support modification
+                defs.announce(f"Adjusting trigger price not possible, {active_order['side'].lower()} order does not support modification", True, 0)
+
             if amend_code == 100:
                 # Critical error, let's log it and revert
                 defs.announce("Critical error while trailing", True, 1)
@@ -351,6 +355,9 @@ def amend_quantity_sell(symbol, active_order, info):
             error_code = 1
         elif "(ErrCode: 10001)" in exception:
             error_code = 2
+        elif "(ErrCode: 170312)" in exception:
+            # Could not modify
+            error_code = 10
         else:
             # Any other error
             error_code = 100
@@ -391,6 +398,9 @@ def amend_trigger_price(symbol, active_order, info):
         if "(ErrCode: 170213)" in exception:
             # Order does not exist
             error_code = 1
+        elif "(ErrCode: 170312)" in exception:
+            # Could not modify
+            error_code = 10
         else:
             # Any other error
             error_code = 100

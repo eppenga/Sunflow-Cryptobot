@@ -277,6 +277,11 @@ def handle_ticker(message):
                         # Quantity could not be changed, do nothing
                         all_sells_new = all_sells
                         defs.announce("Sell order quantity could not be changed, doing nothing", True, 0)
+                        
+                    if amend_code == 10:
+                        all_sells_new = all_sells                        
+                        # Order does not support modification, do nothing
+                        defs.announce("Sell order quantity could not be changed, order does not support modification", True, 0)                        
 
                     if amend_code == 100:
                         # Critical error, let's log it and revert
@@ -514,7 +519,7 @@ def handle_trade(message):
         datapoints['compare'] = len(compare['time'])
         datapoints['limit']   = use_trade['limit']
         if (datapoints['compare'] >= datapoints['trade']) and (datapoints['trade'] >= datapoints['limit']):
-            defs.announce("*** Warning: Increase trade_limit variable in config file ***")
+            defs.announce("*** Warning: Increase trade_limit variable in config file ***", True, 1)
         
         # Debug
         if debug_2:

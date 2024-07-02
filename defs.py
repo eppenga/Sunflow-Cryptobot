@@ -154,12 +154,12 @@ def log_error(exception):
 
     # Error: Remote disconnected
     if ("(ErrCode: 12940)" in exception) or ("RemoteDisconnected" in exception):
-        defs.announce("*** Warning: Remote Disconnected! ***")
+        defs.announce("*** Warning: Remote disconnected! ***", True, 1)
         halt_execution = False
     
     # Error: Read time out
     if "HTTPSConnectionPool" in exception:
-        defs.announce("*** Warning: Read time out, waiting 20 seconds")
+        defs.announce("*** Warning: Read time out, waiting 20 seconds", True, 1)
         for number in range(20, 0, -1):
             print(number, end=" ", flush=True)
             time.sleep(1)
@@ -401,13 +401,13 @@ def rate_limit(response):
         
         # Hard exit
         if ratio > 1:
-            defs.announce("f*** ERROR: API RATE LIMIT EXCEED, STOPPED TO PREVENT PERMANENT BAN! ***")
+            defs.announce("f*** ERROR: API RATE LIMIT EXCEED, STOPPED TO PREVENT PERMANENT BAN! ***", True, 0)
             defs.halt_sunflow = True
             exit()
         
         # Inform of delay
         if delay:
-            defs.announce(f"*** WARNING: API RATE LIMIT HIT, DELAYING SUNFLOW {delay} SECONDS ***")
+            defs.announce(f"*** WARNING: API RATE LIMIT HIT, DELAYING SUNFLOW {delay} SECONDS ***", True, 1)
             time.sleep(delay)
     
     # Clean response data
@@ -605,8 +605,7 @@ def average_depth(depth_data, use_orderbook, buy_percentage, sell_percentage):
     datapoints['compare'] = len(depth_data['time'])
     datapoints['limit']   = use_orderbook['limit']
     if (datapoints['depth'] >= datapoints['compare']) and (datapoints['compare'] >= datapoints['limit']):
-        defs.announce("*** Warning: Increase orderbook_limit variable in config file ***")
-
+        defs.announce("*** Warning: Increase orderbook_limit variable in config file ***", True, 1)
     
     # Debug elements
     if debug_1:
