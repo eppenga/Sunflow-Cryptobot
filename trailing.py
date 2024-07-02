@@ -18,7 +18,7 @@ session = HTTP(
     return_response_headers = True
 )
 
-# Initialize variables
+# Initialize stuck variable
 stuck             = {}
 stuck['check']    = True
 stuck['time']     = 0

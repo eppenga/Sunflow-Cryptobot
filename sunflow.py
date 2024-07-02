@@ -466,6 +466,7 @@ def handle_orderbook(message):
     # Close function
     return
 
+# Handle messages to keep trades up to date
 def handle_trade(message):
     
     # Debug
