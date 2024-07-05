@@ -692,7 +692,8 @@ def main():
                 handle_ticker(simulated_message)
             sleep(1)
         except (RemoteDisconnected, ProtocolError, ChunkedEncodingError) as e:
-            message = f"Exchange connection lost. Reconnecting due to: {e}"
+            exception = str(e)
+            message   = f"Exchange connection lost. Reconnecting due to: {exception}"
             defs.announce(message, True, 1)
             sleep(5)
             ws = connect_websocket()

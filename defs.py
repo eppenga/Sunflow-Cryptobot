@@ -452,6 +452,14 @@ def announce(message, to_apprise=False, level=1):
     filename     = Path(call_frame.filename).name
     functionname = call_frame.function
     timestamp    = now_utc()[1]
+
+    # Safeguard from type errors
+    message = str(message)
+
+    # Check if we can notify
+    if not config.session_report and "session" in message:
+        return_message = timestamp + f"{filename}: {functionname}: No announcement available"
+        return return_message
       
     # Compose messages
     screen_message  = timestamp + f"{filename}: {functionname}: {message}"

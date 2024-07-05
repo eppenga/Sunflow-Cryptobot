@@ -74,5 +74,6 @@ notify_level        = 1                                          # Notify level 
 debug               = False                                      # Turn debug on or off
 exchange_log        = True                                       # Keep a log of all exchange sessions
 wallet_report       = True                                       # Report wallet value, database and coins
+session_report      = True                                       # Report exchange sessions to stdout
 database_rebalance  = True                                       # Sync the database to the exchange
 error_level         = 1                                          # Error level 0 is extended, 1 is normal
