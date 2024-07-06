@@ -214,7 +214,11 @@ def buy(symbol, spot, active_order, all_buys, prices):
     defs.announce("*** BUY BUY BUY! ***")
 
     # Get latest symbol info
-    info = preload.get_info(symbol, spot, config.multiplier) # *** CHECK *** Do this more clever, now it's to many times
+    start_info = defs.now_utc()[4]
+    info       = preload.get_info(symbol, spot, config.multiplier) # *** CHECK *** Do this more clever, now it's to many times
+    end_info   = defs.now_utc()[4]
+    delay_info = end_info - start_info
+    defs.announce(f"Loaded symbol info in {delay_info} ms")
 
     # Initialize active_order
     active_order['side']     = "Buy"
