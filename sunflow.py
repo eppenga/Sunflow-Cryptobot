@@ -543,7 +543,7 @@ def handle_trade(message):
 def buy_matrix(spot, active_order, all_buys, interval):
 
     # Declare some variables global
-    global indicators_advice, orderbook_advice, trade_advice
+    global indicators_advice, orderbook_advice, trade_advice, info
     
     # Initialize variables
     can_buy                = False
@@ -568,9 +568,10 @@ def buy_matrix(spot, active_order, all_buys, interval):
 
         # Determine distance of trigger price and execute buy decission
         if can_buy:
-            result       = orders.buy(symbol, spot, active_order, all_buys, prices, info)
+            result       = orders.buy(symbol, spot, active_order, all_buys, prices)
             active_order = result[0]
             all_buys     = result[1]
+            info         = result[2]
     
     # Return active_order
     return active_order

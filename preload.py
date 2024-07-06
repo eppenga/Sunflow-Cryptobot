@@ -135,11 +135,11 @@ def get_info(symbol, spot, multiplier):
     debug = False
 
     # Initialize info
-    info   = {'time': 0, 'symbol': '', 'baseCoin': '', 'quoteCoin': '', 'status': '', 'basePrecision': 0, 'quotePrecision': 0, 'minOrderQty': 0, 'maxOrderQty': 0, 'minOrderAmt': 0, 'maxOrderAmt': 0, 'tickSize': 0} 
+    info = {'time': 0, 'symbol': '', 'baseCoin': '', 'quoteCoin': '', 'status': '', 'basePrecision': 0, 'quotePrecision': 0, 'minOrderQty': 0, 'maxOrderQty': 0, 'minOrderAmt': 0, 'maxOrderAmt': 0, 'tickSize': 0} 
 
     # Load instrument info via normal session
     pre_info = {}
-    message = defs.announce("session: get_instruments_info")
+    message  = defs.announce("session: get_instruments_info")
     try:
         pre_info = session.get_instruments_info(
             category = "spot",

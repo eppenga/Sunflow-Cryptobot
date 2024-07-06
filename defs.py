@@ -133,12 +133,12 @@ def log_exchange(response, message):
 # Log all errors
 def log_error(exception):
     
-    # Declare global variables
-    global halt_sunflow
-    
     # Debug
     debug = False
 
+    # Declare global variables
+    global halt_sunflow
+    
     # Output debug
     if debug:
         defs.announce("Debug")
@@ -148,9 +148,17 @@ def log_error(exception):
        
     # Initialize variables
     halt_execution = True
-    
+    stack          = inspect.stack()
+    call_frame     = stack[1]
+    filename       = Path(call_frame.filename).name
+    functionname   = call_frame.function
+    timestamp      = now_utc()[1]
+
     # Safeguard from type errors
     exception = str(exception)
+
+    # Create message
+    message = timestamp + f"{filename}: {functionname}: {exception}"
 
     # Error: Remote disconnected
     if ("(ErrCode: 12940)" in exception) or ("RemoteDisconnected" in exception):
@@ -167,10 +175,10 @@ def log_error(exception):
     
     # Write to error log file
     with open(config.error_file, 'a', encoding='utf-8') as file:
-        file.write(now_utc()[1] + exception + "\n")
+        file.write(message + "\n")
     
     # Output to stdout
-    defs.announce(f"Displaying exception: {exception}")
+    defs.announce(f"Exception: {exception}")
     
     # Terminate hard
     if halt_execution:
@@ -457,7 +465,7 @@ def announce(message, to_apprise=False, level=1):
     message = str(message)
 
     # Check if we can notify
-    if not config.session_report and "session" in message:
+    if not config.session_report and "session:" in message:
         return_message = timestamp + f"{filename}: {functionname}: No announcement available"
         return return_message
       

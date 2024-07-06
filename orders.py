@@ -5,7 +5,7 @@
 # Load libraries
 from loader import load_config
 from pybit.unified_trading import HTTP
-import database, defs, distance
+import database, defs, distance, preload
 
 # Load config
 config = load_config()
@@ -208,13 +208,13 @@ def check_sell(spot, profit, active_order, all_buys, info):
     return all_sells, qty, can_sell, rise_to
         
 # New buy order
-def buy(symbol, spot, active_order, all_buys, prices, info):
+def buy(symbol, spot, active_order, all_buys, prices):
 
     # Output to stdout
     defs.announce("*** BUY BUY BUY! ***")
 
     # Get latest symbol info
-    #info = preload.get_info(symbol, spot, config.multiplier) #*** CHECK *** Do this more clever, now it's to many times
+    info = preload.get_info(symbol, spot, config.multiplier) # *** CHECK *** Do this more clever, now it's to many times
 
     # Initialize active_order
     active_order['side']     = "Buy"
@@ -272,7 +272,7 @@ def buy(symbol, spot, active_order, all_buys, prices, info):
     defs.announce(f"Registered buy order in database {config.dbase_file}")
        
     # Return trailing order and new buy order database
-    return active_order, all_buys
+    return active_order, all_buys, info
     
 # New sell order
 def sell(symbol, spot, active_order, prices, info):
