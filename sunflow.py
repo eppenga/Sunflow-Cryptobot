@@ -159,11 +159,11 @@ def handle_ticker(message):
         global spot, ticker, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker
 
         # Initialize variables
-        ticker                 = {}
-        amend_code             = 0
-        amend_error            = ""
-        result                 = ()
-        lock_ticker['time']    = defs.now_utc()[4]
+        ticker              = {}
+        amend_code          = 0
+        amend_error         = ""
+        result              = ()
+        lock_ticker['time'] = defs.now_utc()[4]
         
         # Get ticker update
         ticker['time']      = int(message['ts'])
@@ -568,7 +568,7 @@ def buy_matrix(spot, active_order, all_buys, interval):
 
         # Determine distance of trigger price and execute buy decission
         if can_buy:
-            result       = orders.buy(symbol, spot, active_order, all_buys, prices)
+            result       = orders.buy(symbol, spot, active_order, all_buys, prices, info)
             active_order = result[0]
             all_buys     = result[1]
             info         = result[2]

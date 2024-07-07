@@ -208,17 +208,10 @@ def check_sell(spot, profit, active_order, all_buys, info):
     return all_sells, qty, can_sell, rise_to
         
 # New buy order
-def buy(symbol, spot, active_order, all_buys, prices):
+def buy(symbol, spot, active_order, all_buys, prices, info):
 
     # Output to stdout
     defs.announce("*** BUY BUY BUY! ***")
-
-    # Get latest symbol info
-    start_info = defs.now_utc()[4]
-    info       = preload.get_info(symbol, spot, config.multiplier) # *** CHECK *** Do this more clever, now it's to many times
-    end_info   = defs.now_utc()[4]
-    delay_info = end_info - start_info
-    defs.announce(f"Loaded symbol info in {delay_info} ms")
 
     # Initialize active_order
     active_order['side']     = "Buy"
@@ -274,7 +267,14 @@ def buy(symbol, spot, active_order, all_buys, prices):
     # Store the transaction in the database buys file
     all_buys = database.register_buy(transaction, all_buys, info)
     defs.announce(f"Registered buy order in database {config.dbase_file}")
-       
+
+    # Get latest symbol info at last moment to prevent spikes
+    start_info = defs.now_utc()[4]
+    info       = preload.get_info(symbol, spot, config.multiplier) # *** CHECK *** Do this more clever, now it's to many times
+    end_info   = defs.now_utc()[4]
+    delay_info = end_info - start_info
+    defs.announce(f"Loaded symbol info in {delay_info} ms")
+
     # Return trailing order and new buy order database
     return active_order, all_buys, info
     
