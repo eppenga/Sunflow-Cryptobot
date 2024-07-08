@@ -84,8 +84,8 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
             else:
                 currency        = info['baseCoin']
                 currency_format = info['basePrecision']
-            message = f"{active_order['side']} order closed for {defs.format_number(active_order['qty'], currency_format)} {currency} "
-            message = message + f"at trigger price {defs.format_number(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
+            message_1 = f"{active_order['side']} order closed for {defs.format_number(active_order['qty'], currency_format)} {currency} "
+            message_1 = message_1 + f"at trigger price {defs.format_number(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
             
             # Reset counters
             stuck['check']= True
@@ -102,10 +102,15 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
         
             # Fill in average price and report message
             if active_order['side'] == "Buy":
-                message = message + f" and fill price {defs.format_number(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']}"
+                message_1 = message_1 + f" and fill price {defs.format_number(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']}"
             else:
-                message = message + f", fill price {defs.format_number(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} "
-                message = message + f"and revenue {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
+                message_1 = message_1 + f", fill price {defs.format_number(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} "
+                message_1 = message_1 + f"and revenue {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
+                message_2 = f"made a revenue of {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
+                # Send message to group 2
+                defs.announce(message_2, False, 0, True, 1)
+            
+            # Send message to group 1
             defs.announce(message, True, 1)
 
             # Report wallet, quote and base currency to stdout

@@ -30,6 +30,7 @@ sys.path.append(str(config_path.parent))
 config_module_name = config_path.stem
 config = importlib.import_module(config_module_name)
 
+
 ### Initialize variables ###
 
 # Set default values

@@ -65,10 +65,14 @@ dbase_file          = data_suffix + "buy_orders.json"            # Database file
 exchange_file       = data_suffix + "exchange.log"               # Exchange log file
 error_file          = data_suffix + "errors.log"                 # Error log file
 
-# Notify
-notify_enabled      = False                                      # Notify using Apprise, see https://github.com/caronc/apprise
-notify_urls         = ["tgram://bot_token/chat_id"]              # Fill in your bot_token and chat_id
-notify_level        = 1                                          # Notify level 0 is extended, 1 is normal
+# Notify using Apprise (https://github.com/caronc/apprise)
+notify_enabled_1    = False                                      # Primary group of messaging clients (usually Telegram)
+notify_urls_1       = ["tgram://bot_token/chat_id"]              # Fill in your bot_token and chat_id
+notify_level_1      = 1                                          # Notify level 0 is extended, 1 is normal
+notify_enabled_2    = False                                      # Secondary group of messaging clients (usually LaMetric)
+notify_urls_2       = ["lametric://apikey@device_ipaddr"]        # Fill in your api key and ip addres of your LaMetric
+notify_level_2      = 1                                          # Notify level 0 is extended, 1 is normal
+
 
 # Debug, logs and reporting
 debug               = False                                      # Turn debug on or off

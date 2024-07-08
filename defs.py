@@ -15,9 +15,11 @@ config = load_config()
 # Create an Apprise instance
 apobj = apprise.Apprise()
 
-# Add all of the notification urls for Apprise
-for url in config.notify_urls:
-    apobj.add(url)
+# Primary and secondary notification urls for Apprise
+urls_tags = [(config.notify_urls_1, "primary"), (config.notify_urls_2, "secondary")]
+for urls, tag in urls_tags:
+    for url in urls:
+        apobj.add(url, tag=tag)
 
 # Register halt or continue
 halt_sunflow = False
@@ -451,8 +453,22 @@ def report_ticker(spot, new_spot, rise_to, active_order, all_buys, info):
     # Return message
     return message
 
+# Announcement helper for notification function
+def announce_helper(enabled, config_level, message_level, tag, message):
+    
+    # Do logic
+    if enabled and message_level >= config_level:
+        apobj.notify(
+            body  = message,
+            title = "Sunflow Cryptobot",
+            tag   = tag
+        )
+    
+    # Close function and return
+    return
+
 # Send out a notification via stdout or Apprise
-def announce(message, to_apprise=False, level=1):
+def announce(message, to_group_1=False, level_1=1, to_group_2=False, level_2=1):
     
     # Initialize variables
     stack        = inspect.stack()
@@ -471,19 +487,20 @@ def announce(message, to_apprise=False, level=1):
       
     # Compose messages
     screen_message  = timestamp + f"{filename}: {functionname}: {message}"
-    apprise_message = f"{message} ({config.symbol})"
+    group_1_message = f"{message} ({config.symbol})"
+    group_2_message = f"{message} ({config.symbol})"
     
     # Output to Screen
     print(screen_message + "\n")
     
-    # Output to Apprise
-    if to_apprise:
-        if config.notify_enabled and level >= config.notify_level:
-            apobj.notify(
-                body  = apprise_message,
-                title = "Sunflow Cryptobot"
-            )
-    
+    # Output to Apprise Group 1
+    if to_group_1:
+        announce_helper(config.notify_enabled_1, config.notify_level_1, level_1, "primary", group_1_message)
+
+    # Output to Apprise Group 2
+    if to_group_2:
+        announce_helper(config.notify_enabled_2, config.notify_level_2, level_2, "primary", group_2_message)
+
     # Return message
     return screen_message
 
