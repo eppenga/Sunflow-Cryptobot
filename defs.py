@@ -188,6 +188,49 @@ def log_error(exception):
         defs.announce(exception, True, 1)
         halt_sunflow = True
 
+# Log revenue data
+def log_revenue(active_order, transaction, revenue, info, sides=True, extended=False):
+    
+    # Debug
+    debug = False
+  
+    # Initialize variables
+    message   = "Something went wrong while logging revenue..."
+    divider   = "================================================================================\n"
+    seperator = "\n----------------------------------------\n"
+
+    # Check if we can log
+    if (not extended) and (not sides) and (transaction['side'] == "Buy"):
+        return
+
+    # Format data for extended messaging
+    if extended:
+        a_order = "active_order\n" + pprint.pformat(active_order)
+        t_order = "transaction\n" + pprint.pformat(transaction)
+        r_order = "revenue\n" + pprint.pformat(revenue)
+        i_order = "info\n" + pprint.pformat(info)
+        message = divider + a_order + seperator + t_order + seperator + r_order + seperator + i_order
+
+    # Format data for normal messaging
+    # createdTime, orderId, side, symbol, baseCoin, quoteCoin, orderType, orderStatus, avgPrice, qty, trigger_ini, triggerPrice, cumExecFee, cumExecQty, cumExecValue, revenue
+    if not extended:
+        message = f"{transaction['createdTime']},{transaction['orderId']},{transaction['side']},{transaction['symbol']},{info['baseCoin']},{info['quoteCoin']},"
+        message = message + f"{transaction['orderType']},{transaction['orderStatus']},"
+        message = message + f"{transaction['avgPrice']},{transaction['qty']},{active_order['trigger_ini']},{transaction['triggerPrice']},"
+        message = message + f"{transaction['cumExecFee']},{transaction['cumExecQty']},{transaction['cumExecValue']},{revenue}"
+    
+    # Debug
+    if debug:
+        defs.announce("Revenue log file message")
+        print(message)
+    
+    # Write to revenue log file
+    with open(config.revenue_file, 'a', encoding='utf-8') as file:
+        file.write(message + "\n")
+        
+    # Return
+    return
+
 # Outputs a (Pass) or (Fail) for decide_buy()
 def report_buy(result):
 

@@ -64,6 +64,7 @@ data_suffix         = data_folder + config_file                  # Format of dat
 dbase_file          = data_suffix + "buy_orders.json"            # Database file buy orders
 exchange_file       = data_suffix + "exchange.log"               # Exchange log file
 error_file          = data_suffix + "errors.log"                 # Error log file
+revenue_file        = data_suffix + "revenue.csv"                # Revenue log file
 
 # Notify using Apprise (https://github.com/caronc/apprise)
 notify_enabled_1    = False                                      # Primary group of messaging clients (usually Telegram)
@@ -77,6 +78,9 @@ notify_level_2      = 1                                          # Notify level 
 # Debug, logs and reporting
 debug               = False                                      # Turn debug on or off
 exchange_log        = True                                       # Keep a log of all exchange sessions
+revenue_log         = True                                       # Log revenue of Sunflow
+revenue_log_extend  = False                                      # Extended or normal logging 
+revenue_log_sides   = True                                       # Log buy and sell orders or only sell
 wallet_report       = True                                       # Report wallet value, database and coins
 session_report      = True                                       # Report exchange sessions to stdout
 database_rebalance  = True                                       # Sync the database to the exchange

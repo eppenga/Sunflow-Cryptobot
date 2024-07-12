@@ -220,6 +220,17 @@ def get_info(symbol, spot, multiplier):
     # Return instrument info
     return data
     
+# Create empty files for check_files
+def create_file(create_file):
+        
+    # Does the file exist and if not create an empty file    
+    if not os.path.exists(create_file):
+        with open(create_file, 'a') as file:
+            pass
+        
+    # Return
+    return
+
 # Check if necessary files exists
 def check_files():
         
@@ -227,20 +238,11 @@ def check_files():
     if not os.path.exists(config.data_folder):
         os.makedirs(config.data_folder)
     
-    # Does the buy orders database exist    
-    if not os.path.exists(config.dbase_file):
-        with open(config.dbase_file, 'a') as file:
-            pass
-
-    # Does the errors log file exist
-    if not os.path.exists(config.error_file):
-        with open(config.error_file, 'a') as file:
-            pass
-
-    # Does the exchange log file exist
-    if not os.path.exists(config.exchange_file):
-        with open(config.exchange_file, 'a') as file:
-            pass
+    # Does the buy orders database exist
+    create_file(config.dbase_file)      # Buy orders database
+    create_file(config.error_file)      # Errors log file
+    create_file(config.exchange_file)   # Exchange log file
+    create_file(config.revenue_file)    # Revenue log file
     
     defs.announce("All folders and files checked")
     

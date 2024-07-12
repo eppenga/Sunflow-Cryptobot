@@ -118,6 +118,10 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
             if config.wallet_report:
                 message = orders.report_wallet(all_buys, info)
                 defs.announce(message, True, 1)
+                
+            # Report to revenue log file
+            if config.revenue_log:
+                defs.log_revenue(active_order, transaction, revenue, info, config.revenue_log_sides, config.revenue_log_extend)
             
         # Check if symbol is spiking
         else:
