@@ -64,7 +64,7 @@ data_suffix         = data_folder + config_file                  # Format of dat
 dbase_file          = data_suffix + "buy_orders.json"            # Database file buy orders
 exchange_file       = data_suffix + "exchange.log"               # Exchange log file
 error_file          = data_suffix + "errors.log"                 # Error log file
-revenue_file        = data_suffix + "revenue.csv"                # Revenue log file
+revenue_file        = data_suffix + "revenue.log"                # Revenue log file
 
 # Notify using Apprise (https://github.com/caronc/apprise)
 notify_enabled_1    = False                                      # Primary group of messaging clients (usually Telegram)
