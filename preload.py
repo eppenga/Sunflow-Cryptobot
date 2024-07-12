@@ -128,6 +128,26 @@ def get_prices(symbol, limit):
     # Return prices
     return prices
 
+# Calculations required for info
+def calc_info(info, spot, multiplier):
+
+    # Calculate minimum order value, add 10 % and round up to prevent strange errors
+    minimumQty = info['minOrderQty'] * spot
+    minimumAmt = info['minOrderAmt']
+
+    # Choose to use quantity or amount
+    if minimumQty < minimumAmt:
+        minimumOrder = (minimumAmt / spot) * 1.1
+    else:
+        minimumOrder = (minimumQty / spot) * 1.1
+
+    # Round correctly
+    info['minBuyBase']  = defs.round_number(minimumOrder * multiplier, info['basePrecision'], "up")
+    info['minBuyQuote'] = defs.round_number(minimumOrder * spot * multiplier, info['quotePrecision'], "up")
+
+    # Return instrument info
+    return info
+
 # Preload instrument info
 def get_info(symbol, spot, multiplier):
 
@@ -169,15 +189,7 @@ def get_info(symbol, spot, multiplier):
     info['tickSize']       = float(pre_info['result']['list'][0]['priceFilter']['tickSize'])
 
     # Calculate minimum order value, add 10 % and round up to prevent strange errors
-    minimumQty = info['minOrderQty'] * spot
-    minimumAmt = info['minOrderAmt']
-
-    if minimumQty < minimumAmt:
-        minimumOrder = (minimumAmt / spot) * 1.1
-    else:
-        minimumOrder = (minimumQty / spot) * 1.1
-    info['minBuyBase']  = defs.round_number(minimumOrder * multiplier, info['basePrecision'], "up")
-    info['minBuyQuote'] = defs.round_number(minimumOrder * spot * multiplier, info['quotePrecision'], "up")
+    info = calc_info(info, spot, multiplier)
 
     # Output to stdout
     if debug:

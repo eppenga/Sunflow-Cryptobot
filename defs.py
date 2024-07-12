@@ -488,7 +488,7 @@ def announce(message, to_group_1=False, level_1=1, to_group_2=False, level_2=1):
     # Compose messages
     screen_message  = timestamp + f"{filename}: {functionname}: {message}"
     group_1_message = f"{message} ({config.symbol})"
-    group_2_message = f"{message} ({config.symbol})"
+    group_2_message = f"{message}"
     
     # Output to Screen
     print(screen_message + "\n")
@@ -499,7 +499,7 @@ def announce(message, to_group_1=False, level_1=1, to_group_2=False, level_2=1):
 
     # Output to Apprise Group 2
     if to_group_2:
-        announce_helper(config.notify_enabled_2, config.notify_level_2, level_2, "primary", group_2_message)
+        announce_helper(config.notify_enabled_2, config.notify_level_2, level_2, "secondary", group_2_message)
 
     # Return message
     return screen_message

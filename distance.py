@@ -28,7 +28,7 @@ def protect(active_order, price_distance):
     # Selling
     if active_order['side'] == "Sell":
 
-        # Set the wave for selling
+        # Set standard distance
         active_order['fluctuation'] = active_order['wave']
 
         # Prevent selling at a loss
@@ -36,7 +36,7 @@ def protect(active_order, price_distance):
         if active_order['wave'] > profitable:
             active_order['fluctuation'] = profitable
                         
-        # Check direction of the wave
+        # If price distance is larger than default, use smaller distances
         if active_order['wave'] < active_order['distance']:
             if price_distance > active_order['distance']:
                 if active_order['wave'] > 0:
@@ -51,14 +51,14 @@ def protect(active_order, price_distance):
         active_order['wave'] = active_order['wave'] * -1
         price_distance       = price_distance * -1
 
-        # Set the wave for buying
+        # Set standard distance
         active_order['fluctuation'] = active_order['wave']
         
-        # Check direction of the wave
+        # Use minimum distance
         if active_order['wave'] < active_order['distance']:
             active_order['fluctuation'] = active_order['distance']
 
-        # Check direction of the wave
+        # If price distance is larger than default, use smaller distances *** CHECK *** Maybe this can be better
         if active_order['wave'] < active_order['distance']:
             if price_distance > active_order['distance']:
                 if active_order['wave'] > 0:

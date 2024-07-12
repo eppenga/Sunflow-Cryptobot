@@ -48,7 +48,7 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
         stuck['check'] = False
         stuck['time']  = defs.now_utc()[4]
     if current_time - stuck['time'] > stuck['interval']:
-        defs.announce("Doing an additional check on trailing order")
+        defs.announce(f"Doing an additional check on {active_order['side'].lower()} order")
         stuck['check'] = True
         stuck['time']  = 0
         do_check_order = True
@@ -106,12 +106,13 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
             else:
                 message_1 = message_1 + f", fill price {defs.format_number(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} "
                 message_1 = message_1 + f"and revenue {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
-                message_2 = f"made a revenue of {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
+                message_2 = f"sold {defs.format_number(active_order['qty'], currency_format)} {currency} and "
+                message_2 = message_2 + f"revenue was {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
                 # Send message to group 2
                 defs.announce(message_2, False, 0, True, 1)
             
             # Send message to group 1
-            defs.announce(message, True, 1)
+            defs.announce(message_1, True, 1)
 
             # Report wallet, quote and base currency to stdout
             if config.wallet_report:

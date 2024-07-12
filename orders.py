@@ -5,7 +5,7 @@
 # Load libraries
 from loader import load_config
 from pybit.unified_trading import HTTP
-import database, defs, distance, preload
+import database, defs, distance, pprint, preload
 
 # Load config
 config = load_config()
@@ -163,6 +163,9 @@ def set_trigger(spot, active_order, info):
         active_order['trigger'] = defs.round_number(spot * (1 + (active_order['fluctuation'] / 100)), info['tickSize'], "up")
     else:
         active_order['trigger'] = defs.round_number(spot * (1 - (active_order['fluctuation'] / 100)), info['tickSize'], "down")
+        
+    # Set initial trigger price so we can remember
+    active_order['trigger_ini'] = active_order['trigger']
 
     # Return active_order
     return active_order
@@ -212,6 +215,9 @@ def buy(symbol, spot, active_order, all_buys, prices, info):
 
     # Output to stdout
     defs.announce("*** BUY BUY BUY! ***")
+
+    # Recalculate minimum values
+    info = preload.calc_info(info, spot, config.multiplier)
 
     # Initialize active_order
     active_order['side']     = "Buy"
@@ -267,13 +273,6 @@ def buy(symbol, spot, active_order, all_buys, prices, info):
     # Store the transaction in the database buys file
     all_buys = database.register_buy(transaction, all_buys, info)
     defs.announce(f"Registered buy order in database {config.dbase_file}")
-
-    # Get latest symbol info at last moment to prevent spikes
-    start_info = defs.now_utc()[4]
-    info       = preload.get_info(symbol, spot, config.multiplier) # *** CHECK *** Do this more clever, now it's to many times
-    end_info   = defs.now_utc()[4]
-    delay_info = end_info - start_info
-    defs.announce(f"Loaded symbol info in {delay_info} ms")
 
     # Return trailing order and new buy order database
     return active_order, all_buys, info
@@ -334,6 +333,18 @@ def sell(symbol, spot, active_order, prices, info):
     # Return data
     return active_order
 
+# Handle equity requests safely
+def equity_safe(equity):
+    
+    # Do logic
+    if equity:
+        equity = float(equity)
+    else:
+        equity = float(0)
+    
+    # Return equity
+    return equity
+
 # Rebalances the database vs exchange by removing orders with the highest price
 def rebalance(all_buys, info):
 
@@ -369,11 +380,11 @@ def rebalance(all_buys, info):
         defs.log_exchange(wallet, message)
 
     # Get equity from wallet
-    equity_wallet = float(wallet['result']['list'][0]['coin'][0]['equity'])
+    equity_wallet = equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
 
     # Get equity from all buys
     equity_dbase  = float(sum(order['cumExecQty'] for order in all_buys))
-    equity_remind = equity_dbase
+    equity_remind = float(equity_dbase)
 
     # Report
     if debug:
@@ -436,9 +447,10 @@ def report_wallet(all_buys, info):
         defs.log_exchange(wallet, message)
 
     # Get results
-    total_equity = wallet['result']['list'][0]['totalEquity']
-    total_quote  = wallet['result']['list'][0]['coin'][0]['equity']
-
+    total_equity = equity_safe(wallet['result']['list'][0]['totalEquity'])
+    total_quote  = equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
+    
+    # Create messsage
     message = f"Wallet value {total_equity} {info['quoteCoin']}, "
     message = message + f"database has {order_info[0]} buy orders "
     message = message + f"worth {defs.format_number(order_info[1], info['basePrecision'])} {info['baseCoin']} and "
