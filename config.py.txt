@@ -74,7 +74,6 @@ notify_enabled_2    = False                                      # Secondary gro
 notify_urls_2       = ["lametric://apikey@device_ipaddr"]        # Fill in your api key and ip addres of your LaMetric
 notify_level_2      = 1                                          # Notify level 0 is extended, 1 is normal
 
-
 # Debug, logs, reporting and other switches
 debug               = False                                      # Turn debug on or off
 exchange_log        = True                                       # Keep a log of all exchange sessions

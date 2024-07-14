@@ -28,7 +28,7 @@ stuck['interval'] = 10000
 def check_order(symbol, spot, active_order, all_buys, all_sells, info):
 
     # Declare some variables global
-    global stuck, spike_counter
+    global stuck
     
     # Initialize variables
     result         = ()
@@ -90,7 +90,6 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
             # Reset counters
             stuck['check']= True
             stuck['time'] = 0
-            spike_counter = 0
             
             # Close trailing process
             result       = close_trail(active_order, all_buys, all_sells, info)
