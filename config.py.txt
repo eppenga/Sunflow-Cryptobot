@@ -75,7 +75,7 @@ notify_urls_2       = ["lametric://apikey@device_ipaddr"]        # Fill in your 
 notify_level_2      = 1                                          # Notify level 0 is extended, 1 is normal
 
 
-# Debug, logs and reporting
+# Debug, logs, reporting and other switches
 debug               = False                                      # Turn debug on or off
 exchange_log        = True                                       # Keep a log of all exchange sessions
 revenue_log         = True                                       # Log revenue of Sunflow
@@ -84,4 +84,5 @@ revenue_log_sides   = True                                       # Log buy and s
 wallet_report       = True                                       # Report wallet value, database and coins
 session_report      = True                                       # Report exchange sessions to stdout
 database_rebalance  = True                                       # Sync the database to the exchange
+protect_peaks       = False                                      # Slow dow distance to minimum
 error_level         = 1                                          # Error level 0 is extended, 1 is normal

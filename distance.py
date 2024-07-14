@@ -36,13 +36,14 @@ def protect(active_order, price_distance):
         if active_order['wave'] > profitable:
             active_order['fluctuation'] = profitable
                         
-        # If price distance is larger than default, use smaller distances
-        if active_order['wave'] < active_order['distance']:
-            if price_distance > active_order['distance']:
-                if active_order['wave'] > 0:
-                    active_order['fluctuation'] = active_order['wave']
-            else:
-                active_order['fluctuation'] = active_order['distance']
+        # If price distance is larger than default, use smaller distances *** CHECK *** Maybe this can be better
+        if config.protect_peaks:
+            if active_order['wave'] < active_order['distance']:
+                if price_distance > active_order['distance']:
+                    if active_order['wave'] > 0:
+                        active_order['fluctuation'] = active_order['wave']
+                else:
+                    active_order['fluctuation'] = active_order['distance']
                 
     # Buying
     if active_order['side'] == "Buy":
@@ -59,12 +60,13 @@ def protect(active_order, price_distance):
             active_order['fluctuation'] = active_order['distance']
 
         # If price distance is larger than default, use smaller distances *** CHECK *** Maybe this can be better
-        if active_order['wave'] < active_order['distance']:
-            if price_distance > active_order['distance']:
-                if active_order['wave'] > 0:
-                    active_order['fluctuation'] = active_order['wave']
-            else:
-                active_order['fluctuation'] = active_order['distance']
+        if config.protect_peaks:
+            if active_order['wave'] < active_order['distance']:
+                if price_distance > active_order['distance']:
+                    if active_order['wave'] > 0:
+                        active_order['fluctuation'] = active_order['wave']
+                else:
+                    active_order['fluctuation'] = active_order['distance']
 
         # Temp debug
         if debug:
@@ -72,19 +74,6 @@ def protect(active_order, price_distance):
             print        (f"Default distance    : {active_order['distance']:.4f} %")
             print        (f"Wave distance       : {active_order['wave']:.4f} %")
             print        (f"Fluctuation distance: {active_order['fluctuation']:.4f} %\n")
-
-        
-    ''' Let's remove these fail safes for now 
-
-    # Always keep wave at minimum distance
-    if abs(active_order['wave']) < active_order['distance']:
-        active_order['fluctuation'] = active_order['distance']
-
-    # Double check, not really efficient, but it works
-    if active_order['fluctuation'] < active_order['distance']:
-        active_order['fluctuation'] = active_order['distance']
-
-    '''
     
     # Return active_order
     return active_order
@@ -162,7 +151,7 @@ def distance_ema(active_order, prices, price_distance):
     # Return active_order
     return active_order
 
-# Calculate distance using hybrid *** CHECK *** Must calculated this over a timeframe, not a number of prices!
+# Calculate distance using hybrid
 def distance_hybrid(active_order, prices, price_distance):
 
     # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
