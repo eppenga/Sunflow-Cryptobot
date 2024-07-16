@@ -5,7 +5,7 @@
 # CHANGE TO YOUR LIKING
 
 # Default values
-symbol              = "OPUSDT"     # Symbol bot used for trading
+symbol              = "XRPUSDC"     # Symbol bot used for trading
 interval_1          = 1            # Klines timeframe default interval
 interval_2          = 3            # Klines timeframe first confirmation interval, set to 0 if you do not want to use this
 interval_3          = 5            # Klines timeframe second confirmation interval, set to 0 if you do not want to use this
@@ -42,7 +42,7 @@ trade_timeframe     = 25000        # Timeframe in ms to collect realtime trades
 
 # Wave length
 wave_timeframe      = 10000        # Timeframe in ms to measure wave length, used when wiggle is set to Wave
-wave_multiplier     = 1            # Multiply wave percentage by this multiplier
+wave_multiplier     = 1.00         # Multiply wave percentage by this multiplier
 
 # Exchange keys (ALWAYS KEEP THESE SECRET)
 api_key             = "123456"                                   # API Key
@@ -83,5 +83,5 @@ revenue_log_sides   = True                                       # Log buy and s
 wallet_report       = True                                       # Report wallet value, database and coins
 session_report      = True                                       # Report exchange sessions to stdout
 database_rebalance  = True                                       # Sync the database to the exchange
-protect_peaks       = False                                      # Slow dow distance to minimum
+protect_peaks       = True                                       # Slow dow distance to minimum
 error_level         = 1                                          # Error level 0 is extended, 1 is normal

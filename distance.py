@@ -22,7 +22,7 @@ atr_klines = {'time': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volum
 def calculate_atr():
     
     # Debug
-    debug = True
+    debug = False
 
     # Declare ATR timer and klines variables global
     global atr_timer, atr_klines
@@ -34,7 +34,7 @@ def calculate_atr():
     current_time = defs.now_utc()[4]
     if atr_timer['check']:
         atr_timer['check'] = False
-        atr_timer['time']  = defs.now_utc()[4]
+        atr_timer['time']  = current_time
     if current_time - atr_timer['time'] > atr_timer['interval']:
         defs.announce(f"Requesting {config.limit} klines for ATR")
         atr_timer['check'] = True
@@ -56,14 +56,16 @@ def calculate_atr():
     df['ATR']      = ta.atr(df['high'], df['low'], df['close'], length=14)
     df['ATRP']     = (df['ATR'] / df['close']) * 100
     atr_percentage = df['ATRP'].iloc[-1]
+    atr_perc_avg   = df['ATRP'].mean()
+    atr_multiplier = atr_percentage / atr_perc_avg
     end_time       = defs.now_utc()[4]
 
    # Output to stdout
     if debug:
-        defs.announce(f"ATR percentage is {atr_percentage} % and it took {end_time - start_time}ms to calculate")
+        defs.announce(f"ATR percentage is {atr_percentage} %, on average it was {atr_perc_avg} %, the multiplier is {atr_multiplier} and it took {end_time - start_time}ms to calculate")
       
     # Return ATR as percentage
-    return atr_percentage
+    return atr_percentage, atr_perc_avg, atr_multiplier
 
 # Protect buy and sell
 def protect(active_order, price_distance):
@@ -281,17 +283,21 @@ def distance_wave(active_order, prices, price_distance, prevent=True):
 # Calculate distance using wave taking ATR into account
 def distance_atr(active_order, prices, price_distance):
 
-    # Define scaler
-    scaler = 10
+    # Initialize variables
+    scaler = 1
+    result = ()
     
-    # Get ATR
-    atr_percentage = calculate_atr() * scaler
+    # Get ATR percentage and average
+    result         = calculate_atr()
+    atr_percentage = result[0]
+    atr_perc_avg   = result[1]
+    atr_multiplier = result[2] * scaler
 
     # Get wave
     active_order = distance_wave(active_order, prices, price_distance, False)
 
     # Adjust active_order
-    active_order['wave'] = (1 + atr_percentage) * active_order['wave']
+    active_order['wave'] = atr_multiplier * active_order['wave']
 
     # Prevent sell at loss and other issues
     active_order = protect(active_order, price_distance)
