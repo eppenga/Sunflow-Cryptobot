@@ -219,7 +219,7 @@ def handle_ticker(message):
             if active_order['active'] and active_order['side'] == "Buy" and can_sell:
                 
                 # Output to stdout and Apprise
-                defs.announce("*** Warning: Loosing money! Buying whilest selling is possible, trying to cancel buy order! ***", True, 1)
+                defs.announce("*** Warning: Buying while selling is possible, trying to cancel buy order! ***", True, 1)
                 
                 # Cancel trailing buy, remove from all_buys database
                 active_order['active'] = False

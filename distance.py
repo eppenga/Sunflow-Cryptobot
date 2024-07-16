@@ -4,11 +4,66 @@
 
 # Load libraries
 from loader import load_config
-import math, pandas as pd
-import defs
+import defs, math, pandas as pd, pandas_ta as ta, preload
 
 # Load config
 config = load_config()
+
+# Initialize ATR timer
+atr_timer             = {}
+atr_timer['check']    = False
+atr_timer['time']     = 0
+atr_timer['interval'] = 60000
+
+# Initialize ATR Klines
+atr_klines = {'time': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volume': [], 'turnover': []}
+
+# Calculate ATR as percentage
+def calculate_atr():
+    
+    # Debug
+    debug = True
+
+    # Declare ATR timer and klines variables global
+    global atr_timer, atr_klines
+
+    # Initialize variables
+    get_atr_klines = False
+
+    # Check every interval
+    current_time = defs.now_utc()[4]
+    if atr_timer['check']:
+        atr_timer['check'] = False
+        atr_timer['time']  = defs.now_utc()[4]
+    if current_time - atr_timer['time'] > atr_timer['interval']:
+        defs.announce(f"Requesting {config.limit} klines for ATR")
+        atr_timer['check'] = True
+        atr_timer['time']  = 0
+        get_atr_klines = True
+
+    # Get ATR klines if required
+    if get_atr_klines:
+        start_time = defs.now_utc()[4]
+        atr_klines = preload.get_klines(config.symbol, 1, config.limit)
+        end_time   = defs.now_utc()[4]
+        defs.announce(f"Received {config.limit} ATR klines in {end_time - start_time}ms")
+    
+    # Initialize dataframe
+    df = pd.DataFrame(atr_klines)
+    
+    # Calculate ATR and ATR percentage
+    start_time     = defs.now_utc()[4]
+    df['ATR']      = ta.atr(df['high'], df['low'], df['close'], length=14)
+    df['ATRP']     = (df['ATR'] / df['close']) * 100
+    atr_percentage = df['ATRP'].iloc[-1]
+    end_time       = defs.now_utc()[4]
+
+   # Output to stdout
+    if debug:
+        defs.announce(f"ATR percentage is {atr_percentage} % and it took {end_time - start_time}ms to calculate")
+      
+    # Return ATR as percentage
+    return atr_percentage
 
 # Protect buy and sell
 def protect(active_order, price_distance):
@@ -136,10 +191,10 @@ def distance_ema(active_order, prices, price_distance):
     df['ewm_std'] = df['returns'].ewm(span=number, adjust=False).std()
     
     # Normalize the last value of EWM_Std to a 0-1 scale
-    fluctuation = df['ewm_std'].iloc[-1] / df['ewm_std'].max()
+    wave = df['ewm_std'].iloc[-1] / df['ewm_std'].max()
     
     # Calculate trigger price distance percentage
-    active_order['wave'] = (fluctuation / scaler)
+    active_order['wave'] = (wave / scaler)
     
     # Check for failures
     if math.isnan(active_order['wave']):
@@ -176,13 +231,13 @@ def distance_hybrid(active_order, prices, price_distance):
     df['ewm_std'] = df['returns'].ewm(span=ema_span, adjust=False).std()
 
     # Normalize the last value of EWM_Std to a 0-1 scale
-    fluctuation = df['ewm_std'].iloc[-1] / df['ewm_std'].max()
+    wave = df['ewm_std'].iloc[-1] / df['ewm_std'].max()
 
     # Calculate dynamic scaler based on market conditions (here we just use the default scaler, but it could be dynamic)
     dynamic_scaler = scaler
 
     # Calculate trigger price distance percentage
-    active_order['fluctuation'] = (fluctuation / dynamic_scaler) + active_order['distance']
+    active_order['wave'] = (wave / dynamic_scaler) + active_order['distance']
 
     # Prevent sell at loss and other issues
     active_order = protect(active_order, price_distance)
@@ -191,7 +246,7 @@ def distance_hybrid(active_order, prices, price_distance):
     return active_order
 
 # Calculate distance using wave
-def distance_wave(active_order, prices, price_distance):
+def distance_wave(active_order, prices, price_distance, prevent=True):
     
     # Debug
     debug = False
@@ -217,10 +272,32 @@ def distance_wave(active_order, prices, price_distance):
         defs.announce(f"Price change in the last {config.wave_timeframe / 1000:.2f} seconds is {active_order['wave']:.2f} %")
 
     # Prevent sell at loss and other issues
-    active_order = protect(active_order, price_distance)
+    if prevent:
+        active_order = protect(active_order, price_distance)
 
     # Return active_order
     return active_order   
+
+# Calculate distance using wave taking ATR into account
+def distance_atr(active_order, prices, price_distance):
+
+    # Define scaler
+    scaler = 10
+    
+    # Get ATR
+    atr_percentage = calculate_atr() * scaler
+
+    # Get wave
+    active_order = distance_wave(active_order, prices, price_distance, False)
+
+    # Adjust active_order
+    active_order['wave'] = (1 + atr_percentage) * active_order['wave']
+
+    # Prevent sell at loss and other issues
+    active_order = protect(active_order, price_distance)
+    
+    # Return active_order
+    return active_order
 
 # Calculate trigger price distance
 def calculate(active_order, prices):
@@ -245,6 +322,10 @@ def calculate(active_order, prices):
     ''' Use WAVE to set distance '''
     if active_order['wiggle'] == "Wave":
         active_order = distance_wave(active_order, prices, price_distance)
+
+    ''' Use ATR for WAVE to set distance '''
+    if active_order['wiggle'] == "ATR":
+        active_order = distance_atr(active_order, prices, price_distance)
 
     ''' Use EMA to set trigger price distance '''
     if active_order['wiggle'] == "EMA":

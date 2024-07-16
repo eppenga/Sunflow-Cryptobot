@@ -27,7 +27,7 @@ stuck['interval'] = 10000
 # Check if we can do trailing buy or sell
 def check_order(symbol, spot, active_order, all_buys, all_sells, info):
 
-    # Declare some variables global
+    # Declare stuck variable global
     global stuck
     
     # Initialize variables
@@ -106,7 +106,7 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
                 message_1 = message_1 + f", fill price {defs.format_number(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} "
                 message_1 = message_1 + f"and revenue {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
                 message_2 = f"sold {defs.format_number(active_order['qty'], currency_format)} {currency} and "
-                message_2 = message_2 + f"revenue was {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
+                message_2 = message_2 + f"profit is {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
                 # Send message to group 2
                 defs.announce(message_2, False, 0, True, 1)
             

@@ -199,6 +199,7 @@ def log_revenue(active_order, transaction, revenue, info, sides=True, extended=F
     divider   = "================================================================================\n"
     seperator = "\n----------------------------------------\n"
     timestamp = defs.now_utc()[0]
+    revenue   = defs.round_number(revenue, info['quotePrecision'])
 
     # Check if we can log
     if (not extended) and (not sides) and (transaction['side'] == "Buy"):
