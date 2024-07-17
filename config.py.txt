@@ -2,7 +2,7 @@
 #
 # Config file
 
-# CHANGE TO YOUR LIKING
+## CHANGE TO YOUR LIKING
 
 # Default values
 symbol              = "XRPUSDC"     # Symbol bot used for trading
@@ -25,6 +25,17 @@ indicators_enabled  = True         # Use technical indicators as buy indicator
 indicators_minimum  = -0.25        # Minimum advice value
 indicators_maximum  = +0.50        # Maximum advice value
 
+# Wave length
+wave_timeframe      = 10000        # Timeframe in ms to measure wave length, used when wiggle is set to Wave
+wave_multiplier     = 1.00         # Multiply wave percentage by this multiplier
+
+# Exchange keys (ALWAYS KEEP THESE SECRET)
+api_key             = "123456"                                   # API Key
+api_secret          = "123456"                                   # API Secret
+
+
+## EXPERIMENTAL PARAMETERS
+
 # Orderbook
 orderbook_enabled   = False        # Use orderbook as buy indicator
 orderbook_minimum   = 0            # Minimum orderbook buy depth percentage
@@ -40,15 +51,8 @@ trade_maximum       = 100          # Maximum trade buy ratio percentage
 trade_limit         = 100          # Number of trade orders to keep in database
 trade_timeframe     = 25000        # Timeframe in ms to collect realtime trades
 
-# Wave length
-wave_timeframe      = 10000        # Timeframe in ms to measure wave length, used when wiggle is set to Wave
-wave_multiplier     = 1.00         # Multiply wave percentage by this multiplier
 
-# Exchange keys (ALWAYS KEEP THESE SECRET)
-api_key             = "123456"                                   # API Key
-api_secret          = "123456"                                   # API Secret
-
-# ONLY FOR ADVANCED USERS
+## ONLY FOR ADVANCED USERS
 
 # Load external libraries
 from pathlib import Path
@@ -77,11 +81,11 @@ notify_level_2      = 1                                          # Notify level 
 # Debug, logs, reporting and other switches
 debug               = False                                      # Turn debug on or off
 exchange_log        = True                                       # Keep a log of all exchange sessions
-revenue_log         = True                                       # Log revenue of Sunflow
-revenue_log_extend  = False                                      # Extended or normal logging 
-revenue_log_sides   = True                                       # Log buy and sell orders or only sell
-wallet_report       = True                                       # Report wallet value, database and coins
+revenue_log         = True                                       # Log revenue of Sunflow to file
+revenue_log_extend  = False                                      # Extended or normal logging to file
+revenue_log_sides   = True                                       # Log buy and sell orders or only sell to file
+wallet_report       = True                                       # Report wallet value, database and coins to stdout
 session_report      = True                                       # Report exchange sessions to stdout
-database_rebalance  = True                                       # Sync the database to the exchange
+database_rebalance  = True                                       # Sync the base asset of the buys database to the exchange
 protect_peaks       = True                                       # Slow dow distance to minimum
 error_level         = 1                                          # Error level 0 is extended, 1 is normal
