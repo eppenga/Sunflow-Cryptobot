@@ -73,14 +73,17 @@ def protect(active_order, price_distance):
     # Debug
     debug = False
     
+    # Initialize variables
+    show_distance = False
+    
     # Debug
     if debug:
-        defs.announce( "debug: Distances before")
-        print        (f"Trailing side   : {active_order['side']}")
-        print        (f"Default distance: {active_order['distance']:.4f} %")
-        print        (f"Price distance  : {price_distance:.4f} %")
-        print        (f"Spot distance   : {active_order['fluctuation']:.4f} %")
-        print        (f"Wave distance   : {active_order['wave']:.4f} %\n")
+        defs.announce( "Debug: Distances before")
+        print(f"Trailing side       : {active_order['side']}")
+        print(f"Default distance    : {active_order['distance']:.4f} %")
+        print(f"Price distance      : {price_distance:.4f} %")
+        print(f"Wave distance       : {active_order['wave']:.4f} %\n")
+        print(f"Fluctuation distance: {active_order['fluctuation']:.4f} %")
     
     # Selling
     if active_order['side'] == "Sell":
@@ -125,12 +128,19 @@ def protect(active_order, price_distance):
                 else:
                     active_order['fluctuation'] = active_order['distance']
 
-        # Temp debug
-        if debug:
-            defs.announce( "debug: Distances after")
-            print        (f"Default distance    : {active_order['distance']:.4f} %")
-            print        (f"Wave distance       : {active_order['wave']:.4f} %")
-            print        (f"Fluctuation distance: {active_order['fluctuation']:.4f} %\n")
+    # Debug or show distances
+    if debug or active_order['fluctuation'] < 0:
+        if debug                          : defs.announce("Debug: Distances after")
+        if active_order['fluctuation'] < 0: defs.announce("*** Warning: Fluctuation distance is negative! ***")
+        print(f"Trailing side       : {active_order['side']}")
+        print(f"Default distance    : {active_order['distance']:.4f} %")
+        print(f"Price distance      : {price_distance:.4f} %")
+        print(f"Wave distance       : {active_order['wave']:.4f} %")
+        print(f"Fluctuation distance: {active_order['fluctuation']:.4f} %\n")
+
+    # Last failsafe
+    if active_order['fluctuation'] < 0:
+        active_order['fluctuation'] = 0
     
     # Return active_order
     return active_order

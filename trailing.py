@@ -143,23 +143,27 @@ def check_spike(symbol, spot, active_order, order, all_buys, info):
 
         # Did it spike and was forgotten when selling
         if transaction['triggerPrice'] > spot:
-            defs.announce(f"*** {active_order['side']} order spiked, yakes! ***", True, 1)
+            defs.announce(f"Warning: *** Sell order spiked, cancelling current order! ***", True, 1)
             # Reset trailing sell
             active_order['active'] = False
             # Remove order from exchange
             orders.cancel(symbol, active_order['orderid'])
+            # Rebalance to be safe
+            all_buys = orders.rebalance(all_buys, info)
 
     else:
 
         # Did it spike and was forgotten when buying
         if transaction['triggerPrice'] < spot:
-            defs.announce(f"*** {active_order['side']} order spiked, yakes! ***", True, 1)
+            defs.announce(f"Warning: *** Buy order spiked, cancelling current order! ***", True, 1)
             # Reset trailing buy
             active_order['active'] = False
             # Remove order from all buys
             all_buys = database.remove(active_order['orderid'], all_buys, info)
             # Remove order from exchange
             orders.cancel(symbol, active_order['orderid'])
+            # Rebalance to be safe
+            all_buys = orders.rebalance(all_buys, info)
     
     if error_code == 1:
         defs.announce(f"Although order {active_order['orderid']} spiked, this order was not found at the exchange", True, 1)
