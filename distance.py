@@ -60,6 +60,13 @@ def calculate_atr():
     atr_multiplier = atr_percentage / atr_perc_avg
     end_time       = defs.now_utc()[4]
 
+    # Report ATR data
+    if get_atr_klines:
+        print("ATR Data (experimental)")
+        print(f"ATR current percentage is {atr_percentage} %")
+        print(f"ATR average percentage over {config.limit} klines is {atr_perc_avg} %")
+        print(f"ATR multiplier is {atr_multiplier}")
+
    # Output to stdout
     if debug:
         defs.announce(f"ATR percentage is {atr_percentage} %, on average it was {atr_perc_avg} %, the multiplier is {atr_multiplier} and it took {end_time - start_time}ms to calculate")
