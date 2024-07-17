@@ -22,7 +22,7 @@ atr_klines = {'time': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volum
 def calculate_atr():
     
     # Debug
-    debug = True
+    debug = False
 
     # Declare ATR timer and klines variables global
     global atr_timer, atr_klines
