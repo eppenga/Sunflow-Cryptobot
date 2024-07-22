@@ -12,7 +12,7 @@ interval_3          = 5            # Klines timeframe second confirmation interv
 limit               = 250          # Number of klines downloaded, used for calculcating technical indicators
 profit              = 0.400        # Minimum profit percentage
 distance            = 0.100        # Trigger price distance percentage when Fixed is used by wiggle
-wiggle              = "Spot"       # Method for trigger price distance, Fixed, Spot, EMA or Wave
+wiggle              = "Fixed"      # Method for trigger price distance, Fixed, Spot, Wave, ATR, EMA or Hybrid
 depth               = 0.10         # Depth in percentages used to calculate market depth from orderbook
 multiplier          = 1.00         # Multiply minimum order quantity by this
 

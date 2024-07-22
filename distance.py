@@ -65,7 +65,7 @@ def calculate_atr():
         print("ATR Data (experimental)")
         print(f"ATR current percentage is {atr_percentage} %")
         print(f"ATR average percentage over {config.limit} klines is {atr_perc_avg} %")
-        print(f"ATR multiplier is {atr_multiplier}")
+        print(f"ATR multiplier is {atr_multiplier}\n")
 
    # Output to stdout
     if debug:
@@ -135,10 +135,9 @@ def protect(active_order, price_distance):
                 else:
                     active_order['fluctuation'] = active_order['distance']
 
-    # Debug or show distances
-    if debug or active_order['fluctuation'] < 0:
-        if debug                          : defs.announce("Debug: Distances after")
-        if active_order['fluctuation'] < 0: defs.announce("*** Warning: Fluctuation distance is negative! ***")
+    # Debug
+    if debug:
+        defs.announce("Debug: Distances after")
         print(f"Trailing side       : {active_order['side']}")
         print(f"Default distance    : {active_order['distance']:.4f} %")
         print(f"Price distance      : {price_distance:.4f} %")
@@ -147,6 +146,7 @@ def protect(active_order, price_distance):
 
     # Last failsafe
     if active_order['fluctuation'] < 0:
+        defs.announce(f"*** Warning: Fluctuation distance is {active_order['fluctuation']}, enforcing 0 %! ***")
         active_order['fluctuation'] = 0
     
     # Return active_order
@@ -186,6 +186,7 @@ def distance_spot(active_order, price_distance):
     # Return active_order
     return active_order
 
+# Calculate distance using EMA
 def distance_ema(active_order, prices, price_distance):
     
     # Devide normalized value by this, ie. 2 means it will range between 0 and 0.5
