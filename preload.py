@@ -221,13 +221,16 @@ def get_info(symbol, spot, multiplier):
     return data
     
 # Create empty files for check_files
-def create_file(create_file):
+def create_file(create_file, content=""):
         
-    # Does the file exist and if not create an empty file    
+    # Does the file exist and if not create a file    
     if not os.path.exists(create_file):
         with open(create_file, 'a') as file:
-            pass
-        
+            if content:
+                file.write(content)
+            else:
+                pass
+
     # Return
     return
 
@@ -238,11 +241,14 @@ def check_files():
     if not os.path.exists(config.data_folder):
         os.makedirs(config.data_folder)
     
+    # Headers for files
+    revenue_header = "UTCTime,createdTime,orderId,side,symbol,baseCoin,quoteCoin,orderType,orderStatus,avgPrice,qty,triggerStart,triggerEnd,cumExecFee,cumExecQty,cumExecValue,revenue"
+    
     # Does the buy orders database exist
-    create_file(config.dbase_file)      # Buy orders database
-    create_file(config.error_file)      # Errors log file
-    create_file(config.exchange_file)   # Exchange log file
-    create_file(config.revenue_file)    # Revenue log file
+    create_file(config.dbase_file)                      # Buy orders database
+    create_file(config.error_file)                      # Errors log file
+    create_file(config.exchange_file)                   # Exchange log file
+    create_file(config.revenue_file, revenue_header)    # Revenue log file
     
     defs.announce("All folders and files checked")
     
