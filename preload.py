@@ -268,19 +268,17 @@ def check_orders(transactions, info):
     # Loop through all buys
     for transaction in transactions:
 
-        # Report to stdout
-        message = f"Now checking order: {transaction['orderId']}"
-        if quick: message = message + " quickly"
-        defs.announce(message)
-
         # Check orders
         if quick:
             # Only check order on exchange if status is not Closed
+            defs.announce(f"Checking order from database: {transaction['orderId']}")
             temp_transaction = transaction
             if transaction['status'] != "Closed":
+                defs.announce("Doing an additional check on order status via exchange")
                 temp_transaction = orders.transaction_from_id(transaction['orderId'])
         else:
             # Check all order on exchange regardless of status
+            defs.announce(f"Checking order on exchange: {transaction['orderId']}")
             temp_transaction = orders.transaction_from_id(transaction['orderId'])
 
         # Assign status
