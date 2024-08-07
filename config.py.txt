@@ -88,4 +88,5 @@ wallet_report       = True                                       # Report wallet
 session_report      = True                                       # Report exchange sessions to stdout
 database_rebalance  = True                                       # Sync the base asset of the buys database to the exchange
 protect_peaks       = True                                       # Slow dow distance to minimum
+quick_check         = False                                      # Quickly check orders on startup
 error_level         = 1                                          # Error level 0 is extended, 1 is normal
