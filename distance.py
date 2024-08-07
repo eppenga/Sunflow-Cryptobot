@@ -146,7 +146,7 @@ def protect(active_order, price_distance):
 
     # Last failsafe
     if active_order['fluctuation'] < 0:
-        defs.announce(f"*** Warning: Fluctuation distance is {active_order['fluctuation']}, enforcing 0 %! ***")
+        defs.announce(f"*** Warning: Fluctuation distance is {active_order['fluctuation']:.4f}, enforcing 0 %! ***")
         active_order['fluctuation'] = 0
     
     # Return active_order

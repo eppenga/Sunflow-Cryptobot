@@ -256,20 +256,37 @@ def check_files():
 def check_orders(transactions, info):
     
     # Initialize variables
-    all_buys = []
+    message          = ""
+    all_buys         = []
+    transaction      = {}
+    temp_transaction = {}
+    quick            = config.quick_check
 
-    defs.announce("Checking all order on exchange")
+    # Output to stdout
+    defs.announce("Checking all orders on exchange")
 
     # Loop through all buys
     for transaction in transactions:
 
-        # Get exchange info
-        defs.announce(f"Now checking order: {transaction['orderId']}")
-        exchange_transaction = orders.transaction_from_id(transaction['orderId'])
+        # Report to stdout
+        message = f"Now checking order: {transaction['orderId']}"
+        if quick: message = message + " quickly"
+        defs.announce(message)
 
-        if "Filled" in exchange_transaction['orderStatus']:
-            exchange_transaction['status'] = "Closed"
-            all_buys.append(exchange_transaction)
+        # Check orders
+        if quick:
+            # Only check order on exchange if status is not Closed
+            temp_transaction = transaction
+            if transaction['status'] != "Closed":
+                temp_transaction = orders.transaction_from_id(transaction['orderId'])
+        else:
+            # Check all order on exchange regardless of status
+            temp_transaction = orders.transaction_from_id(transaction['orderId'])
+
+        # Assign status
+        if "Filled" in temp_transaction['orderStatus']:
+            temp_transaction['status'] = "Closed"
+            all_buys.append(temp_transaction)
         
     # Save refreshed database
     database.save(all_buys, info)
