@@ -623,7 +623,6 @@ print(f"Limit     : {limit}\n")
 
 # Preload all requirements
 print("\n*** Preloading ***\n")
-
 preload.check_files()
 if intervals[1] !=0  : klines[intervals[1]] = preload.get_klines(symbol, intervals[1], limit)
 if intervals[2] !=0  : klines[intervals[2]] = preload.get_klines(symbol, intervals[2], limit)
