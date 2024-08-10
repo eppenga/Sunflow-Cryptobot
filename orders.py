@@ -347,6 +347,38 @@ def equity_safe(equity):
     # Return equity
     return equity
 
+# Get total equity of wallet
+def get_wallet(info):
+    
+    # Debug
+    debug = False
+
+    # Initialize variables
+    wallet        = {}
+    equity_wallet = 0
+
+    # Get wallet
+    message = defs.announce("session: get_wallet_balance")
+    try:
+        wallet = session.get_wallet_balance(
+            accountType = "UNIFIED",
+            coin        = info['baseCoin']
+        )
+    except Exception as e:
+        defs.log_error(e)
+        
+    # Check API rate limit and log data if possible
+    if wallet:
+        wallet = defs.rate_limit(wallet)
+        defs.log_exchange(wallet, message)
+
+    # Get equity from wallet
+    equity_wallet = equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
+    total_wallet  = equity_safe(wallet['result']['list'][0]['totalEquity'])
+
+    # Return equity of wallet
+    return total_wallet, equity_wallet
+
 # Rebalances the database vs exchange by removing orders with the highest price
 def rebalance(all_buys, info):
 
@@ -365,25 +397,9 @@ def rebalance(all_buys, info):
     if debug:
         defs.announce("Trying to rebalance buys database with exchange data")
 
-    # Get wallet
-    wallet   = {}
-    message = defs.announce("session: get_wallet_balance")
-    try:
-        wallet = session.get_wallet_balance(
-            accountType = "UNIFIED",
-            coin        = info['baseCoin']
-        )
-    except Exception as e:
-        defs.log_error(e)
-        
-    # Check API rate limit and log data if possible
-    if wallet:
-        wallet = defs.rate_limit(wallet)
-        defs.log_exchange(wallet, message)
-
     # Get equity from wallet
-    equity_wallet = equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
-
+    equity_wallet = get_wallet(info)[1]
+  
     # Get equity from all buys
     equity_dbase  = float(sum(order['cumExecQty'] for order in all_buys))
     equity_remind = float(equity_dbase)

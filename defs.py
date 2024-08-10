@@ -169,7 +169,7 @@ def log_error(exception):
     
     # Error: Read time out
     if "HTTPSConnectionPool" in exception:
-        defs.announce("*** Warning: Read time out, waiting 20 seconds", True, 1)
+        defs.announce("*** Warning: Read time out, waiting 20 seconds ***", True, 1)
         for number in range(20, 0, -1):
             print(number, end=" ", flush=True)
             time.sleep(1)
