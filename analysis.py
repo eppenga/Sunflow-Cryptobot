@@ -95,20 +95,18 @@ minutes = (seconds % 3600) // 60
 seconds = seconds % 60
 
 # Get total wallet
-result = orders.get_wallet(info)
-wallet = result[0]
-equity = result[1]
+equity = orders.get_equity(info)
 
 # Group the revenue data by date and calculate the total profit per day
 df_revenue['date'] = df_revenue['createdTime'].dt.date
 profit_per_day = df_revenue.groupby('date')['revenue'].sum().reset_index()
 
 # Output to stdout
-print("Wallet data")
+print("Equity data")
 print("===========")
-print(f"Used by bot   : {defs.format_number(equity, info['quotePrecision'])} {info['quoteCoin']}")
-print(f"Free to use   : {defs.format_number(wallet - equity, info['quotePrecision'])} {info['quoteCoin']}")
-print(f"Total wallet  : {defs.format_number(wallet, info['quotePrecision'])} {info['quoteCoin']}")
+print(f"Used by bot   : {defs.format_number(equity, info['basePrecision'])} {info['baseCoin']}")
+print(f"Spot price    : {spot} {info['quoteCoin']}")
+print(f"Total value   : {defs.format_number(spot * equity, info['quotePrecision'])} {info['quoteCoin']}")
 
 print()
 

@@ -348,7 +348,7 @@ def equity_safe(equity):
     return equity
 
 # Get total equity of wallet
-def get_wallet(info):
+def get_equity(info):
     
     # Debug
     debug = False
@@ -372,12 +372,15 @@ def get_wallet(info):
         wallet = defs.rate_limit(wallet)
         defs.log_exchange(wallet, message)
 
+    if debug:
+        defs.announce("Wallet information:")
+        pprint.pprint(wallet)
+
     # Get equity from wallet
     equity_wallet = equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
-    total_wallet  = equity_safe(wallet['result']['list'][0]['totalEquity'])
 
     # Return equity of wallet
-    return total_wallet, equity_wallet
+    return equity_wallet
 
 # Rebalances the database vs exchange by removing orders with the highest price
 def rebalance(all_buys, info):
@@ -389,6 +392,7 @@ def rebalance(all_buys, info):
     wallet         = ()
     equity_wallet  = 0
     equity_dbase   = 0
+    equity_diff    = 0
     equity_remind  = 0
     equity_lost    = 0
     dbase_changed = False
@@ -398,11 +402,12 @@ def rebalance(all_buys, info):
         defs.announce("Trying to rebalance buys database with exchange data")
 
     # Get equity from wallet
-    equity_wallet = get_wallet(info)[1]
+    equity_wallet = get_equity(info)
   
     # Get equity from all buys
     equity_dbase  = float(sum(order['cumExecQty'] for order in all_buys))
     equity_remind = float(equity_dbase)
+    equity_diff   = equity_wallet - equity_dbase
 
     # Report
     if debug:
@@ -434,6 +439,9 @@ def rebalance(all_buys, info):
         equity_lost = equity_remind - equity_dbase
         defs.announce(f"Rebalanced buys database with exchange data and lost {equity_lost} {info['baseCoin']}")
         database.save(all_buys, info)
+    
+    # Report to stdout
+    defs.announce(f"Difference between exchange and database is {equity_diff} {info['baseCoin']}")
 
     # Return all buys
     return all_buys
