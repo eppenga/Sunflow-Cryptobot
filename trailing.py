@@ -242,12 +242,16 @@ def close_trail(active_order, all_buys, all_sells, info):
         # Create new all buys database
         all_buys = database.register_sell(all_buys, all_sells, info)
         
-        # Rebalance new database
-        if config.database_rebalance:
-            all_buys = orders.rebalance(all_buys, info)
+        # Rebalance new database *** CHECK ***
+        #if config.database_rebalance:
+        #    all_buys = orders.rebalance(all_buys, info)
         
         # Clear all sells
         all_sells = []
+
+    # Rebalance new database
+    if config.database_rebalance:
+        all_buys = orders.rebalance(all_buys, info)
 
     # Output to stdout
     defs.announce(f"Closed trailing {active_order['side'].lower()} order")
