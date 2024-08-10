@@ -437,11 +437,11 @@ def rebalance(all_buys, info):
     # Save new database
     if dbase_changed:
         equity_lost = equity_remind - equity_dbase
-        defs.announce(f"Rebalanced buys database with exchange data and lost {equity_lost} {info['baseCoin']}")
+        defs.announce(f"Rebalanced buys database with exchange data and lost {defs.round_number(equity_lost, info['basePrecision'])} {info['baseCoin']}")
         database.save(all_buys, info)
     
     # Report to stdout
-    defs.announce(f"Difference between exchange and database is {equity_diff} {info['baseCoin']}")
+    defs.announce(f"Difference between exchange and database is {defs.round_number(equity_diff, info['basePrecision'])} {info['baseCoin']}")
 
     # Return all buys
     return all_buys
