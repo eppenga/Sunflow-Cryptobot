@@ -117,6 +117,7 @@ print(f"Oldest order  : {oldest_order}")
 print(f"Newest order  : {latest_order}")
 print(f"Total in base : {defs.format_number(df_all_buys['cumExecValue'].sum(), info['quotePrecision'])} {info['quoteCoin']}")
 print(f"Total in quote: {defs.format_number(df_all_buys['cumExecQty'].sum(), info['basePrecision'])} {info['baseCoin']}")
+print(f"Exchange diff : {defs.format_number(equity - df_all_buys['cumExecQty'].sum(), info['basePrecision'])} {info['baseCoin']}")
 print()
 print(f"Average price : {defs.format_number(df_all_buys['avgPrice'].mean(), info['quotePrecision'])} {info['quoteCoin']}")
 print(f"Minimum price : {defs.format_number(df_all_buys['avgPrice'].min(), info['quotePrecision'])} {info['quoteCoin']}")
@@ -137,8 +138,9 @@ print(f"Average profit: {defs.format_number(df_revenue['revenue'].mean(), info['
 print(f"Minimum profit: {defs.format_number(df_revenue['revenue'].min(), info['quotePrecision'])} {info['quoteCoin']} / trade")
 print(f"Maximum profit: {defs.format_number(df_revenue['revenue'].max(), info['quotePrecision'])} {info['quoteCoin']} / trade")
 
-# Calculate the number of days between the start and end dates
-days_diff = (df_revenue['createdTime'].max() - df_revenue['createdTime'].min()).days
+# Calculate the profit per day
+total_time_diff = df_revenue['createdTime'].max() - df_revenue['createdTime'].min()
+days_diff = total_time_diff.total_seconds() / (24 * 3600)
 if days_diff > 0:
     avg_profit_per_day = df_revenue['revenue'].sum() / days_diff
     print(f"Average profit: {defs.format_number(avg_profit_per_day, info['quotePrecision'])} {info['quoteCoin']} / day")
