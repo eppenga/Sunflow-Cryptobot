@@ -348,7 +348,7 @@ def equity_safe(equity):
     return equity
 
 # Get total equity of wallet
-def get_equity(info):
+def get_equity(coin):
     
     # Debug
     debug = False
@@ -362,7 +362,7 @@ def get_equity(info):
     try:
         wallet = session.get_wallet_balance(
             accountType = "UNIFIED",
-            coin        = info['baseCoin']
+            coin        = coin
         )
     except Exception as e:
         defs.log_error(e)
@@ -402,7 +402,7 @@ def rebalance(all_buys, info):
         defs.announce("Trying to rebalance buys database with exchange data")
 
     # Get equity from wallet
-    equity_wallet = get_equity(info)
+    equity_wallet = get_equity(info['baseCoin'])
   
     # Get equity from all buys
     equity_dbase  = float(sum(order['cumExecQty'] for order in all_buys))

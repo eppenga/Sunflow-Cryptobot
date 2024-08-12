@@ -95,42 +95,60 @@ minutes = (seconds % 3600) // 60
 seconds = seconds % 60
 
 # Get total wallet
-equity = orders.get_equity(info)
+equity_base  = orders.get_equity(info['baseCoin'])
+equity_quote = orders.get_equity(info['quoteCoin'])
 
 # Group the revenue data by date and calculate the total profit per day
 df_revenue['date'] = df_revenue['createdTime'].dt.date
 profit_per_day = df_revenue.groupby('date')['revenue'].sum().reset_index()
 
 # Output to stdout
-print("Equity data")
-print("===========")
-print(f"Used by bot   : {defs.format_number(equity, info['basePrecision'])} {info['baseCoin']}")
-print(f"Spot price    : {spot} {info['quoteCoin']}")
-print(f"Total value   : {defs.format_number(spot * equity, info['quotePrecision'])} {info['quoteCoin']}")
+print("*** Sunflow Cryptobot Report ***\n")
+
+print("Exchange data")
+print("=============")
+print(f"Base assets   : {defs.format_number(equity_base, info['basePrecision'])} {info['baseCoin']}")
+print(f"Spot price    : {defs.format_number(spot, info['tickSize'])} {info['quoteCoin']}")
+print(f"Base value    : {defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']}")
 
 print()
 
-print("Order data")
-print("==========")
-print(f"Order count   : {len(df_all_buys)}")
-print(f"Oldest order  : {oldest_order}")
-print(f"Newest order  : {latest_order}")
-print(f"Total in base : {defs.format_number(df_all_buys['cumExecValue'].sum(), info['quotePrecision'])} {info['quoteCoin']}")
-print(f"Total in quote: {defs.format_number(df_all_buys['cumExecQty'].sum(), info['basePrecision'])} {info['baseCoin']}")
-print(f"Exchange diff : {defs.format_number(equity - df_all_buys['cumExecQty'].sum(), info['basePrecision'])} {info['baseCoin']}")
+print(f"Base value    : {defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']} (spot * base)")
+print(f"Quote value   : {defs.format_number(equity_quote, info['quotePrecision'])} {info['quoteCoin']} (free to spend)")
+print(f"Total value   : {defs.format_number(spot * equity_base + equity_quote, info['quotePrecision'])} {info['quoteCoin']} (total bot value)")
+
 print()
-print(f"Average price : {defs.format_number(df_all_buys['avgPrice'].mean(), info['quotePrecision'])} {info['quoteCoin']}")
-print(f"Minimum price : {defs.format_number(df_all_buys['avgPrice'].min(), info['quotePrecision'])} {info['quoteCoin']}")
-print(f"Maximum price : {defs.format_number(df_all_buys['avgPrice'].max(), info['quotePrecision'])} {info['quoteCoin']}")
+
+print("Database data")
+print("=============")
+print(f"Order count   : {len(df_all_buys)} orders to sell")
+print(f"Oldest order  : {oldest_order} UTC")
+print(f"Newest order  : {latest_order} UTC")
+
+print()
+
+print(f"Base assets   : {defs.format_number(df_all_buys['cumExecQty'].sum(), info['basePrecision'])} {info['baseCoin']} (from database)")
+print(f"Base assets   : {defs.format_number(equity_base, info['basePrecision'])} {info['baseCoin']} (from exchange)")
+print(f"Difference    : {defs.format_number(equity_base - df_all_buys['cumExecQty'].sum(), info['basePrecision'])} {info['baseCoin']} (synchronization misses)")
+
+print()
+
+print(f"Base value    : {defs.format_number(df_all_buys['cumExecValue'].sum(), info['quotePrecision'])} {info['quoteCoin']} (from database)")
+print(f"Break even    : {defs.format_number(df_all_buys['cumExecValue'].sum() / df_all_buys['cumExecQty'].sum(), info['tickSize'])} {info['quoteCoin']} (based on database)")
+
+print()
+
+print(f"Average price : {defs.format_number(df_all_buys['avgPrice'].mean(), info['tickSize'])} {info['quoteCoin']}")
+print(f"Minimum price : {defs.format_number(df_all_buys['avgPrice'].min(), info['tickSize'])} {info['quoteCoin']}")
+print(f"Maximum price : {defs.format_number(df_all_buys['avgPrice'].max(), info['tickSize'])} {info['quoteCoin']}")
 
 print()
 
 print("Profit data")
 print("===========")
-print(f"Profit lines  : {len(df_revenue)}")
-print(f"Total profit  : {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']}")
-print(f"Start date    : {df_revenue['createdTime'].min().strftime('%Y-%m-%d %H:%M:%S')}")
-print(f"End date      : {df_revenue['createdTime'].max().strftime('%Y-%m-%d %H:%M:%S')}")
+print(f"Profit lines  : {len(df_revenue)} profit lines")
+print(f"Start date    : {df_revenue['createdTime'].min().strftime('%Y-%m-%d %H:%M:%S')} UTC")
+print(f"End date      : {df_revenue['createdTime'].max().strftime('%Y-%m-%d %H:%M:%S')} UTC")
 print(f"Uptime        : {days} days, {hours} hours, {minutes} minutes, {seconds} seconds")
 
 print()
@@ -143,9 +161,12 @@ total_time_diff = df_revenue['createdTime'].max() - df_revenue['createdTime'].mi
 days_diff = total_time_diff.total_seconds() / (24 * 3600)
 if days_diff > 0:
     avg_profit_per_day = df_revenue['revenue'].sum() / days_diff
-    print(f"Average profit: {defs.format_number(avg_profit_per_day, info['quotePrecision'])} {info['quoteCoin']} / day")
+    print(f"Daily profit  : {defs.format_number(avg_profit_per_day, info['quotePrecision'])} {info['quoteCoin']} / day")
 else:
-    print("Average profit: N/A (Only one day of data)")
+    print("Daily profit  : N/A (Only one day of data)")
+
+print(f"Total profit  : {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']}")
+
 print()
 
 # Create a figure with two subplots
@@ -168,6 +189,9 @@ plt.xticks(rotation=45)
 
 # Adjust layout to prevent overlap
 plt.tight_layout()
+
+# Save the plot to the specified file
+plt.savefig(config.data_suffix + "analysis.png")
 
 # Show the plots
 plt.show()
