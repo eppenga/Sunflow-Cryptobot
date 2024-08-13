@@ -15,7 +15,8 @@ _Please note: Sunflow needs API Version 5 of the "unified trading account" of By
 - Uses Bybit websockets
 - Telegram reporting
 - Error handling including auto reconnect
-- Log files for analyses
+- Log files for analysis
+- Experimental analyzer
 
 ![Buy confirmation with optional multiple intervals and technical analysis](https://github.com/eppenga/Sunflow-Cryptobot/assets/4440994/90184716-a793-4c1a-8907-4d746809c763)
 _Sunflow stops buying before price goes down via multiple intervals and technical analysis confirmation._
@@ -56,6 +57,61 @@ _Sunflow easily running with four symbols on a Raspberry Pi 4, hardware requirem
 
 ### Revenue log file
 When the revenue log file is enabled (please see revenue_log in the config file) Sunflow will create a log file of all closed buy and sell orders for further analyses. If you set 'revenue_log_extend' to False it will create an CSV file easy for automated reporting, you can also only include the sell orders for easy profit calculation by setting revenue_log_sides to True. The format of the log file is: createdTime, orderId, side, symbol, baseCoin, quoteCoin, orderType, orderStatus, avgPrice, qty, trigger_ini, triggerPrice, cumExecFee, cumExecQty, cumExecValue, revenue.
+
+### Experimental analyzer
+For automated analysis there is an experimental functionality which can be run simular to sunflow. To use it you have to install additionally the python packages matplotlib and seaborn. Run it as shown below and a sample report with dummy data is also provided.
+```
+python analysis.py
+python sunflow.py -c {optional path/}your-config.py
+```
+
+```
+*** Sunflow Cryptobot Report ***
+
+Exchange data
+=============
+Base assets   : 1086.71 XRP
+Spot price    : 0.5831 USDC
+Base value    : 633.660601 USDC
+
+Base value    : 633.660601 USDC (spot * base)
+Quote value   : 361.527528 USDC (free to spend)
+Total value   : 995.188129 USDC (total bot value)
+
+Database data
+=============
+Order count   : 371 orders to sell
+Oldest order  : 2024-08-08 19:12:10 UTC
+Newest order  : 2024-08-13 17:50:26 UTC
+
+Base assets   : 1083.52 XRP (from database)
+Base assets   : 1086.71 XRP (from exchange)
+Difference    : 3.19 XRP (synchronization misses)
+
+Base value    : 660.150646 USDC (from database)
+Break even    : 0.6093 USDC (based on database)
+
+Average price : 0.6093 USDC
+Minimum price : 0.5820 USDC
+Maximum price : 0.6411 USDC
+
+Profit data
+===========
+Profit lines  : 818 profit lines
+Start date    : 2024-08-08 16:03:28 UTC
+End date      : 2024-08-13 17:54:56 UTC
+Uptime        : 5 days, 1 hours, 51 minutes, 27 seconds
+
+Average profit: 0.029504 USDC / trade
+Minimum profit: -0.000876 USDC / trade
+Maximum profit: 1.470700 USDC / trade
+Daily profit  : 4.753309 USDC / day
+Total profit  : 24.134478 USDC
+```
+
+![XRPUSDC_analysis](https://github.com/user-attachments/assets/0829a1e8-c6bb-4c5b-a174-72ec5c63b62f)
+_Experimental analyzer including graphical representation and reporting_
+
 
 ## Disclaimer
 I give no warranty and accept no responsibility or liability for the accuracy or the completeness of the information and materials contained in this project. Under no circumstances will I be held responsible or liable in any way for any claims, damages, losses, expenses, costs or liabilities whatsoever (including, without limitation, any direct or indirect damages for loss of profits, business interruption or loss of information) resulting from or arising directly or indirectly from your use of or inability to use this code or any code linked to it, or from your reliance on the information and material on this code, even if I have been advised of the possibility of such damages in advance.
