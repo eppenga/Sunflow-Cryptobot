@@ -264,7 +264,7 @@ def buy(symbol, spot, active_order, all_buys, prices, info):
     # Report to stdout
     message = f"Buy order opened for {defs.format_number(active_order['qty'], info['quotePrecision'])} {info['quoteCoin']} "
     message = message + f"at trigger price {defs.format_number(active_order['trigger'], info['tickSize'])} {info['quoteCoin']} "
-    message = message + f"with order ID {active_order['orderid']}"
+    message = message + f"with ID {active_order['orderid']}"
     defs.announce(message, True)
 
     # Get the transaction
@@ -329,7 +329,7 @@ def sell(symbol, spot, active_order, prices, info):
     # Output to stdout and Apprise
     message = f"Sell order opened for {defs.format_number(active_order['qty'], info['basePrecision'])} {info['baseCoin']} "
     message = message + f"at trigger price {defs.format_number(active_order['trigger'], info['tickSize'])} {info['quoteCoin']} "
-    message = message + f"with order ID {active_order['orderid']}"
+    message = message + f"with ID {active_order['orderid']}"
     defs.announce(message, True)
    
     # Return data
@@ -461,8 +461,8 @@ def report_wallet(all_buys, info):
     message = defs.announce("session: get_wallet_balance")
     try:
         wallet = session.get_wallet_balance(
-            accountType="UNIFIED",
-            coin="USDC"
+            accountType = "UNIFIED",
+            coin        = info['quoteCoin']
         )
     except Exception as e:
         defs.log_error(e)

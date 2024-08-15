@@ -109,12 +109,11 @@ print("Exchange data")
 print("=============")
 print(f"Base assets   : {defs.format_number(equity_base, info['basePrecision'])} {info['baseCoin']}")
 print(f"Spot price    : {defs.format_number(spot, info['tickSize'])} {info['quoteCoin']}")
-print(f"Base value    : {defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']}")
 
 print()
 
 print(f"Base value    : {defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']} (spot * base)")
-print(f"Quote value   : {defs.format_number(equity_quote, info['quotePrecision'])} {info['quoteCoin']} (free to spend)")
+print(f"Quote value   : {defs.format_number(equity_quote, info['quotePrecision'])} {info['quoteCoin']} (free to spend by bot)")
 print(f"Total value   : {defs.format_number(spot * equity_base + equity_quote, info['quotePrecision'])} {info['quoteCoin']} (total bot value)")
 
 print()
@@ -133,8 +132,10 @@ print(f"Difference    : {defs.format_number(equity_base - df_all_buys['cumExecQt
 
 print()
 
-print(f"Base value    : {defs.format_number(df_all_buys['cumExecValue'].sum(), info['quotePrecision'])} {info['quoteCoin']} (from database)")
-print(f"Break even    : {defs.format_number(df_all_buys['cumExecValue'].sum() / df_all_buys['cumExecQty'].sum(), info['tickSize'])} {info['quoteCoin']} (based on database)")
+print(f"Base value    : {defs.format_number(df_all_buys['cumExecValue'].sum(), info['quotePrecision'])} {info['quoteCoin']} (from database, buy value)")
+print(f"Base value    : {defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']} (from exchange, present value)")
+print(f"Difference    : {defs.format_number(df_all_buys['cumExecValue'].sum() - spot * equity_base, info['basePrecision'])} {info['quoteCoin']} (between buy value and present value)")
+print(f"Break even    : {defs.format_number(df_all_buys['cumExecValue'].sum() / df_all_buys['cumExecQty'].sum(), info['tickSize'])} {info['quoteCoin']} (equal to present value)")
 
 print()
 
@@ -175,6 +176,7 @@ plt.figure(figsize=(14, 10))
 # First subplot: Histogram of average prices
 plt.subplot(2, 1, 1)
 sns.histplot(df_all_buys['avgPrice'], bins=20, kde=False)
+plt.title('Distribution of Outstanding Orders')
 plt.title('Distribution of Outstanding Orders')
 plt.xlabel('Average Price')
 plt.ylabel('Frequency')

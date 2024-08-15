@@ -381,7 +381,7 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
     else:
         do_buy[5] = True
 
-    # Report orderbook
+    # Report trades
     if use_trade['enabled']:
         if trade_advice['result']:
             do_buy[6] = True
