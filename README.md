@@ -59,7 +59,7 @@ _Sunflow easily running with four symbols on a Raspberry Pi 4, hardware requirem
 When the revenue log file is enabled (please see revenue_log in the config file) Sunflow will create a log file of all closed buy and sell orders for further analyses. If you set 'revenue_log_extend' to False it will create an CSV file easy for automated reporting, you can also only include the sell orders for easy profit calculation by setting revenue_log_sides to True. The format of the log file is: createdTime, orderId, side, symbol, baseCoin, quoteCoin, orderType, orderStatus, avgPrice, qty, trigger_ini, triggerPrice, cumExecFee, cumExecQty, cumExecValue, revenue.
 
 ### Experimental analyzer
-For automated analysis there is an experimental functionality which can be run simular to sunflow. To use it you have to install additionally the python packages matplotlib and seaborn. Run it as shown below and a sample report with dummy data is also provided.
+For automated analysis there is an experimental functionality which can be run simular to sunflow. To use it you have to install additionally the python packages matplotlib and seaborn. Run it as shown below (data below is dummy data).
 ```
 python analysis.py
 python sunflow.py -c {optional path/}your-config.py
