@@ -33,7 +33,7 @@ pip install -r requirements.txt
 ```
 
 ### Configure
-Configure by creating a config.py file from the config.py.txt file. Rename config.py.txt to config.py and use your favorite editor to modify.
+Configure by creating a config.py file from the config.py.txt file. Rename config.py.txt to config.py and use your favorite editor to modify. The Github wiki has a few hints on what all parameters mean, but documentation isn't ready yet.
 ```
 mv config.py.txt config.py
 nano config.py
