@@ -27,7 +27,7 @@ indicators_minimum  = -0.25        # Minimum advice value
 indicators_maximum  = +0.50        # Maximum advice value
 
 # Wave length
-wave_timeframe      = 10000        # Timeframe in ms to measure wave length, used when wiggle is set to Wave
+wave_timeframe      = 10000        # Timeframe in ms to measure wave length, used when wiggle uses Wave, EMA or Hybrid
 wave_multiplier     = 1.00         # Multiply wave percentage by this multiplier
 
 # Exchange keys (ALWAYS KEEP THESE SECRET)
