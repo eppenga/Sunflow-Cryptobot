@@ -262,10 +262,11 @@ def advice_buy(indicators_advice, orderbook_advice, trade_advice, use_indicators
     '''' Check TECHNICAL INDICATORS for buy decission '''
     
     if use_indicators['enabled']:
-        technical_indicators                 = indicators.calculate(klines[interval], spot)
-        result                               = indicators.advice(technical_indicators)
-        indicators_advice[interval]['value'] = result[0]
-        indicators_advice[interval]['level'] = result[1]
+        indicators_advice[interval]['filled'] = True
+        technical_indicators                  = indicators.calculate(klines[interval], spot)
+        result                                = indicators.advice(technical_indicators)
+        indicators_advice[interval]['value']  = result[0]
+        indicators_advice[interval]['level']  = result[1]
 
         # Check if indicator advice is within range
         if (indicators_advice[interval]['value'] >= use_indicators['minimum']) and (indicators_advice[interval]['value'] <= use_indicators['maximum']):
@@ -314,6 +315,53 @@ def advice_buy(indicators_advice, orderbook_advice, trade_advice, use_indicators
     # Return all data
     return indicators_advice, spread_advice, orderbook_advice, trade_advice
 
+# Calculate the average of all active intervals
+def indicators_average(indicators_advice, intervals, use_indicators):
+    
+    # Debug
+    debug  = False
+    
+    # Initialize variables
+    count          = 0
+    total_value    = 0
+    average_filled = True
+    average_level  = "Neutral"
+    average_result = False
+    average_value  = 0
+    
+    # Exclude interval 0
+    filtered_intervals = {k: v for k, v in intervals.items() if v != 0}
+
+    # Check if all required intervals are filled
+    for interval in filtered_intervals.values():
+        if not indicators_advice[interval]['filled']:
+            average_filled = False
+    
+    # Calculate the average value
+    if average_filled:
+        for interval in filtered_intervals.values():
+            total_value += indicators_advice[interval]['value']
+            count += 1
+        average_value = total_value / count
+        average_level = indicators.technicals_advice(average_value)
+        if average_value >= use_indicators['minimum'] and average_value <= use_indicators['maximum']:
+            average_result = True
+
+    # Assign average indicators
+    if average_filled:
+        indicators_advice[0]['filled'] = average_filled
+        indicators_advice[0]['level']  = average_level
+        indicators_advice[0]['result'] = average_result
+        indicators_advice[0]['value']  = average_value
+
+    # Dump variables
+    if debug:
+        defs.announce(f"Dump of intervals advice variable:")
+        pprint.pprint(indicators_advice)
+        pprint.pprint(intervals)
+       
+    return indicators_advice
+
 # Determines buy decission and outputs to stdout
 def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, interval, intervals):
             
@@ -336,29 +384,49 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
         message = f"Update {interval}m: "
 
     # Report and check indicators
-    if use_indicators['enabled']:    
-        if intervals[1] != 0:
-            if indicators_advice[intervals[1]]['result']:
-                do_buy[1] = True
-            message += f"{intervals[1]}m: {indicators_advice[intervals[1]]['value']:.2f} "
-            message += report_buy(indicators_advice[intervals[1]]['result']) + ", "
-        else:
-            do_buy[1] = True
-        if intervals[2] != 0:
-            if indicators_advice[intervals[2]]['result']:
-                do_buy[2] = True
-            message += f"{intervals[2]}m: {indicators_advice[intervals[2]]['value']:.2f} "
-            message += report_buy(indicators_advice[intervals[2]]['result']) + ", "
-        else:
-            do_buy[2] = True
-        if intervals[3] != 0:
-            if indicators_advice[intervals[3]]['result']:
-                do_buy[3] = True
-            message +=f"{intervals[3]}m: {indicators_advice[intervals[3]]['value']:.2f} "
-            message += report_buy(indicators_advice[intervals[3]]['result']) + ", "                
-        else:
-            do_buy[3] = True
+    if use_indicators['enabled']:
+
+        # Use average of all active intervals
+        if config.interval_average:        
+
+            # Calculate average
+            indicators_advice = indicators_average(indicators_advice, intervals, use_indicators)
+            do_buy[1] = indicators_advice[intervals[0]]['result']
+            do_buy[2] = indicators_advice[intervals[0]]['result']
+            do_buy[3] = indicators_advice[intervals[0]]['result']
+                        
+            # Create message
+            for i in range(1, 4):
+                if intervals[i] != 0:
+                    message += f"{intervals[i]}m: "
+                    if indicators_advice[intervals[i]]['filled']:
+                        message +=  f"{indicators_advice[intervals[i]]['value']:.2f}, " 
+                    else:
+                        message += "?, "
+            if indicators_advice[intervals[0]]['filled']:
+                message += f"average: {indicators_advice[intervals[0]]['value']:.2f} "
+            else:
+                message += "average: ? "
+            message += report_buy(indicators_advice[intervals[0]]['result']) + ", "
+
+        # Use all intervals seperatly
+        if not config.interval_average:
+
+            # Create message
+            for i in range(1, 4):
+                if intervals[i] != 0:
+                    if indicators_advice[intervals[i]]['result']:
+                        do_buy[i] = True
+                    message += f"{intervals[i]}m: "
+                    if indicators_advice[intervals[i]]['filled']:
+                        message += f"{indicators_advice[intervals[i]]['value']:.2f} " 
+                    else:
+                        message += "? "
+                    message += report_buy(indicators_advice[intervals[i]]['result']) + ", "
+                else:
+                    do_buy[i] = True
     else:
+        # Indicators are disabled
         do_buy[1] = True
         do_buy[2] = True
         do_buy[3] = True
@@ -415,7 +483,7 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
         print(orderbook_advice, "\n")
 
     # Return result
-    return can_buy, message
+    return can_buy, message, indicators_advice
 
 # Deal with API rate limit
 def rate_limit(response):

@@ -38,6 +38,7 @@ debug                        = config.debug                   # Debug
 symbol                       = config.symbol                  # Symbol bot used for trading
 klines                       = {}                             # Klines for symbol
 intervals                    = {}                             # Klines intervals
+intervals[0]                 = 0                              # Average of all active intervals
 intervals[1]                 = config.interval_1              # Klines timeframe interval 1
 intervals[2]                 = config.interval_2              # Klines timeframe interval 2
 intervals[3]                 = config.interval_3              # Klines timeframe interval 3
@@ -118,9 +119,10 @@ if not config.indicators_enabled:                             # Set intervals to
 
 # Initialize indicators advice variable
 indicators_advice               = {}
-indicators_advice[intervals[1]] = {'result': True, 'value': 0, 'level': 'Neutral'}
-indicators_advice[intervals[2]] = {'result': True, 'value': 0, 'level': 'Neutral'}
-indicators_advice[intervals[3]] = {'result': True, 'value': 0, 'level': 'Neutral'}
+indicators_advice[intervals[0]] = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Average advice of all active intervals
+indicators_advice[intervals[1]] = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 1
+indicators_advice[intervals[2]] = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 2
+indicators_advice[intervals[3]] = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 3
 
 # Initialize orderbook advice variable
 orderbook_advice                = {}
@@ -143,6 +145,7 @@ depth_data                      = {'time': [], 'buy_perc': [], 'sell_perc': []}
 # Locking handle_ticker function to prevent race conditions
 lock_ticker                     = {}
 lock_ticker['time']             = defs.now_utc()[4]
+lock_ticker['delay']            = 1000
 lock_ticker['enabled']          = False
 
 
@@ -566,6 +569,7 @@ def buy_matrix(spot, active_order, all_buys, interval):
         result            = defs.decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, interval, intervals)
         can_buy           = result[0]
         message           = result[1]
+        indicators_advice = result[2]
         defs.announce(message)
 
         # Determine distance of trigger price and execute buy decission
@@ -690,7 +694,7 @@ def main():
             # Simulate or fetch the latest ticker message
             current_time      = defs.now_utc()[4]
             simulated_message = simulated_ticker()
-            if current_time - lock_ticker['time'] > 1000:
+            if current_time - lock_ticker['time'] > lock_ticker['delay']:
                 handle_ticker(simulated_message)
             sleep(1)
         except (RemoteDisconnected, ProtocolError, ChunkedEncodingError) as e:

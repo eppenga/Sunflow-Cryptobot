@@ -49,13 +49,15 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
         stuck['time']  = defs.now_utc()[4]
     if current_time - stuck['time'] > stuck['interval']:
         defs.announce(f"Doing an additional check on {active_order['side'].lower()} order")
-        stuck['check'] = True
-        stuck['time']  = 0
         do_check_order = True
 
     # Current price crossed trigger price
     if do_check_order:
 
+        # Reset stuck
+        stuck['check']= True
+        stuck['time'] = 0
+        
         # Has trailing endend, check if order does still exist
         order = {}
         message = defs.announce("session: get_open_orders")
@@ -86,10 +88,6 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
                 currency_format = info['basePrecision']
             message_1 = f"{active_order['side']} order closed for {defs.format_number(active_order['qty'], currency_format)} {currency} "
             message_1 = message_1 + f"at trigger price {defs.format_number(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
-            
-            # Reset counters
-            stuck['check']= True
-            stuck['time'] = 0
             
             # Close trailing process
             result       = close_trail(active_order, all_buys, all_sells, info)
@@ -241,11 +239,7 @@ def close_trail(active_order, all_buys, all_sells, info):
         
         # Create new all buys database
         all_buys = database.register_sell(all_buys, all_sells, info)
-        
-        # Rebalance new database *** CHECK ***
-        #if config.database_rebalance:
-        #    all_buys = orders.rebalance(all_buys, info)
-        
+                
         # Clear all sells
         all_sells = []
 

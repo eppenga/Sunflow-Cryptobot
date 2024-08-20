@@ -162,35 +162,47 @@ total_time_diff = df_revenue['createdTime'].max() - df_revenue['createdTime'].mi
 days_diff = total_time_diff.total_seconds() / (24 * 3600)
 if days_diff > 0:
     avg_profit_per_day = df_revenue['revenue'].sum() / days_diff
-    print(f"Daily profit  : {defs.format_number(avg_profit_per_day, info['quotePrecision'])} {info['quoteCoin']} / day")
+    message_dp       = f"Daily profit  : {defs.format_number(avg_profit_per_day, info['quotePrecision'])} {info['quoteCoin']} / day"
+    message_dp_graph = f"Daily profit: {defs.format_number(avg_profit_per_day, info['quotePrecision'])} {info['quoteCoin']}\n"
+    print(message_dp)
 else:
-    print("Daily profit  : N/A (Only one day of data)")
+    message_dp       = "Daily profit  : N/A (Only one day of data)"
+    message_dp_graph = "Daily profit  : N/A"
+    print(message_dp)
 
 print(f"Total profit  : {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']}")
 
 print()
 
-# Create a figure with two subplots
-plt.figure(figsize=(14, 10))
+# Create a figure and subplots
+fig, axes = plt.subplots(2, 1, figsize=(14, 10))
+
+# Add top left text
+message = f"Free to spend: {defs.format_number(equity_quote, info['quotePrecision'])} {info['quoteCoin']}\n"
+message = message + f"Total value  : {defs.format_number(spot * equity_base + equity_quote, info['quotePrecision'])} {info['quoteCoin']}"
+fig.text(0.01, 0.98, message, ha='left', va='top', fontsize=12, fontname='DejaVu Sans Mono')
+
+# Add top right text
+message = message_dp_graph
+message = message + f"Total profit: {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']}"
+fig.text(0.99, 0.98, message, ha='right', va='top', fontsize=12, fontname='DejaVu Sans Mono')
 
 # First subplot: Histogram of average prices
-plt.subplot(2, 1, 1)
-sns.histplot(df_all_buys['avgPrice'], bins=20, kde=False)
-plt.title('Distribution of Outstanding Orders')
-plt.title('Distribution of Outstanding Orders')
-plt.xlabel('Average Price')
-plt.ylabel('Frequency')
+sns.histplot(df_all_buys['avgPrice'], bins=20, kde=False, ax=axes[0])
+axes[0].set_title('Distribution of Outstanding Orders')
+axes[0].set_xlabel('Average Price')
+axes[0].set_ylabel('Frequency')
 
 # Second subplot: Profit per day
-plt.subplot(2, 1, 2)
-sns.lineplot(data=profit_per_day, x='date', y='revenue', marker='o')
-plt.title('Profit per Day')
-plt.xlabel('Date')
-plt.ylabel(f'Profit ({info["quoteCoin"]})')
-plt.xticks(rotation=45)
+sns.lineplot(data=profit_per_day, x='date', y='revenue', marker='o', ax=axes[1])
+axes[1].set_title('Profit per Day')
+axes[1].set_xlabel('Date')
+axes[1].set_ylabel(f'Profit ({info["quoteCoin"]})')
+axes[1].set_xticks(axes[1].get_xticks())  # Ensure xticks are set
+axes[1].tick_params(axis='x', rotation=45)  # Rotate xticks
 
-# Adjust layout to prevent overlap
-plt.tight_layout()
+# Adjust layout to prevent overlap and give space for the text
+plt.tight_layout(rect=[0, 0, 1, 0.96])
 
 # Save the plot to the specified file
 plt.savefig(config.data_suffix + "analysis.png")

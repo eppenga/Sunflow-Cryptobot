@@ -5,10 +5,11 @@
 ## CHANGE TO YOUR LIKING
 
 # Default values
-symbol              = "XRPUSDC"     # Symbol bot used for trading
+symbol              = "XRPUSDC"    # Symbol bot used for trading
 interval_1          = 1            # Klines timeframe default interval
 interval_2          = 3            # Klines timeframe first confirmation interval, set to 0 if you do not want to use this
 interval_3          = 5            # Klines timeframe second confirmation interval, set to 0 if you do not want to use this
+interval_average    = False        # Calculate the average over the active intervals or treat them separately
 limit               = 250          # Number of klines downloaded, used for calculcating technical indicators
 profit              = 0.400        # Minimum profit percentage
 distance            = 0.100        # Trigger price distance percentage when Fixed is used by wiggle
@@ -30,8 +31,8 @@ wave_timeframe      = 10000        # Timeframe in ms to measure wave length, use
 wave_multiplier     = 1.00         # Multiply wave percentage by this multiplier
 
 # Exchange keys (ALWAYS KEEP THESE SECRET)
-api_key             = "123456"                                   # API Key
-api_secret          = "123456"                                   # API Secret
+api_key             = "123456"     # API Key
+api_secret          = "123456"     # API Secret
 
 
 ## EXPERIMENTAL PARAMETERS
@@ -87,6 +88,6 @@ revenue_log_sides   = True                                       # Log buy and s
 wallet_report       = True                                       # Report wallet value, database and coins to stdout
 session_report      = True                                       # Report exchange sessions to stdout
 database_rebalance  = True                                       # Sync the base asset of the buys database to the exchange
-protect_peaks       = True                                       # Slow dow distance to minimum
-quick_check         = False                                      # Quickly check orders on startup
+protect_peaks       = True                                       # Slow down distance to minimum
+quick_check         = False                                      # Quick check orders on startup
 error_level         = 1                                          # Error level 0 is extended, 1 is normal
