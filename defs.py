@@ -8,6 +8,8 @@ from pathlib import Path
 from datetime import datetime, timezone
 import defs, indicators
 import apprise, inspect, math, pprint, time
+import pandas as pd
+import numpy as np
 
 # Load config
 config = load_config()
@@ -803,3 +805,79 @@ def calculate_total_values(trades):
     
     # Return totals
     return total_buy, total_sell, total_all, (total_buy / total_all) * 100, (total_sell / total_all) * 100
+
+# Calculate optimum profit and default trigger price distance based on previous prices
+def optimize(prices, profit, profit_initial, distance, distance_initial, current_time):
+    
+    # Debug
+    debug = False
+
+    # Start the timer
+    start_time = time.time()
+    
+    # Initialize variables
+    length       = 10                      # Length over which the volatility is calculated
+    interval     = '30min'                 # Interval used for indicator KPI (in our case historical volatility) *** CHECK *** We can make this more complex and better
+    limit_min    = config.limit_spot_min   # Mimimum number of prices to use
+    limit_max    = config.limit_spot_max   # Maximum number of prices to use
+    volatility   = 0                       # Volatility deviation
+    new_profit   = profit                  # Proposed new profit
+    new_distance = distance                # Proposed new distance
+   
+    # Debug
+    if current_time - prices['time'][0] < limit_min:
+        defs.announce(f"Optimization not possible yet, missing {current_time - prices['time'][0]} ms of price data")
+        return profit, distance
+
+    # Convert the time and price data into a DataFrame
+    df = pd.DataFrame(prices)
+    
+    # Convert the 'time' column to datetime format
+    df['time'] = pd.to_datetime(df['time'], unit='ms')
+    
+    # Set the 'time' column as the index
+    df.set_index('time', inplace=True)
+    
+    # Resample the data to the specified interval
+    df_resampled = df['price'].resample(interval).last()
+    
+    # Drop any NaN values that may result from resampling
+    df_resampled.dropna(inplace=True)
+    
+    # Calculate the log returns
+    df_resampled = df_resampled.to_frame()
+    df_resampled['log_return'] = np.log(df_resampled['price'] / df_resampled['price'].shift(1))
+    
+    # Calculate the rolling volatility (standard deviation of log returns)
+    df_resampled['volatility'] = df_resampled['log_return'].rolling(window=length).std() * np.sqrt(length)
+    
+    # Calculate the average volatility
+    average_volatility = df_resampled['volatility'].mean()
+    
+    # Add a column for the deviation percentage from the average volatility
+    df_resampled['volatility_deviation_pct'] = ((df_resampled['volatility'] - average_volatility) / average_volatility)
+    
+    # Drop the 'log_return' column if not needed
+    df_resampled.drop(columns=['log_return'], inplace=True)
+    
+    # Calculate the elapsed time
+    elapsed_time = (time.time() - start_time) * 1000
+
+    # Get volatility deviation and calculate new price and distance
+    volatility = min(df_resampled['volatility_deviation_pct'].iloc[-1], 1)
+    if volatility > 0:
+        new_profit = profit_initial * (1 + volatility)
+        new_distance = (distance_initial / profit_initial) * new_profit
+   
+    if debug:
+        defs.announce("Optimized dataframe")
+        print(df_resampled)
+        print()
+        print(f"Time taken to calculate: {elapsed_time:.2f} milliseconds")
+   
+    # Report to stdout
+    if new_profit != profit:
+        defs.announce(f"Optimized new profit is {new_profit:.4f} % and distance is {new_distance:.4f} %")
+
+    # Return
+    return new_profit, new_distance

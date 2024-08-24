@@ -114,6 +114,9 @@ def get_klines(symbol, interval, limit):
 
 # Preload prices
 def get_prices(symbol, limit):
+
+    # Debug
+    debug = False
        
     # Initialize prices
     prices = {}
@@ -124,6 +127,9 @@ def get_prices(symbol, limit):
         'time' : kline_prices['time'],
         'price': kline_prices['close']
     }
+
+    # Report to stdout
+    defs.announce(f"Downloaded {limit} prices with 1 minute interval from exchange")
 
     # Return prices
     return prices

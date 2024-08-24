@@ -16,7 +16,7 @@ from pybit.unified_trading import HTTP
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import argparse, importlib, sys
+import argparse, importlib, pprint, sys
 
 # Load internal libraries
 import database, defs, orders, preload
@@ -45,6 +45,43 @@ session = HTTP(
     return_response_headers = True
 )
 
+# Initialize variables
+debug = False
+
+# Calculate time elements
+def calc_time(df):
+
+    # Calculate oldest and latest order times
+    first = df['createdTime'].min().strftime('%d-%m-%Y %H:%M:%S')
+    last = df['createdTime'].max().strftime('%d-%m-%Y %H:%M:%S')
+
+    # Calculate duration
+    start = df['createdTime'].min()
+    end   = df['createdTime'].max()
+    span   = end - start
+
+    # Calculate days, hours, minutes, and seconds
+    days    = span.days
+    seconds = span.seconds
+    hours   = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+
+    time_elements            = {}
+    time_elements['first']   = first
+    time_elements['last']    = last
+    time_elements['start']   = start
+    time_elements['end']     = end
+    time_elements['span']    = span
+    time_elements['days']    = days
+    time_elements['seconds'] = seconds
+    time_elements['hours']   = hours
+    time_elements['minutes'] = minutes
+    time_elements['seconds'] = seconds
+        
+    # Return time elements
+    return time_elements
+
 
 ### Analysis ###
 
@@ -70,29 +107,23 @@ all_buys = database.load(dbase_file, info)
 df_all_buys = pd.DataFrame(all_buys)
 df_revenue  = pd.read_csv(revenue_file)
 
+# Check if we can run
+if df_all_buys.empty or df_revenue.empty:
+    defs.announce("Not enough data available, no analysis possible")
+    exit()
+
 # Convert timestamps to readable dates
 df_all_buys['createdTime'] = pd.to_datetime(df_all_buys['createdTime'], unit='ms')
 df_all_buys['updatedTime'] = pd.to_datetime(df_all_buys['updatedTime'], unit='ms')
 df_revenue['createdTime'] = pd.to_datetime(df_revenue['createdTime'], unit='ms')
 
-# Filter the all buys dataframe for status = 'Closed'
+# Filter the dataframes
 df_all_buys = df_all_buys[df_all_buys['status'] == 'Closed']
+df_revenue  = df_revenue[df_revenue['side'] == 'Sell'] 
 
-# Calculate oldest and latest order times
-oldest_order = df_all_buys['createdTime'].min().strftime('%Y-%m-%d %H:%M:%S')
-latest_order = df_all_buys['createdTime'].max().strftime('%Y-%m-%d %H:%M:%S')
-
-# Calculate duration
-start_date = df_revenue['createdTime'].min()
-end_date = df_revenue['createdTime'].max()
-duration = end_date - start_date
-
-# Calculate days, hours, minutes, and seconds
-days = duration.days
-seconds = duration.seconds
-hours = seconds // 3600
-minutes = (seconds % 3600) // 60
-seconds = seconds % 60
+# Get time elements
+ab_elem = calc_time(df_all_buys)
+rv_elem = calc_time(df_revenue)
 
 # Get total wallet
 equity_base  = orders.get_equity(info['baseCoin'])
@@ -102,6 +133,17 @@ equity_quote = orders.get_equity(info['quoteCoin'])
 df_revenue['date'] = df_revenue['createdTime'].dt.date
 profit_per_day = df_revenue.groupby('date')['revenue'].sum().reset_index()
 
+# Debug
+if debug:
+    print("df_all_buys: ")
+    print(df_all_buys)
+    print("df_revenue:")    
+    print(df_revenue)
+    print()
+    pprint.pprint(ab_elem)
+    pprint.pprint(rv_elem)
+    print()
+
 # Output to stdout
 print("*** Sunflow Cryptobot Report ***\n")
 
@@ -109,10 +151,7 @@ print("Exchange data")
 print("=============")
 print(f"Base assets   : {defs.format_number(equity_base, info['basePrecision'])} {info['baseCoin']}")
 print(f"Spot price    : {defs.format_number(spot, info['tickSize'])} {info['quoteCoin']}")
-
-print()
-
-print(f"Base value    : {defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']} (spot * base)")
+print(f"Base value    : {defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']} (spot price * assets)")
 print(f"Quote value   : {defs.format_number(equity_quote, info['quotePrecision'])} {info['quoteCoin']} (free to spend by bot)")
 print(f"Total value   : {defs.format_number(spot * equity_base + equity_quote, info['quotePrecision'])} {info['quoteCoin']} (total bot value)")
 
@@ -121,21 +160,15 @@ print()
 print("Database data")
 print("=============")
 print(f"Order count   : {len(df_all_buys)} orders to sell")
-print(f"Oldest order  : {oldest_order} UTC")
-print(f"Newest order  : {latest_order} UTC")
+print(f"First order   : {ab_elem['first']} UTC")
+print(f"Last order    : {ab_elem['last']} UTC")
+print(f"Timespan      : {ab_elem['days']} days, {ab_elem['hours']} hours, {ab_elem['minutes']} minutes, {ab_elem['seconds']} seconds")
 
 print()
 
 print(f"Base assets   : {defs.format_number(df_all_buys['cumExecQty'].sum(), info['basePrecision'])} {info['baseCoin']} (from database)")
 print(f"Base assets   : {defs.format_number(equity_base, info['basePrecision'])} {info['baseCoin']} (from exchange)")
 print(f"Difference    : {defs.format_number(equity_base - df_all_buys['cumExecQty'].sum(), info['basePrecision'])} {info['baseCoin']} (synchronization misses)")
-
-print()
-
-print(f"Base value    : {defs.format_number(df_all_buys['cumExecValue'].sum(), info['quotePrecision'])} {info['quoteCoin']} (from database, buy value)")
-print(f"Base value    : {defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']} (from exchange, present value)")
-print(f"Difference    : {defs.format_number(df_all_buys['cumExecValue'].sum() - spot * equity_base, info['basePrecision'])} {info['quoteCoin']} (between buy value and present value)")
-print(f"Break even    : {defs.format_number(df_all_buys['cumExecValue'].sum() / df_all_buys['cumExecQty'].sum(), info['tickSize'])} {info['quoteCoin']} (equal to present value)")
 
 print()
 
@@ -147,15 +180,18 @@ print()
 
 print("Profit data")
 print("===========")
-print(f"Profit lines  : {len(df_revenue)} profit lines")
-print(f"Start date    : {df_revenue['createdTime'].min().strftime('%Y-%m-%d %H:%M:%S')} UTC")
-print(f"End date      : {df_revenue['createdTime'].max().strftime('%Y-%m-%d %H:%M:%S')} UTC")
-print(f"Uptime        : {days} days, {hours} hours, {minutes} minutes, {seconds} seconds")
+print(f"Sell count    : {len(df_revenue)} orders sold")
+print(f"First sell    : {rv_elem['first']} UTC")
+print(f"Last sell     : {rv_elem['last']} UTC")
+print(f"Timespan      : {rv_elem['days']} days, {rv_elem['hours']} hours, {rv_elem['minutes']} minutes, {rv_elem['seconds']} seconds")
 
 print()
+
 print(f"Average profit: {defs.format_number(df_revenue['revenue'].mean(), info['quotePrecision'])} {info['quoteCoin']} / trade")
 print(f"Minimum profit: {defs.format_number(df_revenue['revenue'].min(), info['quotePrecision'])} {info['quoteCoin']} / trade")
 print(f"Maximum profit: {defs.format_number(df_revenue['revenue'].max(), info['quotePrecision'])} {info['quoteCoin']} / trade")
+
+print()
 
 # Calculate the profit per day
 total_time_diff = df_revenue['createdTime'].max() - df_revenue['createdTime'].min()
@@ -170,6 +206,14 @@ else:
     message_dp_graph = "Daily profit  : N/A"
     print(message_dp)
 
+# Calculate today's profit
+today_date = pd.Timestamp('now').normalize()
+today_profit = df_revenue[df_revenue['createdTime'].dt.normalize() == today_date]['revenue'].sum()
+
+# Output today's profit
+print(f"Todays profit : {defs.format_number(today_profit, info['quotePrecision'])} {info['quoteCoin']} (today)")
+
+# Output total profit
 print(f"Total profit  : {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']}")
 
 print()

@@ -44,12 +44,16 @@ intervals[2]                 = config.interval_2              # Klines timeframe
 intervals[3]                 = config.interval_3              # Klines timeframe interval 3
 trades                       = {}                             # Trades for symbol
 limit                        = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
+limit_spot_min               = config.limit_spot_min          # Minimum miliseconds of previous spot price data
+limit_spot_max               = config.limit_spot_max          # Maximum miliseconds of previous spot price data
 ticker                       = {}                             # Ticker data, including lastPrice and time
 info                         = {}                             # Instrument info on symbol
 spot                         = 0                              # Spot price, always equal to lastPrice
 profit                       = config.profit                  # Minimum profit percentage
+profit_initial               = config.profit                  # Keep initial profit always stored 
 depth                        = config.depth                   # Depth in percentages used to calculate market depth from orderbook
 multiplier                   = config.multiplier              # Multiply minimum order quantity by this
+optimize                     = config.optimize                # Try to optimize the minimum profit and distance percentage
 prices                       = {}                             # Last {limit} prices based on ticker
 depth_data                   = {}                             # Depth buy and sell percentage indexed by time
 
@@ -90,6 +94,7 @@ active_order['previous']     = 0                              # Previous price
 active_order['current']      = 0                              # Current price
 active_order['wiggle']       = config.wiggle                  # Method to use to calculate trigger price distance
 active_order['distance']     = config.distance                # Trigger price distance percentage when set to default
+active_order['distance_ini'] = config.distance                # Keep initial distance always stored
 active_order['fluctuation']  = config.distance                # Trigger price distance percentage when set to wiggle
 active_order['wave']         = config.distance                # Trigger price distance percentage when set to wave
 active_order['orderid']      = 0                              # Orderid
@@ -161,14 +166,15 @@ def handle_ticker(message):
     try:
    
         # Declare some variables global
-        global spot, ticker, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker
+        global spot, ticker, profit, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker
 
         # Initialize variables
         ticker              = {}
         amend_code          = 0
         amend_error         = ""
         result              = ()
-        lock_ticker['time'] = defs.now_utc()[4]
+        current_time        = defs.now_utc()[4]
+        lock_ticker['time'] = current_time
         
         # Get ticker update
         ticker['time']      = int(message['ts'])
@@ -180,8 +186,11 @@ def handle_ticker(message):
         # Popup new price
         prices['time'].append(ticker['time'])
         prices['price'].append(ticker['lastPrice'])
-        prices['time'].pop(0)
-        prices['price'].pop(0)
+        
+        # Remove last price if necessary
+        if current_time - prices['time'][0] > limit_spot_max:
+            prices['time'].pop(0)
+            prices['price'].pop(0)
 
         # Show incoming message
         if debug: defs.announce(f"*** Incoming ticker with price {ticker['lastPrice']} {info['baseCoin']}, simulated = {ticker['simulated']} ***")
@@ -194,6 +203,12 @@ def handle_ticker(message):
         
         # Lock handle_ticker function
         lock_ticker['enabled'] = True        
+
+        # Calculate historical volatility and optimize profit and distance
+        if optimize:
+            result                   = defs.optimize(prices, profit, profit_initial, active_order['distance'], active_order['distance_ini'], current_time)
+            profit                   = result[0]
+            active_order['distance'] = result[1]
           
         # Run trailing if active
         if active_order['active']:
@@ -637,7 +652,7 @@ info                 = preload.get_info(symbol, spot, multiplier)
 all_buys             = database.load(config.dbase_file, info)
 all_buys             = preload.check_orders(all_buys, info)
 if config.database_rebalance: all_buys = orders.rebalance(all_buys, info)
-prices               = preload.get_prices(symbol, limit)
+prices               = preload.get_prices(symbol, 1000)
 
 # Announce start
 print("\n*** Starting ***\n")
