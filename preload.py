@@ -129,7 +129,7 @@ def get_prices(symbol, limit):
     }
 
     # Report to stdout
-    defs.announce(f"Downloaded {limit} prices with 1 minute interval from exchange")
+    defs.announce(f"Downloaded {limit} prices with 1m interval from exchange")
 
     # Return prices
     return prices
