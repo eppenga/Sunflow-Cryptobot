@@ -37,6 +37,11 @@ api_secret          = "123456"     # API Secret
 
 ## EXPERIMENTAL PARAMETERS
 
+# Optimized price and trigger distance
+optimize            = False        # Try to optimize the minimum profit and distance percentage
+limit_spot_min      = 25920000     # Minimum miliseconds of previous spot price data (8,640,000 is one day)
+limit_spot_max      = 864000000    # Maximum miliseconds of previous spot price data
+
 # Orderbook
 orderbook_enabled   = False        # Use orderbook as buy indicator
 orderbook_minimum   = 0            # Minimum orderbook buy depth percentage
