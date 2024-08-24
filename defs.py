@@ -876,8 +876,7 @@ def optimize(prices, profit, profit_initial, distance, distance_initial, current
         print(f"Time taken to calculate: {elapsed_time:.2f} milliseconds")
    
     # Report to stdout
-    if new_profit != profit:
-        defs.announce(f"Optimized new profit is {new_profit:.4f} % and distance is {new_distance:.4f} %")
+    defs.announce(f"Optimized profit is {new_profit:.4f} %, distance is {new_distance:.4f} % and age is {current_time - prices['time']} ms")
 
     # Return
     return new_profit, new_distance
