@@ -222,12 +222,14 @@ print()
 fig, axes = plt.subplots(2, 1, figsize=(14, 10))
 
 # Add top left text
-message = f"Free to spend: {defs.format_number(equity_quote, info['quotePrecision'])} {info['quoteCoin']}\n"
+message = f"Quote assets : {defs.format_number(equity_base, info['basePrecision'])} {info['baseCoin']}\n"
+message = message + f"Free to spend: {defs.format_number(equity_quote, info['quotePrecision'])} {info['quoteCoin']}\n"
 message = message + f"Total value  : {defs.format_number(spot * equity_base + equity_quote, info['quotePrecision'])} {info['quoteCoin']}"
 fig.text(0.01, 0.98, message, ha='left', va='top', fontsize=12, fontname='DejaVu Sans Mono')
 
 # Add top right text
 message = message_dp_graph
+message = message + f"Todays profit: {defs.format_number(today_profit, info['quotePrecision'])} {info['quoteCoin']}\n"
 message = message + f"Total profit: {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']}"
 fig.text(0.99, 0.98, message, ha='right', va='top', fontsize=12, fontname='DejaVu Sans Mono')
 
