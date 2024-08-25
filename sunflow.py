@@ -203,13 +203,7 @@ def handle_ticker(message):
         
         # Lock handle_ticker function
         lock_ticker['enabled'] = True        
-
-        # Calculate historical volatility and optimize profit and distance
-        if optimize:
-            result                   = defs.optimize(prices, profit, profit_initial, active_order['distance'], active_order['distance_ini'], current_time)
-            profit                   = result[0]
-            active_order['distance'] = result[1]
-          
+         
         # Run trailing if active
         if active_order['active']:
             active_order['current'] = ticker['lastPrice']
@@ -220,7 +214,15 @@ def handle_ticker(message):
 
         # Has price changed, then run all kinds of actions
         if spot != ticker['lastPrice']:
+
+            # Store new spot price
             new_spot = ticker['lastPrice']
+
+            # Optimize profit and distance percentages
+            if optimize:
+                result                   = defs.optimize(prices, profit, profit_initial, active_order['distance'], active_order['distance_ini'])
+                profit                   = result[0]
+                active_order['distance'] = result[1]
 
             # Check if and how much we can sell
             result                  = orders.check_sell(new_spot, profit, active_order, all_buys, info)
@@ -651,8 +653,13 @@ spot                 = ticker['lastPrice']
 info                 = preload.get_info(symbol, spot, multiplier)
 all_buys             = database.load(config.dbase_file, info)
 all_buys             = preload.check_orders(all_buys, info)
-if config.database_rebalance: all_buys = orders.rebalance(all_buys, info)
+if config.database_rebalance: 
+    all_buys = orders.rebalance(all_buys, info)
 prices               = preload.get_prices(symbol, 1000)
+if optimize:
+    result           = defs.optimize(prices, profit, profit_initial, active_order['distance'], active_order['distance_ini'])
+    profit           = result[0]
+    active_order['distance'] = result[1]
 
 # Announce start
 print("\n*** Starting ***\n")
