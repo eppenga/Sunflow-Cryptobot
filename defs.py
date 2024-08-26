@@ -23,8 +23,9 @@ for urls, tag in urls_tags:
     for url in urls:
         apobj.add(url, tag=tag)
 
-# Register halt or continue
-halt_sunflow = False
+# Initialize variables 
+df_errors    = 0        # Dataframe error counter
+halt_sunflow = False    # Register halt or continue
 
 # Add new kline and remove the oldest
 def new_kline(kline, klines):
@@ -163,6 +164,11 @@ def log_error(exception):
 
     # Create message
     message = timestamp + f"{filename}: {functionname}: {exception}"
+
+    # Error: Dataframe failure
+    if ("(30908)" in exception) or ("Length of values" in exception):
+        defs.announce(f"*** Warning: Dataframe issue for the {df_errors} time! ***", True, 1)
+        halt_execution = False
 
     # Error: Remote disconnected
     if ("(ErrCode: 12940)" in exception) or ("RemoteDisconnected" in exception):
@@ -811,6 +817,9 @@ def optimize(prices, profit, profit_initial, distance, distance_initial):
     
     # Debug
     debug = False
+
+    # Global error counter
+    global df_errors, halt_sunflow
   
     # Initialize variables
     length       = 10                      # Length over which the volatility is calculated
@@ -873,13 +882,22 @@ def optimize(prices, profit, profit_initial, distance, distance_initial):
         
     # In case of failure
     except Exception as e:
+        df_errors  = df_errors + 1
         prices_log = pprint.pformat(prices)
         with open('prices_error.txt', 'w') as file:
             file.write(prices_log)
         defs.log_error(e)
+        
+        # After three consecutive errors halt
+        if df_errors > 2:
+            halt_sunflow = True
+        return profit, distance
    
     # Calculate the elapsed time
     elapsed_time = defs.now_utc()[4] - start_time
+
+    # Reset error counter
+    df_errors = 0
   
     # Report to stdout
     defs.announce(f"{elapsed_time} ms: Optimized profit {new_profit:.4f} %, trigger distance {new_distance:.4f} % and age {start_time - prices['time'][0]} ms")
