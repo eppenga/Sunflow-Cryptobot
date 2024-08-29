@@ -42,20 +42,27 @@ intervals[0]                 = 0                              # Average of all a
 intervals[1]                 = config.interval_1              # Klines timeframe interval 1
 intervals[2]                 = config.interval_2              # Klines timeframe interval 2
 intervals[3]                 = config.interval_3              # Klines timeframe interval 3
-trades                       = {}                             # Trades for symbol
 limit                        = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
-limit_spot_min               = config.limit_spot_min          # Minimum miliseconds of previous spot price data
-limit_spot_max               = config.limit_spot_max          # Maximum miliseconds of previous spot price data
+trades                       = {}                             # Trades for symbol
 ticker                       = {}                             # Ticker data, including lastPrice and time
 info                         = {}                             # Instrument info on symbol
 spot                         = 0                              # Spot price, always equal to lastPrice
 profit                       = config.profit                  # Minimum profit percentage
-profit_initial               = config.profit                  # Keep initial profit always stored 
 depth                        = config.depth                   # Depth in percentages used to calculate market depth from orderbook
 multiplier                   = config.multiplier              # Multiply minimum order quantity by this
-optimize                     = config.optimize                # Try to optimize the minimum profit and distance percentage
 prices                       = {}                             # Last {limit} prices based on ticker
 depth_data                   = {}                             # Depth buy and sell percentage indexed by time
+
+# Optimize profit and trigger price distance
+optimizer                    = {}                             # Profit and trigger price distance optimizer
+optimizer['enabled']         = config.optimizer               # Try to optimize the minimum profit and distance percentage
+optimizer['profit']          = config.profit                  # Initial profit percentage when Sunflow started, will never change
+optimizer['distance']        = config.distance                # Initial trigger price distance percentage when Sunflow started, will never change
+optimizer['interval']        = config.optimizer_interval      # Interval used for indicator KPI
+optimizer['limit_min']       = config.optimizer_limit_min     # Minimum miliseconds of spot price data
+optimizer['limit_max']       = config.optimizer_limit_max     # Maximum miliseconds of spot price data
+optimizer['adj_min']         = config.optimizer_adj_min       # Minimum profit and trigger price adjustment
+optimizer['adj_max']         = config.optimizer_adj_max       # Maximum profit and trigger price adjustment
 
 # Minimum spread between historical buy orders
 use_spread                   = {}                             # Spread
@@ -67,6 +74,7 @@ use_indicators               = {}                             # Technical indica
 use_indicators['enabled']    = config.indicators_enabled      # Use technical indicators as buy trigger
 use_indicators['minimum']    = config.indicators_minimum      # Minimum advice value
 use_indicators['maximum']    = config.indicators_maximum      # Maximum advice value
+
 
 # Orderbook
 use_orderbook                = {}                             # Orderbook
@@ -188,7 +196,7 @@ def handle_ticker(message):
         prices['price'].append(ticker['lastPrice'])
         
         # Remove last price if necessary
-        if current_time - prices['time'][0] > limit_spot_max:
+        if current_time - prices['time'][0] > optimizer['limit_max']:
             prices['time'].pop(0)
             prices['price'].pop(0)
 
@@ -219,10 +227,11 @@ def handle_ticker(message):
             new_spot = ticker['lastPrice']
 
             # Optimize profit and distance percentages
-            if optimize:
-                result                   = defs.optimize(prices, profit, profit_initial, active_order['distance'], active_order['distance_ini'])
-                profit                   = result[0]
-                active_order['distance'] = result[1]
+            if optimizer['enabled']:
+                result       = defs.optimize(prices, profit, active_order, optimizer)
+                profit       = result[0]
+                active_order = result[1]
+                optimizer    = result[2]
 
             # Check if and how much we can sell
             result                  = orders.check_sell(new_spot, profit, active_order, all_buys, info)
@@ -656,10 +665,11 @@ all_buys             = preload.check_orders(all_buys, info)
 if config.database_rebalance: 
     all_buys = orders.rebalance(all_buys, info)
 prices               = preload.get_prices(symbol, 1000)
-if optimize:
-    result           = defs.optimize(prices, profit, profit_initial, active_order['distance'], active_order['distance_ini'])
-    profit           = result[0]
-    active_order['distance'] = result[1]
+if optimizer['enabled']:
+    result       = defs.optimize(prices, profit, active_order, optimizer)
+    profit       = result[0]
+    active_order = result[1]
+    optimizer    = result[2]
 
 # Announce start
 print("\n*** Starting ***\n")
