@@ -37,10 +37,13 @@ api_secret          = "123456"     # API Secret
 
 ## EXPERIMENTAL PARAMETERS
 
-# Optimized price and trigger distance
-optimize            = False        # Try to optimize the minimum profit and distance percentage
-limit_spot_min      = 25920000     # Minimum miliseconds of previous spot price data (8,640,000 is one day)
-limit_spot_max      = 864000000    # Maximum miliseconds of previous spot price data
+# Optimizer
+optimizer           = False        # Try to optimize the minimum profit and trigger price distance percentage
+optimizer_interval  = '30min'      # Interval used for indicator KPI
+optimizer_limit_min = 25920000     # Minimum miliseconds of spot price data (8,640,000 is one day)
+optimizer_limit_max = 864000000    # Maximum miliseconds of spot price data
+optimizer_adj_min   = -50          # Minimum profit and trigger price adjustment (50 = halve)
+optimizer_adj_max   = 100          # Maximum profit and trigger price adjustment (100 = double)
 
 # Orderbook
 orderbook_enabled   = False        # Use orderbook as buy indicator
