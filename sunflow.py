@@ -10,6 +10,7 @@ from requests.exceptions import ChunkedEncodingError
 from urllib3.exceptions import ProtocolError
 from http.client import RemoteDisconnected
 import argparse, importlib, pprint, sys, traceback
+import pandas as pd
 
 # Load internal libraries
 import database, defs, preload, trailing, orders
@@ -63,6 +64,7 @@ optimizer['limit_min']       = config.optimizer_limit_min     # Minimum miliseco
 optimizer['limit_max']       = config.optimizer_limit_max     # Maximum miliseconds of spot price data
 optimizer['adj_min']         = config.optimizer_adj_min       # Minimum profit and trigger price adjustment
 optimizer['adj_max']         = config.optimizer_adj_max       # Maximum profit and trigger price adjustment
+optimizer['df']              = pd.DataFrame()                 # Dataframe is empty at start
 
 # Minimum spread between historical buy orders
 use_spread                   = {}                             # Spread
@@ -169,12 +171,12 @@ def handle_ticker(message):
     
     # Debug
     debug = False
-    
+       
     # Errors are not reported within websocket
     try:
    
         # Declare some variables global
-        global spot, ticker, profit, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker
+        global spot, ticker, profit, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker, optimizer
 
         # Initialize variables
         ticker              = {}

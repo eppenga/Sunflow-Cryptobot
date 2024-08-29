@@ -846,7 +846,7 @@ def resample_optimzer(prices, interval):
 
 # Calculate optimum profit and default trigger price distance based on previous prices
 def optimize(prices, profit, active_order, optimizer):
-    
+       
     # Debug
     debug = False
 
@@ -874,9 +874,11 @@ def optimize(prices, profit, active_order, optimizer):
         ## Create a dataframe in two steps, we do this for speed reasons. The first part of the dataframe is kept in
         ## like a cache and then we always add the last one or two intervals. 
 
-        # Resample and create dataframe for the first time
-        if not optimizer['df']:
+        # Resample and create dataframe for the first time or get it from cache
+        if optimizer['df'].empty:
             df = resample_optimzer(prices, interval)
+        else:
+            df = optimizer['df']
         
         # Get the timestamp of the last item in the dataframe in miliseconds
         last_timestamp = int(df.index[-1].timestamp() * 1000)
@@ -886,12 +888,19 @@ def optimize(prices, profit, active_order, optimizer):
             'price': [price for price, time in zip(prices['price'], prices['time']) if time > last_timestamp],
             'time': [time for time in prices['time'] if time > last_timestamp]
         }
-        
+
         # Create a dataframe from the new prices
         df_new         = pd.DataFrame(prices_new)
         df_new['time'] = pd.to_datetime(df_new['time'], unit='ms')
         df_new.set_index('time', inplace=True)
-                
+
+        # Debug
+        if debug:
+            defs.announce("Dataframes to be concatenated")
+            print(df)
+            print()
+            print(df_new)
+
         # Concatenate the two dataframes
         df = pd.concat([df, df_new])
 
@@ -923,7 +932,7 @@ def optimize(prices, profit, active_order, optimizer):
         profit_new   = optimizer['profit'] * (1 + volatility)
         distance_new = (optimizer['distance'] / optimizer['profit']) * profit_new
 
-        # Debug    
+        # Debug
         if debug:
             defs.announce("Optimized full dataframe:")
             print(df)
