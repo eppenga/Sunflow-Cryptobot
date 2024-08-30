@@ -5,7 +5,7 @@
 # Load libraries
 from loader import load_config
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import defs, indicators
 import apprise, inspect, math, pprint, time
 import pandas as pd
@@ -106,7 +106,7 @@ def check_spread(all_buys, spot, spread):
     # Return buy advice
     return can_buy, near
 
-# Return timestamp according to UTC
+# Return timestamp according to UTC and offset
 def now_utc():
     
     # Current UTC datetime
@@ -118,7 +118,12 @@ def now_utc():
     timestamp_3  = str(milliseconds) + " | "
     timestamp_4  = int(time.time() * 1000)
     
-    return timestamp_0, timestamp_1, timestamp_2, timestamp_3, timestamp_4
+    # Current UTC datetime and offset
+    offset_time  = current_time + timedelta(hours=config.time_offset)
+    timestamp_5  = offset_time.strftime('%Y-%m-%d %H:%M:%S') + f'.{int(milliseconds * 100):02d}'
+    timestamp_6  = offset_time.strftime('%Y-%m-%d %H:%M:%S') + f'.{int(milliseconds * 100):02d}' + " | " + config.symbol + ": "
+    
+    return timestamp_0, timestamp_1, timestamp_2, timestamp_3, timestamp_4, timestamp_5, timestamp_6
 
 # Log all responses from exchange
 def log_exchange(response, message):
@@ -598,7 +603,7 @@ def announce(message, to_group_1=False, level_1=1, to_group_2=False, level_2=1):
     call_frame   = stack[1]
     filename     = Path(call_frame.filename).name
     functionname = call_frame.function
-    timestamp    = now_utc()[1]
+    timestamp    = now_utc()[6]
 
     # Safeguard from type errors
     message = str(message)
