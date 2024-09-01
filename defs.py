@@ -879,13 +879,14 @@ def optimize(prices, profit, active_order, optimizer):
     # Check if we can optimize
     if start_time - prices['time'][0] < optimizer['limit_min']:
         defs.announce(f"Optimization not possible yet, missing {start_time - prices['time'][0]} ms of price data")
-        return profit, active_order
+        return profit, active_order, optimizer
 
     # Try to optimize
     try:
 
         ## Create a dataframe in two steps, we do this for speed reasons. The first part of the dataframe is kept in
         ## like a cache and then we always add the last one or two intervals. 
+
 
         # Resample and create dataframe for the first time or get it from cache
         if optimizer['df'].empty:
@@ -921,6 +922,7 @@ def optimize(prices, profit, active_order, optimizer):
         df = df['price'].resample(interval).last()
         df.dropna(inplace=True)
 
+
         ## Here we calculate the optimizer KPI, in this case volatility, but you can use anything you like
 
         # Calculate the log returns
@@ -955,16 +957,15 @@ def optimize(prices, profit, active_order, optimizer):
         
     # In case of failure
     except Exception as e:
+        
+        # Count the errors and log
         df_errors  = df_errors + 1
-        prices_log = pprint.pformat(prices)
-        with open('prices_error.txt', 'w') as file:
-            file.write(prices_log)
         defs.log_error(e)
         
         # After three consecutive errors halt
         if df_errors > 2:
             halt_sunflow = True
-        return profit, active_order
+        return profit, active_order, optimizer
    
     # Calculate the elapsed time
     elapsed_time = defs.now_utc()[4] - start_time
