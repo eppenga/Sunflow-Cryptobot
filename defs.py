@@ -857,7 +857,7 @@ def resample_optimzer(prices, interval):
     # Return dataframe
     return df_resampled
 
-# Calculate optimum profit and default trigger price distance based on previous prices
+# Optimize profit and default trigger price distance based on previous prices
 def optimize(prices, profit, active_order, optimizer):
        
     # Debug
@@ -867,14 +867,14 @@ def optimize(prices, profit, active_order, optimizer):
     global df_errors, halt_sunflow
   
     # Initialize variables
-    volatility   = 0                          # Volatility deviation
-    length       = 10                         # Length over which the volatility is calculated
-    interval     = optimizer['interval']      # Interval used for indicator KPI (in our case historical volatility) *** CHECK *** We can make this more complex and better
-    profit       = profit                     # Current profit
-    profit_new   = profit                     # Proposed new profit to be
-    distance     = active_order['distance']   # Current distance
-    distance_new = active_order['distance']   # Proposed new distance to be
-    start_time   = defs.now_utc()[4]          # Current time
+    volatility   = 0                                    # Volatility deviation
+    length       = 10                                   # Length over which the volatility is calculated
+    interval     = str(optimizer['interval']) + "min"   # Interval used for indicator KPI (in our case historical volatility)
+    profit       = profit                               # Current profit
+    profit_new   = profit                               # Proposed new profit to be
+    distance     = active_order['distance']             # Current distance
+    distance_new = active_order['distance']             # Proposed new distance to be
+    start_time   = defs.now_utc()[4]                    # Current time
    
     # Check if we can optimize
     if start_time - prices['time'][0] < optimizer['limit_min']:
@@ -886,7 +886,6 @@ def optimize(prices, profit, active_order, optimizer):
 
         ## Create a dataframe in two steps, we do this for speed reasons. The first part of the dataframe is kept in
         ## like a cache and then we always add the last one or two intervals. 
-
 
         # Resample and create dataframe for the first time or get it from cache
         if optimizer['df'].empty:

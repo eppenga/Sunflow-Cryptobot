@@ -6,7 +6,7 @@
 
 # Default values
 symbol              = "XRPUSDC"    # Symbol bot used for trading
-interval_1          = 1            # Klines timeframe default interval
+interval_1          = 1            # Klines timeframe default interval in minutes
 interval_2          = 3            # Klines timeframe first confirmation interval, set to 0 if you do not want to use this
 interval_3          = 5            # Klines timeframe second confirmation interval, set to 0 if you do not want to use this
 interval_average    = False        # Calculate the average over the active intervals or treat them separately
@@ -39,7 +39,7 @@ api_secret          = "123456"     # API Secret
 
 # Optimizer
 optimizer           = False        # Try to optimize the minimum profit and trigger price distance percentage
-optimizer_interval  = '30min'      # Interval used for indicator KPI
+optimizer_interval  = 30           # Interval in minutes used for indicator KPI
 optimizer_limit_min = 25920000     # Minimum miliseconds of spot price data (8,640,000 is one day)
 optimizer_limit_max = 864000000    # Maximum miliseconds of spot price data
 optimizer_adj_min   = -50          # Minimum profit and trigger price adjustment (50 = halve)
