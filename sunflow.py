@@ -676,7 +676,11 @@ if optimizer['enabled']:
 
 # Announce start
 print("\n*** Starting ***\n")
-defs.announce(f"Sunflow started at {defs.now_utc()[0]} UTC", True, 1)
+if config.timestdout_utc:
+    time_output = defs.now_utc()[0] + " UTC"
+else:
+    time_output = defs.now_utc()[5] + " local time"
+defs.announce(f"Sunflow started at {time_output}", True, 1)
 
 
 ### Websockets ###
