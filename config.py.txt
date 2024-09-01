@@ -39,6 +39,7 @@ api_secret          = "123456"     # API Secret
 
 # Optimizer
 optimizer           = False        # Try to optimize the minimum profit and trigger price distance percentage
+optimizer_side      = False        # When optimizing optimize both on buy and sell or only sell
 optimizer_interval  = 30           # Interval in minutes used for indicator KPI
 optimizer_limit_min = 25920000     # Minimum miliseconds of spot price data (8,640,000 is one day)
 optimizer_limit_max = 864000000    # Maximum miliseconds of spot price data

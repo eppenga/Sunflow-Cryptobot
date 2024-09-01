@@ -99,7 +99,7 @@ def get_klines(symbol, interval, limit):
         klines[key].reverse()
         
     # Output to stdout
-    defs.announce(f"Initial {limit} klines with interval {interval}m loaded from exchange")
+    defs.announce(f"Initial {limit} klines with {interval}m interval loaded from exchange")
     
     if debug:
         defs.announce(f"Prefilled klines with interval {interval}m")

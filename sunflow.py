@@ -57,6 +57,7 @@ depth_data                   = {}                             # Depth buy and se
 # Optimize profit and trigger price distance
 optimizer                    = {}                             # Profit and trigger price distance optimizer
 optimizer['enabled']         = config.optimizer               # Try to optimize the minimum profit and distance percentage
+optimizer['side']            = config.optimizer_side          # When optimizing optimize both on buy and sell or only sell
 optimizer['profit']          = config.profit                  # Initial profit percentage when Sunflow started, will never change
 optimizer['distance']        = config.distance                # Initial trigger price distance percentage when Sunflow started, will never change
 optimizer['interval']        = config.optimizer_interval      # Interval used for indicator KPI
@@ -97,7 +98,7 @@ use_trade['timeframe']       = config.trade_timeframe         # Timeframe in ms 
 
 # Trailing order
 active_order                 = {}                             # Trailing order data
-active_order['side']         = ""                             # Trailing buy
+active_order['side']         = ""                             # Trailing Buy or Sell
 active_order['active']       = False                          # Trailing order active or not
 active_order['start']        = 0                              # Start price when trailing order began     
 active_order['previous']     = 0                              # Previous price

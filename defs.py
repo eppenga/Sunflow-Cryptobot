@@ -875,7 +875,11 @@ def optimize(prices, profit, active_order, optimizer):
     distance     = active_order['distance']             # Current distance
     distance_new = active_order['distance']             # Proposed new distance to be
     start_time   = defs.now_utc()[4]                    # Current time
-   
+
+    # Optimize on both buy and sell or only sell
+    if active_order['side'] == "Buy" and not optimizer['side']:
+        return profit, active_order, optimizer
+    
     # Check if we can optimize
     if start_time - prices['time'][0] < optimizer['limit_min']:
         defs.announce(f"Optimization not possible yet, missing {start_time - prices['time'][0]} ms of price data")
@@ -907,17 +911,17 @@ def optimize(prices, profit, active_order, optimizer):
         df_new['time'] = pd.to_datetime(df_new['time'], unit='ms')
         df_new.set_index('time', inplace=True)
 
-        # Debug
+        # Debug to stdout
         if debug:
             defs.announce("Dataframes to be concatenated")
             print(df)
             print()
             print(df_new)
 
-        # Concatenate the two dataframes
+        # Concatenate the cached and new dataframes
         df = pd.concat([df, df_new])
 
-        # Resample again
+        # Resample again and drop empty rows
         df = df['price'].resample(interval).last()
         df.dropna(inplace=True)
 
@@ -946,7 +950,7 @@ def optimize(prices, profit, active_order, optimizer):
         profit_new   = optimizer['profit'] * (1 + volatility)
         distance_new = (optimizer['distance'] / optimizer['profit']) * profit_new
 
-        # Debug
+        # Debug to stdout
         if debug:
             defs.announce("Optimized full dataframe:")
             print(df)
