@@ -676,7 +676,7 @@ if optimizer['enabled']:
 
 # Announce start
 print("\n*** Starting ***\n")
-if config.timestdout_utc:
+if config.timeutc_std:
     time_output = defs.now_utc()[0] + " UTC"
 else:
     time_output = defs.now_utc()[5] + " local time"

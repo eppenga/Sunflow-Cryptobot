@@ -608,7 +608,7 @@ def announce(message, to_group_1=False, level_1=1, to_group_2=False, level_2=1):
     functionname = call_frame.function
     
     # Local or UTC time
-    if config.timestdout_utc:
+    if config.timeutc_std:
         timestamp = now_utc()[1]
     else:
         timestamp = now_utc()[6]
