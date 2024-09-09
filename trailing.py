@@ -59,7 +59,7 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
         stuck['time'] = 0
         
         # Has trailing endend, check if order does still exist
-        order = {}
+        order   = {}
         message = defs.announce("session: get_open_orders")
         try:
             order = session.get_open_orders(

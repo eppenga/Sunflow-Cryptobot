@@ -24,6 +24,7 @@ import database, defs, orders, preload
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="Run the Sunflow Cryptobot Tester with a specified config.")
 parser.add_argument('-c', '--config', default='config.py', help='Specify the config file (with .py extension).')
+parser.add_argument('-d', '--days', type=int, default=30, help='Number of days to display in the profit per day graph.')
 args = parser.parse_args()
 
 # Resolve config file path
@@ -129,9 +130,8 @@ rv_elem = calc_time(df_revenue)
 equity_base  = orders.get_equity(info['baseCoin'])
 equity_quote = orders.get_equity(info['quoteCoin'])
 
-# Group the revenue data by date and calculate the total profit per day
+# Group the revenue data by date
 df_revenue['date'] = df_revenue['createdTime'].dt.date
-profit_per_day = df_revenue.groupby('date')['revenue'].sum().reset_index()
 
 # Debug
 if debug:
@@ -207,7 +207,7 @@ else:
     print(message_dp)
 
 # Calculate today's profit
-today_date = pd.Timestamp('now').normalize()
+today_date   = pd.Timestamp('now').normalize()
 today_profit = df_revenue[df_revenue['createdTime'].dt.normalize() == today_date]['revenue'].sum()
 
 # Output today's profit
@@ -217,6 +217,16 @@ print(f"Todays profit : {defs.format_number(today_profit, info['quotePrecision']
 print(f"Total profit  : {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']}")
 
 print()
+
+# Get the number of days from the argument
+num_days = args.days
+
+# Filter the df_revenue DataFrame to only include the last 'num_days' days
+date_threshold = pd.Timestamp('now').normalize() - pd.Timedelta(days=num_days)
+filtered_df_revenue = df_revenue[df_revenue['createdTime'] >= date_threshold]
+
+# Group the filtered revenue data by date and calculate the total profit per day
+profit_per_day = filtered_df_revenue.groupby('date')['revenue'].sum().reset_index()
 
 # Create a figure and subplots
 fig, axes = plt.subplots(2, 1, figsize=(14, 10))
@@ -241,7 +251,7 @@ axes[0].set_ylabel('Frequency')
 
 # Second subplot: Profit per day
 sns.lineplot(data=profit_per_day, x='date', y='revenue', marker='o', ax=axes[1])
-axes[1].set_title('Profit per Day')
+axes[1].set_title('Profit per Day (Last {} Days)'.format(num_days))
 axes[1].set_xlabel('Date')
 axes[1].set_ylabel(f'Profit ({info["quoteCoin"]})')
 axes[1].set_xticks(axes[1].get_xticks())  # Ensure xticks are set

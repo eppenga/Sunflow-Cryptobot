@@ -867,7 +867,7 @@ def optimize(prices, profit, active_order, optimizer):
     global df_errors, halt_sunflow
   
     # Initialize variables
-    volatility   = 0                                    # Volatility deviation
+    volatility   = 0                                    # Volatility
     length       = 10                                   # Length over which the volatility is calculated
     interval     = str(optimizer['interval']) + "min"   # Interval used for indicator KPI (in our case historical volatility)
     profit       = profit                               # Current profit

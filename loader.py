@@ -12,6 +12,7 @@ def load_config():
     # Parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', default='config.py')
+    parser.add_argument('-d', '--days', type=int, default=30,)
     args = parser.parse_args()
 
     # Resolve config file path
