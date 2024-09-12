@@ -45,6 +45,7 @@ optimizer_limit_min = 25920000     # Minimum miliseconds of spot price data (8,6
 optimizer_limit_max = 864000000    # Maximum miliseconds of spot price data
 optimizer_adj_min   = -50          # Minimum profit and trigger price adjustment (-50 = halve)
 optimizer_adj_max   = 100          # Maximum profit and trigger price adjustment (100 = double)
+optimizer_scaler    = 1            # Scales the final optimizer value by multiplying by this value
 
 # Orderbook
 orderbook_enabled   = False        # Use orderbook as buy indicator

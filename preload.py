@@ -113,7 +113,7 @@ def get_klines(symbol, interval, limit):
     return klines
 
 # Preload prices
-def get_prices(symbol, limit):
+def get_prices(symbol, interval, limit):
 
     # Debug
     debug = False
@@ -122,17 +122,38 @@ def get_prices(symbol, limit):
     prices = {}
 
     # Get kline with the lowest interval (1 minute)
-    kline_prices = get_klines(symbol, 1, limit)
+    kline_prices = get_klines(symbol, interval, limit)
     prices       = {
         'time' : kline_prices['time'],
         'price': kline_prices['close']
     }
 
     # Report to stdout
-    defs.announce(f"Initial {limit} prices with 1m interval loaded from exchange")
+    defs.announce(f"Initial {limit} prices with {interval}m interval loaded from exchange")
 
     # Return prices
     return prices
+
+# Combine two lists of prices
+def combine_prices(prices_1, prices_2):
+    
+    # Combine and sort by 'time'
+    prices = sorted(zip(prices_1['time'] + prices_2['time'], prices_1['price'] + prices_2['price']))
+
+    # Use a dictionary to remove duplicates, keeping the first occurrence of each 'time'
+    unique_prices = {}
+    for t, p in prices:
+        if t not in unique_prices:
+            unique_prices[t] = p
+
+    # Separate into 'time' and 'price' lists
+    combined_prices = {
+        'time': list(unique_prices.keys()),
+        'price': list(unique_prices.values())
+    }
+    
+    # Return combined list
+    return combined_prices
 
 # Calculations required for info
 def calc_info(info, spot, multiplier):

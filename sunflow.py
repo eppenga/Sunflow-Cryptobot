@@ -65,6 +65,7 @@ optimizer['limit_min']       = config.optimizer_limit_min     # Minimum miliseco
 optimizer['limit_max']       = config.optimizer_limit_max     # Maximum miliseconds of spot price data
 optimizer['adj_min']         = config.optimizer_adj_min       # Minimum profit and trigger price adjustment
 optimizer['adj_max']         = config.optimizer_adj_max       # Maximum profit and trigger price adjustment
+optimizer['scaler']          = config.optimizer_scaler        # Scales the final optimizer value by multiplying by this value
 optimizer['df']              = pd.DataFrame()                 # Dataframe is empty at start
 
 # Minimum spread between historical buy orders
@@ -667,8 +668,16 @@ all_buys             = database.load(config.dbase_file, info)
 all_buys             = preload.check_orders(all_buys, info)
 if config.database_rebalance: 
     all_buys = orders.rebalance(all_buys, info)
-prices               = preload.get_prices(symbol, 1000)
+prices               = preload.get_prices(symbol, 1, 1000)
+
+# Preload optimizer and load prices
 if optimizer['enabled']:
+
+    # Get historical prices and combine with current prices
+    prices_old   = preload.get_prices(symbol, optimizer['interval'], 1000)
+    prices       = preload.combine_prices(prices_old, prices)
+    
+    # Calulcate optimized data
     result       = defs.optimize(prices, profit, active_order, optimizer)
     profit       = result[0]
     active_order = result[1]

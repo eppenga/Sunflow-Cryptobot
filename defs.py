@@ -947,6 +947,7 @@ def optimize(prices, profit, active_order, optimizer):
         # Get volatility deviation and calculate new price and distance
         volatility   = min(df['volatility_deviation_pct'].iloc[-1], optimizer['adj_max'] / 100)
         volatility   = max(volatility, optimizer['adj_min'] / 100)
+        volatility   = optimizer['scaler'] * volatility
         profit_new   = optimizer['profit'] * (1 + volatility)
         distance_new = (optimizer['distance'] / optimizer['profit']) * profit_new
 
@@ -980,7 +981,7 @@ def optimize(prices, profit, active_order, optimizer):
     active_order['distance'] = distance_new
   
     # Report to stdout
-    defs.announce(f"{elapsed_time} ms: Optimized profit {profit_new:.4f} %, trigger distance {distance_new:.4f} % and age {start_time - prices['time'][0]} ms")
+    defs.announce(f"Optimized profit {profit_new:.4f} %, trigger distance {distance_new:.4f} % and age is {start_time - prices['time'][0]} ms")
 
     # Return
     return profit_new, active_order, optimizer
