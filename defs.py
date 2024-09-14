@@ -983,7 +983,7 @@ def optimize(prices, profit, active_order, optimizer):
     active_order['distance'] = distance_new
   
     # Report to stdout
-    defs.announce(f"Volatility {((1 + volatility) * 100):.4f} %, profit {profit_new:.4f} %, trigger price distance {distance_new:.4f} % and age {start_time - prices['time'][0]} ms")
+    defs.announce(f"Volatility {(volatility * 100):.4f} %, profit {profit_new:.4f} %, trigger price distance {distance_new:.4f} % and age {start_time - prices['time'][0]} ms")
 
     # Return
     return profit_new, active_order, optimizer
