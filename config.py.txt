@@ -15,7 +15,7 @@ profit              = 0.400        # Minimum profit percentage
 distance            = 0.100        # Trigger price distance percentage when Fixed is used by wiggle
 wiggle              = "Fixed"      # Method for trigger price distance, Fixed, Spot, Wave, ATR, EMA or Hybrid
 depth               = 0.10         # Depth in percentages used to calculate market depth from orderbook
-multiplier          = 1.00         # Multiply minimum order quantity by this
+multiplier          = 1.00         # Multiply minimum order quantity by this factor
 
 # Spread between orders
 spread_enabled      = True         # Use spread as buy indicator
@@ -39,13 +39,13 @@ api_secret          = "123456"     # API Secret
 
 # Optimizer
 optimizer           = False        # Try to optimize the minimum profit and trigger price distance percentage
-optimizer_side      = False        # When optimizing optimize both on buy and sell or only sell
+optimizer_sides     = "Buy,Sell"   # When optimizing optimize both on buy and sell or only sell
 optimizer_interval  = 30           # Interval in minutes used for indicator KPI
 optimizer_limit_min = 25920000     # Minimum miliseconds of spot price data (8,640,000 is one day)
 optimizer_limit_max = 864000000    # Maximum miliseconds of spot price data
 optimizer_adj_min   = -50          # Minimum profit and trigger price adjustment (-50 = halve)
 optimizer_adj_max   = 100          # Maximum profit and trigger price adjustment (100 = double)
-optimizer_scaler    = 1            # Scales the final optimizer value by multiplying by this value
+optimizer_scaler    = 1.0          # Multiply optimized profit and trigger price distance by this factor
 
 # Orderbook
 orderbook_enabled   = False        # Use orderbook as buy indicator
@@ -82,12 +82,12 @@ error_file          = data_suffix + "errors.log"                 # Error log fil
 revenue_file        = data_suffix + "revenue.log"                # Revenue log file
 
 # Notify using Apprise (https://github.com/caronc/apprise)
-notify_enabled_1    = False                                      # Primary group of messaging clients (usually Telegram)
-notify_urls_1       = ["tgram://bot_token/chat_id"]              # Fill in your bot_token and chat_id
-notify_level_1      = 1                                          # Notify level 0 is extended, 1 is normal
-notify_enabled_2    = False                                      # Secondary group of messaging clients (usually LaMetric)
-notify_urls_2       = ["lametric://apikey@device_ipaddr"]        # Fill in your api key and ip addres of your LaMetric
-notify_level_2      = 1                                          # Notify level 0 is extended, 1 is normal
+notify_1_enabled    = False                                      # Primary group of messaging clients (usually Telegram)
+notify_1_urls       = ["tgram://bot_token/chat_id"]              # Fill in your bot_token and chat_id
+notify_1_level      = 1                                          # Notify level 0 is extended, 1 is normal
+notify_2_enabled    = False                                      # Secondary group of messaging clients (usually LaMetric)
+notify_2_urls       = ["lametric://apikey@device_ipaddr"]        # Fill in your api key and ip addres of your LaMetric
+notify_2_level      = 1                                          # Notify level 0 is extended, 1 is normal
 
 # Debug, logs, reporting and other switches
 debug               = False                                      # Turn debug on or off

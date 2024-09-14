@@ -57,7 +57,7 @@ depth_data                   = {}                             # Depth buy and se
 # Optimize profit and trigger price distance
 optimizer                    = {}                             # Profit and trigger price distance optimizer
 optimizer['enabled']         = config.optimizer               # Try to optimize the minimum profit and distance percentage
-optimizer['side']            = config.optimizer_side          # When optimizing optimize both on buy and sell or only sell
+optimizer['sides']           = config.optimizer_sides         # When optimizing optimize both on buy and sell or only sell
 optimizer['profit']          = config.profit                  # Initial profit percentage when Sunflow started, will never change
 optimizer['distance']        = config.distance                # Initial trigger price distance percentage when Sunflow started, will never change
 optimizer['interval']        = config.optimizer_interval      # Interval used for indicator KPI

@@ -18,7 +18,7 @@ config = load_config()
 apobj = apprise.Apprise()
 
 # Primary and secondary notification urls for Apprise
-urls_tags = [(config.notify_urls_1, "primary"), (config.notify_urls_2, "secondary")]
+urls_tags = [(config.notify_1_urls, "primary"), (config.notify_2_urls, "secondary")]
 for urls, tag in urls_tags:
     for url in urls:
         apobj.add(url, tag=tag)
@@ -631,11 +631,11 @@ def announce(message, to_group_1=False, level_1=1, to_group_2=False, level_2=1):
     
     # Output to Apprise Group 1
     if to_group_1:
-        announce_helper(config.notify_enabled_1, config.notify_level_1, level_1, "primary", group_1_message)
+        announce_helper(config.notify_1_enabled, config.notify_1_level, level_1, "primary", group_1_message)
 
     # Output to Apprise Group 2
     if to_group_2:
-        announce_helper(config.notify_enabled_2, config.notify_level_2, level_2, "secondary", group_2_message)
+        announce_helper(config.notify_2_enabled, config.notify_2_level, level_2, "secondary", group_2_message)
 
     # Return message
     return screen_message
@@ -876,8 +876,9 @@ def optimize(prices, profit, active_order, optimizer):
     distance_new = active_order['distance']             # Proposed new distance to be
     start_time   = defs.now_utc()[4]                    # Current time
 
-    # Optimize on both buy and sell or only sell
-    if active_order['side'] == "Buy" and not optimizer['side']:
+    # Optimize only on desired sides
+    if active_order['side'] not in optimizer['sides']:
+        defs.announce(f"Optimization not executed, because active side {active_order['side']} is not in {optimizer['sides']}")
         return profit, active_order, optimizer
     
     # Check if we can optimize
