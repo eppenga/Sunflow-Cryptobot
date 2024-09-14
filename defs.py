@@ -859,7 +859,7 @@ def optimize(prices, profit, active_order, optimizer):
        
     # Debug
     debug = False
-
+    
     # Global error counter
     global df_errors, halt_sunflow
   
@@ -942,10 +942,14 @@ def optimize(prices, profit, active_order, optimizer):
         # Drop the 'log_return' column if not needed
         df.drop(columns=['log_return'], inplace=True)
         
+        # Debug report volatility
+        if debug:
+            defs.announce(f"Raw optimized volatility {df['volatility_deviation_pct'].iloc[-1]:.4f} %")
+        
         # Get volatility deviation and calculate new price and distance
-        volatility   = min(df['volatility_deviation_pct'].iloc[-1], optimizer['adj_max'] / 100)
+        volatility   = df['volatility_deviation_pct'].iloc[-1] * optimizer['scaler']
+        volatility   = min(volatility, optimizer['adj_max'] / 100)
         volatility   = max(volatility, optimizer['adj_min'] / 100)
-        volatility   = optimizer['scaler'] * volatility
         profit_new   = optimizer['profit'] * (1 + volatility)
         distance_new = (optimizer['distance'] / optimizer['profit']) * profit_new
 
@@ -979,7 +983,7 @@ def optimize(prices, profit, active_order, optimizer):
     active_order['distance'] = distance_new
   
     # Report to stdout
-    defs.announce(f"Optimized profit {profit_new:.4f} %, trigger price distance {distance_new:.4f} % and age {start_time - prices['time'][0]} ms")
+    defs.announce(f"Volatility {((1 + volatility) * 100):.4f} %, profit {profit_new:.4f} %, trigger price distance {distance_new:.4f} % and age {start_time - prices['time'][0]} ms")
 
     # Return
     return profit_new, active_order, optimizer
