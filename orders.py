@@ -479,8 +479,11 @@ def report_wallet(all_buys, info):
     # Create messsage
     message = f"Wallet value {total_equity} {info['quoteCoin']}, "
     message = message + f"database has {order_info[0]} buy orders "
-    message = message + f"worth {defs.format_number(order_info[1], info['basePrecision'])} {info['baseCoin']} and "
+    message = message + f"worth {defs.format_number(order_info[1], info['basePrecision'])} {info['baseCoin']}, and "
     message = message + f"{total_quote} {info['quoteCoin']} is free"
+    
+    # Output to stdout
+    defs.announce(message, True, 1)
   
     # Return message
     return message

@@ -48,7 +48,7 @@ def get_ticker(symbol):
     ticker['lastPrice'] = float(pre_ticker['result']['list'][0]['lastPrice'])
     
     # Output to stdout
-    defs.announce("Initial ticker loaded")
+    defs.announce(f"Initial ticker price set to {ticker['lastPrice']} {ticker['symbol']} via exchange")
     
     if debug:
         defs.announce(ticker)
@@ -129,7 +129,7 @@ def get_prices(symbol, interval, limit):
     }
 
     # Report to stdout
-    defs.announce(f"Initial {limit} prices with {interval}m interval loaded from exchange")
+    defs.announce(f"Initial {limit} prices with {interval}m interval extracted from klines")
 
     # Return prices
     return prices

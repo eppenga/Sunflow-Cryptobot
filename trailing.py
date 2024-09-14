@@ -113,8 +113,7 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
 
             # Report wallet, quote and base currency to stdout
             if config.wallet_report:
-                message = orders.report_wallet(all_buys, info)
-                defs.announce(message, True, 1)
+                orders.report_wallet(all_buys, info)
                 
             # Report to revenue log file
             if config.revenue_log:

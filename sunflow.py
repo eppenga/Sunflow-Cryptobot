@@ -666,8 +666,6 @@ spot                 = ticker['lastPrice']
 info                 = preload.get_info(symbol, spot, multiplier)
 all_buys             = database.load(config.dbase_file, info)
 all_buys             = preload.check_orders(all_buys, info)
-if config.database_rebalance: 
-    all_buys = orders.rebalance(all_buys, info)
 prices               = preload.get_prices(symbol, 1, 1000)
 
 # Preload optimizer and load prices
@@ -682,6 +680,15 @@ if optimizer['enabled']:
     profit       = result[0]
     active_order = result[1]
     optimizer    = result[2]
+
+# Preload database inconsistencies
+if config.database_rebalance: 
+    all_buys = orders.rebalance(all_buys, info)
+
+# Preload wallet, quote and base currency to stdout
+if config.wallet_report:
+    orders.report_wallet(all_buys, info)
+
 
 # Announce start
 print("\n*** Starting ***\n")

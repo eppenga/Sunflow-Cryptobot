@@ -185,10 +185,7 @@ def log_error(exception):
     
     # Error: Read time out
     if "HTTPSConnectionPool" in exception:
-        defs.announce("*** Warning: Read time out, waiting 20 seconds ***", True, 1)
-        for number in range(20, 0, -1):
-            print(number, end=" ", flush=True)
-            time.sleep(1)
+        defs.announce("*** Warning: Read time out! ***", True, 1)
         halt_execution = False
     
     # Write to error log file
@@ -982,7 +979,7 @@ def optimize(prices, profit, active_order, optimizer):
     active_order['distance'] = distance_new
   
     # Report to stdout
-    defs.announce(f"Optimized profit {profit_new:.4f} %, trigger distance {distance_new:.4f} % and age is {start_time - prices['time'][0]} ms")
+    defs.announce(f"Optimized profit {profit_new:.4f} %, trigger price distance {distance_new:.4f} % and age {start_time - prices['time'][0]} ms")
 
     # Return
     return profit_new, active_order, optimizer
