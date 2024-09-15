@@ -298,7 +298,7 @@ def check_orders(transactions, info):
         # Check orders
         if quick:
             # Only check order on exchange if status is not Closed
-            defs.announce(f"Checking order from database: {transaction['orderId']}")
+            defs.announce(f"Checking order from database with ID {transaction['orderId']}")
             temp_transaction = transaction
             if transaction['status'] != "Closed":
                 defs.announce("Doing an additional check on order status via exchange")
