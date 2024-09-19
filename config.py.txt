@@ -37,6 +37,16 @@ api_secret          = "123456"     # API Secret
 
 ## EXPERIMENTAL PARAMETERS
 
+# Compounding
+compounding         = True         # Use compounding to adjust minimum order value
+compounding_start   = 1000         # Amount in quote asset when the Sunflow started
+
+# Price limits
+pricelimit_enabled  = False        # Use price limits
+pricelimit_max_buy  = 0            # Maximum buy price, set to 0 if do not want to use this
+pricelimit_min_sell = 0            # Minimum sell price, set to 0 if do not want to use this
+pricelimit_max_sell = 0            # Maximum sell price, set to 0 if do not want to use this
+
 # Optimizer
 optimizer           = False        # Try to optimize the minimum profit and trigger price distance percentage
 optimizer_sides     = "Buy,Sell"   # When optimizing optimize both on buy and sell or only sell

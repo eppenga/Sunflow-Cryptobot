@@ -156,7 +156,13 @@ def combine_prices(prices_1, prices_2):
     return combined_prices
 
 # Calculations required for info
-def calc_info(info, spot, multiplier):
+def calc_info(info, spot, multiplier, compounding):
+
+    # Debug
+    debug = False
+    
+    # Initialize variables
+    compounding_ratio = 1
 
     # Calculate minimum order value, add 10 % and round up to prevent strange errors
     minimumQty = info['minOrderQty'] * spot
@@ -168,15 +174,26 @@ def calc_info(info, spot, multiplier):
     else:
         minimumOrder = (minimumQty / spot) * 1.1
 
-    # Round correctly
-    info['minBuyBase']  = defs.round_number(minimumOrder * multiplier, info['basePrecision'], "up")
-    info['minBuyQuote'] = defs.round_number(minimumOrder * spot * multiplier, info['quotePrecision'], "up")
+    # Do compounding if enabled
+    if compounding['enabled']:
+        
+        # Only compound if when profitable
+        if compounding['now'] > compounding['start']:
+            compounding_ratio = compounding['now'] / compounding['start']
+
+    # Round correctly, adjust for multiplier and compounding
+    info['minBuyBase']  = defs.round_number(minimumOrder * multiplier * compounding_ratio, info['basePrecision'], "up")
+    info['minBuyQuote'] = defs.round_number(minimumOrder * spot * multiplier * compounding_ratio, info['quotePrecision'], "up")
+
+    # Debug
+    if debug:
+        defs.announce(f"Minimum order in base is {info['minBuyBase']} {info['baseCoin']} and in quote is {info['minBuyQuote']} {info['quoteCoin']}")
 
     # Return instrument info
     return info
 
 # Preload instrument info
-def get_info(symbol, spot, multiplier):
+def get_info(symbol, spot, multiplier, compounding):
 
     # Debug
     debug = False
@@ -216,7 +233,7 @@ def get_info(symbol, spot, multiplier):
     info['tickSize']       = float(pre_info['result']['list'][0]['priceFilter']['tickSize'])
 
     # Calculate minimum order value, add 10 % and round up to prevent strange errors
-    info = calc_info(info, spot, multiplier)
+    info = calc_info(info, spot, multiplier, compounding)
 
     # Output to stdout
     if debug:
@@ -236,8 +253,8 @@ def get_info(symbol, spot, multiplier):
     data['minOrderAmt']    = info['minOrderAmt']           # Minimum order quantity in quote asset
     data['maxOrderAmt']    = info['maxOrderAmt']           # Maximum order quantity in quote asset
     data['tickSize']       = info['tickSize']              # Smallest possible price increment (of base asset) 
-    data['minBuyBase']     = info['minBuyBase']            # Minimum buy value in Base Asset (possibly corrected for multiplier!)
-    data['minBuyQuote']    = info['minBuyQuote']           # Minimum buy value in Quote Asset (possibly corrected for multiplier!)
+    data['minBuyBase']     = info['minBuyBase']            # Minimum buy value in Base Asset (possibly corrected for multiplier and compounding!)
+    data['minBuyQuote']    = info['minBuyQuote']           # Minimum buy value in Quote Asset (possibly corrected for multiplier and compounding!)
 
     # Debug
     if debug:

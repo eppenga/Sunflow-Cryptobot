@@ -211,13 +211,13 @@ def check_sell(spot, profit, active_order, all_buys, info):
     return all_sells, qty, can_sell, rise_to
         
 # New buy order
-def buy(symbol, spot, active_order, all_buys, prices, info):
+def buy(symbol, spot, compounding, active_order, all_buys, prices, info):
 
     # Output to stdout
     defs.announce("*** BUY BUY BUY! ***")
 
     # Recalculate minimum values
-    info = preload.calc_info(info, spot, config.multiplier)
+    info = preload.calc_info(info, spot, config.multiplier, compounding)
 
     # Initialize active_order
     active_order['side']     = "Buy"
@@ -478,12 +478,12 @@ def report_wallet(all_buys, info):
     
     # Create messsage
     message = f"Wallet value {total_equity} {info['quoteCoin']}, "
-    message = message + f"in database {order_info[0]} transactions "
-    message = message + f"worth {defs.format_number(order_info[1], info['basePrecision'])} {info['baseCoin']}, and "
+    message = message + f"database has {order_info[0]} transactions "
+    message = message + f"worth {defs.format_number(order_info[1], info['basePrecision'])} {info['baseCoin']}, "
     message = message + f"{total_quote} {info['quoteCoin']} is free"
     
     # Output to stdout
     defs.announce(message, True, 1)
   
     # Return message
-    return message
+    return total_equity, total_quote

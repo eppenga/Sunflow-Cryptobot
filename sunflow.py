@@ -159,6 +159,25 @@ trades                          = {'time': [], 'side': [], 'size': [], 'price': 
 # Initialize depth variable
 depth_data                      = {'time': [], 'buy_perc': [], 'sell_perc': []}
 
+# Price limits
+pricelimit                     = {}                             # 
+pricelimit['enabled']          = config.pricelimit_enabled
+pricelimit['max_buy_enabled']  = False
+pricelimit['min_sell_enabled'] = False
+pricelimit['max_sell_enabled'] = False
+pricelimit['max_buy']          = config.pricelimit_max_buy
+pricelimit['min_sell']         = config.pricelimit_min_sell
+pricelimit['max_sell]']        = config.pricelimit_max_sell
+if config.pricelimit_max_buy > 0  : pricelimit['max_buy_enabled'] = True
+if config.pricelimit_min_sell > 0 : pricelimit['min_sell_enabled'] = True
+if config.pricelimit_max_sell > 0 : pricelimit['max_sell_enabled'] = True
+
+# Compounding
+compounding                     = {}
+compounding['enabled']          = config.compounding
+compounding['start']            = config.compounding_start
+compounding['now']              = config.compounding_start
+
 # Locking handle_ticker function to prevent race conditions
 lock_ticker                     = {}
 lock_ticker['time']             = defs.now_utc()[4]
@@ -178,7 +197,7 @@ def handle_ticker(message):
     try:
    
         # Declare some variables global
-        global spot, ticker, profit, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker, optimizer
+        global spot, ticker, profit, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker, optimizer, compounding, info
 
         # Initialize variables
         ticker              = {}
@@ -220,9 +239,11 @@ def handle_ticker(message):
         if active_order['active']:
             active_order['current'] = ticker['lastPrice']
             active_order['status']  = 'Trailing'
-            result       = trailing.trail(symbol, ticker['lastPrice'], active_order, info, all_buys, all_sells, prices)
+            result       = trailing.trail(symbol, ticker['lastPrice'], compounding, active_order, info, all_buys, all_sells, prices)
             active_order = result[0]
             all_buys     = result[1]
+            compounding  = result[2]
+            info         = result[3]
 
         # Has price changed, then run all kinds of actions
         if spot != ticker['lastPrice']:
@@ -306,7 +327,7 @@ def handle_ticker(message):
                     if amend_code == 1:
                         # Order does not exist, trailing order was sold in between
                         all_sells_new = all_sells
-                        defs.announce("Adjusting trigger quantity no possible, sell order already hit", True, 0)
+                        defs.announce("Adjusting trigger quantity not possible, sell order already hit", True, 0)
                         
                     if amend_code == 2:
                         # Quantity could not be changed, do nothing
@@ -604,7 +625,7 @@ def buy_matrix(spot, active_order, all_buys, interval):
 
         # Determine distance of trigger price and execute buy decission
         if can_buy:
-            result       = orders.buy(symbol, spot, active_order, all_buys, prices, info)
+            result       = orders.buy(symbol, spot, compounding, active_order, all_buys, prices, info)
             active_order = result[0]
             all_buys     = result[1]
             info         = result[2]
@@ -624,11 +645,15 @@ def prechecks():
     # Do checks
     if intervals[3] != 0 and intervals[2] == 0:
         goahead = False
-        defs.announce("Interval 2 must be set if you use interval 3 for confirmation")
+        defs.announce("Interval 2 must be set if you use interval 3 for confirmation!")
         
     if not use_spread['enabled'] and not use_indicators['enabled']:
         goahead = False
-        defs.announce("Need at least either Technical Indicators enabled or Spread to determine buy action")
+        defs.announce("Need at least either Technical Indicators enabled or Spread to determine buy action!")
+    
+    if compounding['enabled'] and not config.wallet_report:
+        goahead = False
+        defs.announce("When compounding set wallet_report to True to use compounding!")
     
     # Return result
     return goahead
@@ -636,12 +661,12 @@ def prechecks():
 
 ### Start main program ###
 
-# Check if we can start
+## Check if we can start
 if not prechecks():
     defs.announce("*** NO START ***", True, 1)
     exit()
-    
-# Display welcome screen
+
+## Display welcome screen
 print("\n*************************")
 print("*** Sunflow Cryptobot ***")
 print("*************************\n")
@@ -655,7 +680,8 @@ if use_spread['enabled']:
 print(f"Profit    : {profit} %")
 print(f"Limit     : {limit}\n")
 
-# Preload all requirements
+
+## Preload all requirements
 print("\n*** Preloading ***\n")
 preload.check_files()
 if intervals[1] !=0  : klines[intervals[1]] = preload.get_klines(symbol, intervals[1], limit)
@@ -663,7 +689,7 @@ if intervals[2] !=0  : klines[intervals[2]] = preload.get_klines(symbol, interva
 if intervals[3] !=0  : klines[intervals[3]] = preload.get_klines(symbol, intervals[3], limit)
 ticker               = preload.get_ticker(symbol)
 spot                 = ticker['lastPrice']
-info                 = preload.get_info(symbol, spot, multiplier)
+info                 = preload.get_info(symbol, spot, multiplier, compounding)
 all_buys             = database.load(config.dbase_file, info)
 all_buys             = preload.check_orders(all_buys, info)
 prices               = preload.get_prices(symbol, 1, 1000)
@@ -687,10 +713,14 @@ if config.database_rebalance:
 
 # Preload wallet, quote and base currency to stdout
 if config.wallet_report:
-    orders.report_wallet(all_buys, info)
+    compounding['now'] = orders.report_wallet(all_buys, info)[0]
+
+# Preload compounding
+if compounding['enabled']:
+    info = defs.calc_compounding(info, spot, compounding)
 
 
-# Announce start
+## Announce start
 print("\n*** Starting ***\n")
 if config.timeutc_std:
     time_output = defs.now_utc()[0] + " UTC"
@@ -765,4 +795,4 @@ if __name__ == "__main__" and not defs.halt_sunflow:
 
 
 ### Say goodbye ###
-defs.announce(f"*** Sunflow terminated at {defs.now_utc()[0]} UTC ***", True, 1)
+defs.announce(f"*** Sunflow terminated at {defs.now_utc()[5]} ***", True, 1)

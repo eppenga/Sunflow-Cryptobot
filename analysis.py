@@ -93,15 +93,20 @@ print("**********************************\n")
 print(f"CONFIG FILE IN USE: {config_path}\n")
 
 # Initialize variables
-symbol       = config.symbol
-multiplier   = config.multiplier
-dbase_file   = config.dbase_file
-revenue_file = config.revenue_file 
+symbol                 = config.symbol
+multiplier             = config.multiplier
+dbase_file             = config.dbase_file
+revenue_file           = config.revenue_file
+compounding            = {}
+compounding['enabled'] = config.compounding
+compounding['start']   = config.compounding_start
+compounding['now']     = config.compounding_start
+
 
 # Load all buys
 ticker   = preload.get_ticker(symbol)
 spot     = ticker['lastPrice']
-info     = preload.get_info(symbol, spot, multiplier)
+info     = preload.get_info(symbol, spot, multiplier, compounding)
 all_buys = database.load(dbase_file, info)
 
 # Load data into a dataframes

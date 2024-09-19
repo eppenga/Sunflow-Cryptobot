@@ -25,7 +25,7 @@ stuck['time']     = 0
 stuck['interval'] = 10000
    
 # Check if we can do trailing buy or sell
-def check_order(symbol, spot, active_order, all_buys, all_sells, info):
+def check_order(symbol, spot, compounding, active_order, all_buys, all_sells, info):
 
     # Declare stuck variable global
     global stuck
@@ -111,9 +111,13 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
             # Send message to group 1
             defs.announce(message_1, True, 1)
 
-            # Report wallet, quote and base currency to stdout
+            # Report wallet, quote and base currency to stdout and adjust compounding
             if config.wallet_report:
-                orders.report_wallet(all_buys, info)
+                compounding['now'] = orders.report_wallet(all_buys, info)[0]
+            
+            # Report compounding
+            if compounding['enabled']:
+                info = defs.calc_compounding(info, spot, compounding)
                 
             # Report to revenue log file
             if config.revenue_log:
@@ -126,7 +130,7 @@ def check_order(symbol, spot, active_order, all_buys, all_sells, info):
             all_buys     = result[1]
 
     # Return modified data
-    return active_order, all_buys
+    return active_order, all_buys, compounding, info
 
 # Checks if the trailing error spiked
 def check_spike(symbol, spot, active_order, order, all_buys, info):
@@ -252,7 +256,7 @@ def close_trail(active_order, all_buys, all_sells, info):
     return active_order, all_buys, all_sells, transaction, revenue
 
 # Trailing buy or sell
-def trail(symbol, spot, active_order, info, all_buys, all_sells, prices):
+def trail(symbol, spot, compounding, active_order, info, all_buys, all_sells, prices):
 
     # Debug
     debug = False
@@ -268,9 +272,11 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices):
         defs.announce(f"Trailing {active_order['side']}: Checking if we can do trailing")
 
     # Check if the order still exists
-    result       = check_order(symbol, spot, active_order, all_buys, all_sells, info)
+    result       = check_order(symbol, spot, compounding, active_order, all_buys, all_sells, info)
     active_order = result[0]
     all_buys     = result[1]
+    compounding  = result[2]
+    info         = result[3]
 
     # Order still exists, we can do trailing buy or sell
     if active_order['active']:
@@ -323,7 +329,7 @@ def trail(symbol, spot, active_order, info, all_buys, all_sells, prices):
                 defs.log_error(amend_error)
         
     # Return modified data
-    return active_order, all_buys
+    return active_order, all_buys, compounding, info
    
 # Change the quantity of the current trailing sell
 def amend_quantity_sell(symbol, active_order, info):

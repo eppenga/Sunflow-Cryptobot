@@ -6,7 +6,7 @@
 from loader import load_config
 from pathlib import Path
 from datetime import datetime, timezone
-import defs, indicators
+import defs, indicators, preload
 import apprise, inspect, math, pprint, pytz, time
 import pandas as pd
 import numpy as np
@@ -383,12 +383,12 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
 
     # Initialize variables
     do_buy    = {}
-    do_buy[1] = False
-    do_buy[2] = False
-    do_buy[3] = False
-    do_buy[4] = False
-    do_buy[5] = False
-    do_buy[6] = False
+    do_buy[1] = False   # Indicator interval 1
+    do_buy[2] = False   # Indicator interval 2
+    do_buy[3] = False   # Indicator interval 3
+    do_buy[4] = False   # Spread
+    do_buy[5] = False   # Orderbook
+    do_buy[6] = False   # Trades
     can_buy   = False
     message   = ""
    
@@ -580,6 +580,26 @@ def report_ticker(spot, new_spot, rise_to, active_order, all_buys, info):
     
     # Return message
     return message
+
+# Report on compounding
+def calc_compounding(info, spot, compounding):
+    
+    # Calculate ratio
+    compounding_ratio = compounding['now'] / compounding['start']
+    
+    # Create message
+    message = f"Compounding started at {defs.format_number(compounding['start'], info['quotePrecision'])} {info['quoteCoin']}, "
+    message = message + f"currenttly at {defs.format_number(compounding['now'], info['quotePrecision'])} {info['quoteCoin']}, "
+    message = message + f"thus ratio is {compounding_ratio:.4f} x"
+
+    # Adjust minimum order values
+    info = preload.calc_info(info, spot, config.multiplier, compounding)
+        
+    # Display message
+    defs.announce(message)
+    
+    # Return
+    return info
 
 # Announcement helper for notification function
 def announce_helper(enabled, config_level, message_level, tag, message):
@@ -983,7 +1003,10 @@ def optimize(prices, profit, active_order, optimizer):
     active_order['distance'] = distance_new
   
     # Report to stdout
-    defs.announce(f"Volatility {(volatility * 100):.4f} %, profit {profit_new:.4f} %, trigger price distance {distance_new:.4f} % and age {start_time - prices['time'][0]} ms")
+    if volatility != 0:
+        defs.announce(f"Volatility {(volatility * 100):.4f} %, profit {profit_new:.4f} %, trigger price distance {distance_new:.4f} % and age {start_time - prices['time'][0]} ms")
+    else:
+        defs.announce(f"Profit and trigger price distance not adjusted because volatility is out of range")
 
     # Return
     return profit_new, active_order, optimizer
