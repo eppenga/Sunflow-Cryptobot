@@ -76,7 +76,7 @@ def check_order(symbol, spot, compounding, active_order, all_buys, all_sells, in
             defs.log_exchange(order, message)
 
         # Check if trailing order is filled, if so reset counters and close trailing process
-        if order['result']['list'] == []:
+        if order['result']['list'] == [] or order['result']['list'][0]['orderStatus'] == "Filled":  # *** CHECK *** Odd behavior from exchange, sometimes the realtime table is not cleared
             
             # Prepare message for stdout and Apprise
             defs.announce(f"Trailing {active_order['side'].lower()}: *** Order has been filled! ***")

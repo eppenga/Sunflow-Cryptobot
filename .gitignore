@@ -16,6 +16,7 @@ todo*
 /backup
 /symbols
 /outputs
+/test
 
 # Ignore python
 /__pycache__
