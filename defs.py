@@ -587,13 +587,19 @@ def calc_compounding(info, spot, compounding):
     # Calculate ratio
     compounding_ratio = compounding['now'] / compounding['start']
     
-    # Create message
-    message = f"Compounding started at {defs.format_number(compounding['start'], info['quotePrecision'])} {info['quoteCoin']}, "
-    message = message + f"currenttly at {defs.format_number(compounding['now'], info['quotePrecision'])} {info['quoteCoin']}, "
-    message = message + f"thus ratio is {compounding_ratio:.4f} x"
+    # Profitable or not
+    if compounding_ratio > 0:
 
-    # Adjust minimum order values
-    info = preload.calc_info(info, spot, config.multiplier, compounding)
+        # Adjust minimum order values
+        info = preload.calc_info(info, spot, config.multiplier, compounding)
+
+        # Create message
+        message = f"Compounding started at {defs.format_number(compounding['start'], info['quotePrecision'])} {info['quoteCoin']}, "
+        message = message + f"currently at {defs.format_number(compounding['now'], info['quotePrecision'])} {info['quoteCoin']}, "
+        message = message + f"thus ratio is {compounding_ratio:.4f} x"
+
+    else:
+        message = "Compounding inactive because no profit yet"
         
     # Display message
     defs.announce(message)
