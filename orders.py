@@ -188,7 +188,8 @@ def set_trigger(spot, active_order, info):
 # Check if we can sell based on price limit
 def sell_matrix(spot, use_pricelimit, pricelimit_advice, info):
     
-    # Initialize price limit sell result
+    # Initialize variables
+    message = ""
     pricelimit_advice['sell_result'] = True
     
     # Check sell price for price limits
@@ -226,6 +227,7 @@ def check_sell(spot, profit, active_order, all_buys, use_pricelimit, pricelimit_
     # Initialize variables
     qty       = 0
     counter   = 0
+    message   = ""
     rise_to   = ""
     nearest   = []
     distance  = active_order['distance']
