@@ -489,6 +489,8 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
             do_buy[7] = True
         message += f"Pricelimit: "
         message += report_buy(pricelimit_advice['buy_result']) + ", "
+    else:
+        do_buy[7] = True
 
     # Determine buy decission
     if do_buy[1] and do_buy[2] and do_buy[3] and do_buy[4] and do_buy[5] and do_buy[6] and do_buy[7]:
