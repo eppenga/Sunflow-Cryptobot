@@ -146,7 +146,7 @@ def protect(active_order, price_distance):
 
     # Last failsafe
     if active_order['fluctuation'] < 0:
-        defs.announce(f"*** Warning: Fluctuation distance is {active_order['fluctuation']:.4f} %, enforcing 0.0000 % ! ***")
+        defs.announce(f"*** Warning: Fluctuation distance is {active_order['fluctuation']:.4f} %, enforcing 0.0000 %! ***")
         active_order['fluctuation'] = 0
     
     # Return active_order
@@ -325,7 +325,12 @@ def distance_atr(active_order, prices, price_distance):
 
 # Calculate trigger price distance
 def calculate(active_order, prices):
-   
+
+    # Debug and speed
+    debug = False
+    speed = True
+    stime = defs.now_utc()[4]
+
     # Store previous fluctuation
     previous_fluctuation = active_order['fluctuation']
     
@@ -362,6 +367,9 @@ def calculate(active_order, prices):
     # Output to stdout
     if previous_fluctuation != active_order['fluctuation']:
         defs.announce(f"Adviced trigger price distance is now {active_order['fluctuation']:.4f} %")
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
 
     # Return modified data
     return active_order

@@ -8,8 +8,6 @@ from pathlib import Path
 from datetime import datetime, timezone
 import defs, indicators, preload
 import apprise, inspect, math, pprint, pytz, time
-import pandas as pd
-import numpy as np
 
 # Load config
 config = load_config()
@@ -264,7 +262,7 @@ def report_buy(result):
     return pafa
 
 # Give an advice via the buy matrix
-def advice_buy(indicators_advice, orderbook_advice, trade_advice, use_indicators, use_spread, use_orderbook, use_trade, spot, klines, all_buys, interval):
+def advice_buy(indicators_advice, orderbook_advice, trade_advice, pricelimit_advice, use_indicators, use_spread, use_orderbook, use_trade, use_pricelimit, spot, klines, all_buys, interval):
 
     # Initialize variables
     spread_advice          = {}
@@ -324,9 +322,22 @@ def advice_buy(indicators_advice, orderbook_advice, trade_advice, use_indicators
     else:
         # If orderbook is not enabled, always true
         trade_advice['result'] = True
+
+
+    ''' Check ORDERBOOK for buy decission '''
+
+    if use_pricelimit['enabled']:
+        if use_pricelimit['max_buy_enabled']:
+            if spot < use_pricelimit['max_buy']:
+                pricelimit_advice['buy_result'] = True
+            else:
+                pricelimit_advice['buy_result'] = False
+    else:
+        # If pricelimit is not enabled, always true
+        pricelimit_advice['buy_result'] = True
         
     # Return all data
-    return indicators_advice, spread_advice, orderbook_advice, trade_advice
+    return indicators_advice, spread_advice, orderbook_advice, trade_advice, pricelimit_advice
 
 # Calculate the average of all active intervals
 def indicators_average(indicators_advice, intervals, use_indicators):
@@ -376,7 +387,7 @@ def indicators_average(indicators_advice, intervals, use_indicators):
     return indicators_advice
 
 # Determines buy decission and outputs to stdout
-def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, interval, intervals):
+def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, pricelimit_advice, use_pricelimit, interval, intervals):
             
     # Debug
     debug = False
@@ -389,6 +400,7 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
     do_buy[4] = False   # Spread
     do_buy[5] = False   # Orderbook
     do_buy[6] = False   # Trades
+    do_buy[7] = False   # Pricelimit
     can_buy   = False
     message   = ""
    
@@ -471,8 +483,15 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
     else:
         do_buy[6] = True
 
+    # Report pricelimit
+    if use_pricelimit['enabled']:
+        if pricelimit_advice['buy_result']:
+            do_buy[7] = True
+        message += f"Pricelimit: "
+        message += report_buy(pricelimit_advice['buy_result']) + ", "
+
     # Determine buy decission
-    if do_buy[1] and do_buy[2] and do_buy[3] and do_buy[4] and do_buy[5] and do_buy[6]:
+    if do_buy[1] and do_buy[2] and do_buy[3] and do_buy[4] and do_buy[5] and do_buy[6] and do_buy[7]:
         can_buy = True
         message += "BUY!"
     else:
@@ -495,6 +514,9 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
         print("Orderbook advice:")
         print(orderbook_advice, "\n")
 
+        print("Pricelimit advice:")
+        print(pricelimit_advice, "\n")
+
     # Return result
     return can_buy, message, indicators_advice
 
@@ -516,7 +538,7 @@ def rate_limit(response):
         limit  = float(response[2]['X-Bapi-Limit'])
     except:
         if debug:
-            defs.announce("Warning: API Rate Limit info does not exist in data, probably public request")
+            defs.announce("*** Warning: API Rate Limit info does not exist in data, probably public request! ***")
         skip = True
 
     # Continue when API Rate Limit is presence
@@ -545,7 +567,7 @@ def rate_limit(response):
         
         # Inform of delay
         if delay:
-            defs.announce(f"*** WARNING: API RATE LIMIT HIT, DELAYING SUNFLOW {delay} SECONDS ***", True, 1)
+            defs.announce(f"*** WARNING: API RATE LIMIT HIT, DELAYING SUNFLOW {delay} SECONDS! ***", True, 1)
             time.sleep(delay)
     
     # Clean response data
@@ -583,6 +605,11 @@ def report_ticker(spot, new_spot, rise_to, active_order, all_buys, info):
 
 # Report on compounding
 def calc_compounding(info, spot, compounding):
+
+    # Debug and speed
+    debug = False
+    speed = True
+    stime = defs.now_utc()[4]
     
     # Calculate ratio
     compounding_ratio = compounding['now'] / compounding['start']
@@ -595,14 +622,17 @@ def calc_compounding(info, spot, compounding):
 
         # Create message
         message = f"Compounding started at {defs.format_number(compounding['start'], info['quotePrecision'])} {info['quoteCoin']}, "
-        message = message + f"currently at {defs.format_number(compounding['now'], info['quotePrecision'])} {info['quoteCoin']}, "
-        message = message + f"thus ratio is {compounding_ratio:.4f} x"
+        message = message + f"currently {defs.format_number(compounding['now'], info['quotePrecision'])} {info['quoteCoin']}, "
+        message = message + f"ratio is {compounding_ratio:.4f}x"
 
     else:
         message = "Compounding inactive because no profit yet"
         
     # Display message
     defs.announce(message)
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
     
     # Return
     return info
@@ -623,7 +653,7 @@ def announce_helper(enabled, config_level, message_level, tag, message):
 
 # Send out a notification via stdout or Apprise
 def announce(message, to_group_1=False, level_1=1, to_group_2=False, level_2=1):
-    
+   
     # Initialize variables
     stack        = inspect.stack()
     call_frame   = stack[1]
@@ -639,7 +669,12 @@ def announce(message, to_group_1=False, level_1=1, to_group_2=False, level_2=1):
     # Safeguard from type errors
     message = str(message)
 
-    # Check if we can notify
+    # Check if we can notify for blanc messages
+    if not message:
+        screen_message = timestamp + f"{filename}: {functionname}: No announcement available"
+        return screen_message
+
+    # Check if we can notify for session messages
     if not config.session_report and "session:" in message:
         return_message = timestamp + f"{filename}: {functionname}: No announcement available"
         return return_message
@@ -757,7 +792,7 @@ def get_index_number(data, timeframe, limit):
     ratio = (elements / limit) * 100
     if elements < limit:
         missing = limit - elements
-        defs.announce(f"*** Warning: Still fetching data, message will disappear ({ratio:.0f} %) ***")
+        defs.announce(f"*** Warning: Still fetching data, message will disappear ({ratio:.0f} %)! ***")
     
     closest_index = defs.get_closest_index(data, span)
     number        = limit - closest_index - missing
@@ -797,7 +832,7 @@ def average_depth(depth_data, use_orderbook, buy_percentage, sell_percentage):
     datapoints['compare'] = len(depth_data['time'])
     datapoints['limit']   = use_orderbook['limit']
     if (datapoints['depth'] >= datapoints['compare']) and (datapoints['compare'] >= datapoints['limit']):
-        defs.announce("*** Warning: Increase orderbook_limit variable in config file ***", True, 1)
+        defs.announce("*** Warning: Increase orderbook_limit variable in config file! ***", True, 1)
     
     # Debug elements
     if debug_1:
@@ -848,171 +883,23 @@ def calculate_total_values(trades):
     # Return totals
     return total_buy, total_sell, total_all, (total_buy / total_all) * 100, (total_sell / total_all) * 100
 
-# Resample and create dataframe for optimizer
-def resample_optimzer(prices, interval):
-
-    # Debug
-    debug = False
-  
-    # Convert the time and price data into a DataFrame
-    df = pd.DataFrame(prices)
-    
-    # Convert the 'time' column to datetime format
-    df['time'] = pd.to_datetime(df['time'], unit='ms')
-    
-    # Set the 'time' column as the index
-    df.set_index('time', inplace=True)
-    
-    # Resample the data to the specified interval
-    df_resampled = df['price'].resample(interval).last()
-    
-    # Drop any NaN values that may result from resampling
-    df_resampled.dropna(inplace=True)
-
-    # Remove the last row
-    df_resampled = df_resampled.iloc[:-1]
-
-    # Debug
-    if debug:
-        defs.announce("Resampled dataframe:")
-        pprint.pprint(df_resampled)
-
-    # Return dataframe
-    return df_resampled
-
-# Optimize profit and default trigger price distance based on previous prices
-def optimize(prices, profit, active_order, optimizer):
+# Report time it took to execute a function
+def report_exec(start_time, supplement = "", always_display = False):
        
-    # Debug
-    debug = False
-    
-    # Global error counter
-    global df_errors, halt_sunflow
-  
     # Initialize variables
-    volatility   = 0                                    # Volatility
-    length       = 10                                   # Length over which the volatility is calculated
-    interval     = str(optimizer['interval']) + "min"   # Interval used for indicator KPI (in our case historical volatility)
-    profit       = profit                               # Current profit
-    profit_new   = profit                               # Proposed new profit to be
-    distance     = active_order['distance']             # Current distance
-    distance_new = active_order['distance']             # Proposed new distance to be
-    start_time   = defs.now_utc()[4]                    # Current time
-
-    # Optimize only on desired sides
-    if active_order['side'] not in optimizer['sides']:
-        defs.announce(f"Optimization not executed, because active side {active_order['side']} is not in {optimizer['sides']}")
-        return profit, active_order, optimizer
+    message    = ""
+    mess_delay = 500
+    warn_delay = 1000
+    end_time   = now_utc()[4]
+    exec_time  = end_time - start_time
     
-    # Check if we can optimize
-    if start_time - prices['time'][0] < optimizer['limit_min']:
-        defs.announce(f"Optimization not possible yet, missing {start_time - prices['time'][0]} ms of price data")
-        return profit, active_order, optimizer
-
-    # Try to optimize
-    try:
-
-        ## Create a dataframe in two steps, we do this for speed reasons. The first part of the dataframe is kept in
-        ## like a cache and then we always add the last one or two intervals. 
-
-        # Resample and create dataframe for the first time or get it from cache
-        if optimizer['df'].empty:
-            df = resample_optimzer(prices, interval)
-        else:
-            df = optimizer['df']
+    # Create message
+    if exec_time > mess_delay or always_display:
+        message = f"Execution time of function was {exec_time} ms"
+        if supplement:
+            message = message + f" ({supplement})"
+        if exec_time > warn_delay:
+            message = "*** Warning: " + message + "! ***"
         
-        # Get the timestamp of the last item in the dataframe in miliseconds
-        last_timestamp = int(df.index[-1].timestamp() * 1000)
-        
-        # Which prices are not yet in the resampled data since last timestamp of dataframe
-        prices_new = {
-            'price': [price for price, time in zip(prices['price'], prices['time']) if time > last_timestamp],
-            'time': [time for time in prices['time'] if time > last_timestamp]
-        }
-
-        # Create a dataframe from the new prices
-        df_new         = pd.DataFrame(prices_new)
-        df_new['time'] = pd.to_datetime(df_new['time'], unit='ms')
-        df_new.set_index('time', inplace=True)
-
-        # Debug to stdout
-        if debug:
-            defs.announce("Dataframes to be concatenated")
-            print(df)
-            print()
-            print(df_new)
-
-        # Concatenate the cached and new dataframes
-        df = pd.concat([df, df_new])
-
-        # Resample again and drop empty rows
-        df = df['price'].resample(interval).last()
-        df.dropna(inplace=True)
-
-
-        ## Here we calculate the optimizer KPI, in this case volatility, but you can use anything you like
-
-        # Calculate the log returns
-        df = df.to_frame()
-        df['log_return'] = np.log(df['price'] / df['price'].shift(1))
-        
-        # Calculate the rolling volatility (standard deviation of log returns)
-        df['volatility'] = df['log_return'].rolling(window=length).std() * np.sqrt(length)
-        
-        # Calculate the average volatility
-        average_volatility = df['volatility'].mean()
-        
-        # Add a column for the deviation percentage from the average volatility
-        df['volatility_deviation_pct'] = ((df['volatility'] - average_volatility) / average_volatility)
-        
-        # Drop the 'log_return' column if not needed
-        df.drop(columns=['log_return'], inplace=True)
-        
-        # Debug report volatility
-        if debug:
-            defs.announce(f"Raw optimized volatility {df['volatility_deviation_pct'].iloc[-1]:.4f} %")
-        
-        # Get volatility deviation and calculate new price and distance
-        volatility   = df['volatility_deviation_pct'].iloc[-1] * optimizer['scaler']
-        volatility   = min(volatility, optimizer['adj_max'] / 100)
-        volatility   = max(volatility, optimizer['adj_min'] / 100)
-        profit_new   = optimizer['profit'] * (1 + volatility)
-        distance_new = (optimizer['distance'] / optimizer['profit']) * profit_new
-
-        # Debug to stdout
-        if debug:
-            defs.announce("Optimized full dataframe:")
-            print(df)
-            
-        # Store the dataframe for future use, except for the last row
-        optimizer['df'] = df.iloc[:-1]
-        
-    # In case of failure
-    except Exception as e:
-        
-        # Count the errors and log
-        df_errors  = df_errors + 1
-        defs.log_error(e)
-        
-        # After three consecutive errors halt
-        if df_errors > 2:
-            halt_sunflow = True
-        return profit, active_order, optimizer
-   
-    # Calculate the elapsed time
-    elapsed_time = defs.now_utc()[4] - start_time
-
-    # Reset error counter
-    df_errors = 0
-  
-    # Rework to original variable
-    active_order['distance'] = distance_new
-  
-    # Report to stdout
-    if volatility != 0:
-        defs.announce(f"Volatility {(volatility * 100):.4f} %, profit {profit_new:.4f} %, trigger price distance {distance_new:.4f} % and age {start_time - prices['time'][0]} ms")
-    else:
-        defs.announce(f"Profit and trigger price distance not adjusted because volatility is out of range")
-
-    # Return
-    return profit_new, active_order, optimizer
+    # Return message
+    return message

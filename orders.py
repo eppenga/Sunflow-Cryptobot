@@ -28,9 +28,11 @@ def order_id(order):
 # Get order history
 def history(orderId):
     
-    # Debug
+    # Debug and speed
     debug = False
-       
+    speed = True
+    stime = defs.now_utc()[4]
+           
     # First try realtime
     order   = {}
     message = defs.announce("session: get_open_orders")
@@ -68,9 +70,13 @@ def history(orderId):
         message = defs.announce("Trying to load non-existing order, something is corrupt!")
         defs.log_error(message)
 
+    # Debug
     if debug:
         defs.announce("Order history")
         print(order)
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
 
     return order
 
@@ -100,6 +106,11 @@ def decode(order):
 
 # Cancel an order at the exchange
 def cancel(symbol, orderid):
+
+    # Debug and speed
+    debug = False
+    speed = True
+    stime = defs.now_utc()[4]
     
     # Initialize
     error_code = 0
@@ -128,6 +139,9 @@ def cancel(symbol, orderid):
         order = defs.rate_limit(order)
         defs.log_exchange(order, message)
         
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+
     # Return error code
     return error_code, exception    
 
@@ -145,6 +159,7 @@ def transaction_from_order(order):
 # Turn an order from the exchange into a properly formatted transaction after the order already exists
 def transaction_from_id(orderId):
     
+    # Do logic
     order_history = history(orderId)
     transaction   = decode(order_history)
 
@@ -170,24 +185,66 @@ def set_trigger(spot, active_order, info):
     # Return active_order
     return active_order
 
+# Check if we can sell based on price limit
+def sell_matrix(spot, use_pricelimit, pricelimit_advice, info):
+    
+    # Initialize price limit sell result
+    pricelimit_advice['sell_result'] = True
+    
+    # Check sell price for price limits
+    if use_pricelimit['enabled']:
+        
+        # Check minimum sell price for price limit
+        if use_pricelimit['min_sell_enabled']:
+            if spot > use_pricelimit['min_sell']:
+                pricelimit_advice['sell_result'] = True
+            else:
+                pricelimit_advice['sell_result'] = False
+                message = f"price {spot} {info['quoteCoin']} is lower than minimum sell price "
+                message = message + f"{defs.format_number(use_pricelimit['min_sell'], info['tickSize'])} {info['quoteCoin']}"
+
+        # Check maximum sell price for price limit
+        if use_pricelimit['max_sell_enabled']:
+            if spot < use_pricelimit['max_sell']:
+                pricelimit_advice['sell_result'] = True
+            else:
+                pricelimit_advice['sell_result'] = False
+                message = f"price {spot} {info['quoteCoin']} is higher than maximum sell price "
+                message = message + f"{defs.format_number(use_pricelimit['max_sell'], info['tickSize'])} {info['quoteCoin']}"
+
+    # Return modified price limit
+    return pricelimit_advice, message    
+
 # What orders and how much can we sell with profit
-def check_sell(spot, profit, active_order, all_buys, info):
+def check_sell(spot, profit, active_order, all_buys, use_pricelimit, pricelimit_advice, info):
+
+    # Debug and speed
+    debug = False
+    speed = True
+    stime = defs.now_utc()[4]
 
     # Initialize variables
-    qty               = 0
-    counter           = 0
-    rise_to           = ""
-    nearest           = []
-    distance          = active_order['distance']
-    can_sell          = False
-    all_sells         = []
-       
+    qty       = 0
+    counter   = 0
+    rise_to   = ""
+    nearest   = []
+    distance  = active_order['distance']
+    pre_sell  = False
+    can_sell  = False
+    all_sells = []
+    result    = ()
+    
+    # Check sell price limit
+    result            = sell_matrix(spot, use_pricelimit, pricelimit_advice, info)
+    pricelimit_advice = result[0]
+    message           = result[1]
+    
     # Walk through buy database and find profitable buys
     for transaction in all_buys:
 
         # Only walk through closed buy orders
         if transaction['status'] == 'Closed':
-                       
+                    
             # Check if a transaction is profitable
             profitable_price = transaction['avgPrice'] * (1 + ((profit + distance) / 100))
             nearest.append(profitable_price - spot)
@@ -199,19 +256,36 @@ def check_sell(spot, profit, active_order, all_buys, info):
     # Adjust quantity to exchange regulations
     qty = defs.round_number(qty, info['basePrecision'], "down")
     
-    # Can sell or not
+    # Do we have order to sell
     if all_sells and qty > 0:
+        pre_sell = True
+
+    # We have orders to sell, and sell price limit is not blocking 
+    if pre_sell and pricelimit_advice['sell_result']:
         can_sell = True
         defs.announce(f"Trying to sell {counter} orders for a total of {defs.format_number(qty, info['basePrecision'])} {info['baseCoin']}")
     else:
         if nearest:
             rise_to = f"{defs.format_number(min(nearest), info['tickSize'])} {info['quoteCoin']}"
-    
+
+    # We have orders to sell, but sell price limit is blocking
+    if pre_sell and not pricelimit_advice['sell_result']:
+        message = f"We could sell {counter} orders, but " + message
+        defs.announce(message)        
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+
     # Return data
     return all_sells, qty, can_sell, rise_to
         
 # New buy order
 def buy(symbol, spot, compounding, active_order, all_buys, prices, info):
+
+    # Debug and speed
+    debug = False
+    speed = True
+    stime = defs.now_utc()[4]
 
     # Output to stdout
     defs.announce("*** BUY BUY BUY! ***")
@@ -251,6 +325,7 @@ def buy(symbol, spot, compounding, active_order, all_buys, prices, info):
         # Buy order failed, reset active_order and return
         active_order['active'] = False
         defs.announce("Buy order failed due to error, trailing stopped")
+        if speed: defs.announce(defs.report_exec(stime))    
         return active_order, all_buys
         
     # Check API rate limit and log data if possible
@@ -275,11 +350,19 @@ def buy(symbol, spot, compounding, active_order, all_buys, prices, info):
     all_buys = database.register_buy(transaction, all_buys, info)
     defs.announce(f"Registered buy order in database {config.dbase_file}")
 
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+
     # Return trailing order and new buy order database
     return active_order, all_buys, info
     
 # New sell order
 def sell(symbol, spot, active_order, prices, info):
+
+    # Debug and speed
+    debug = False
+    speed = True
+    stime = defs.now_utc()[4]
 
     # Output to stdout
     defs.announce("*** SELL SELL SELL! ***")
@@ -316,6 +399,7 @@ def sell(symbol, spot, active_order, prices, info):
         # Sell order failed, reset active_order and return
         active_order['active'] = False
         defs.announce("Sell order failed due to error, trailing stopped")
+        if speed: defs.announce(defs.report_exec(stime))        
         return active_order
         
     # Check API rate limit and log data if possible
@@ -331,6 +415,9 @@ def sell(symbol, spot, active_order, prices, info):
     message = message + f"at trigger price {defs.format_number(active_order['trigger'], info['tickSize'])} {info['quoteCoin']} "
     message = message + f"with ID {active_order['orderid']}"
     defs.announce(message, True)
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
    
     # Return data
     return active_order
@@ -350,8 +437,10 @@ def equity_safe(equity):
 # Get total equity of wallet
 def get_equity(coin):
     
-    # Debug
+    # Debug and speed
     debug = False
+    speed = True
+    stime = defs.now_utc()[4]
 
     # Initialize variables
     wallet        = {}
@@ -379,14 +468,19 @@ def get_equity(coin):
     # Get equity from wallet
     equity_wallet = equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
 
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+
     # Return equity of wallet
     return equity_wallet
 
 # Rebalances the database vs exchange by removing orders with the highest price
 def rebalance(all_buys, info):
 
-    # Debug
+    # Debug and speed
     debug = False
+    speed = True
+    stime = defs.now_utc()[4]
 
     # Initialize variables
     wallet         = ()
@@ -443,11 +537,19 @@ def rebalance(all_buys, info):
     # Report to stdout
     defs.announce(f"Difference between exchange and database is {defs.round_number(equity_diff, info['basePrecision'])} {info['baseCoin']}")
 
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+
     # Return all buys
     return all_buys
 
 # Report wallet info to stdout
 def report_wallet(all_buys, info):
+
+    # Debug and speed
+    debug = False
+    speed = True
+    stime = defs.now_utc()[4]
 
     # Initialize variables
     message    = ""
@@ -484,6 +586,9 @@ def report_wallet(all_buys, info):
     
     # Output to stdout
     defs.announce(message, True, 1)
-  
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+ 
     # Return message
     return total_equity, total_quote

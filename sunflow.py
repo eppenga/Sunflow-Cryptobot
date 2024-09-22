@@ -13,7 +13,7 @@ import argparse, importlib, pprint, sys, traceback
 import pandas as pd
 
 # Load internal libraries
-import database, defs, preload, trailing, orders
+import database, defs, optimum, orders, preload, trailing
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description="Run the Sunflow Cryptobot with a specified config.")
@@ -56,7 +56,7 @@ depth_data                   = {}                             # Depth buy and se
 
 # Optimize profit and trigger price distance
 optimizer                    = {}                             # Profit and trigger price distance optimizer
-optimizer['enabled']         = config.optimizer               # Try to optimize the minimum profit and distance percentage
+optimizer['enabled']         = config.optimizer_enabled       # Try to optimize the minimum profit and distance percentage
 optimizer['sides']           = config.optimizer_sides         # When optimizing optimize both on buy and sell or only sell
 optimizer['profit']          = config.profit                  # Initial profit percentage when Sunflow started, will never change
 optimizer['distance']        = config.distance                # Initial trigger price distance percentage when Sunflow started, will never change
@@ -79,7 +79,6 @@ use_indicators['enabled']    = config.indicators_enabled      # Use technical in
 use_indicators['minimum']    = config.indicators_minimum      # Minimum advice value
 use_indicators['maximum']    = config.indicators_maximum      # Maximum advice value
 
-
 # Orderbook
 use_orderbook                = {}                             # Orderbook
 use_orderbook['enabled']     = config.orderbook_enabled       # Use orderbook as buy trigger
@@ -96,6 +95,19 @@ use_trade['minimum']         = config.trade_minimum           # Minimum trade bu
 use_trade['maximum']         = config.trade_maximum           # Maximum trade buy ratio percentage
 use_trade['limit']           = config.trade_limit             # Number of trade orders to keep in database
 use_trade['timeframe']       = config.trade_timeframe         # Timeframe in ms to collect realtime trades
+
+# Price limits
+use_pricelimit                       = {}                                      # Use pricelimits to prevent buy or sell
+use_pricelimit['enabled']            = config.pricelimit_enabled               # Set pricelimits functionality
+use_pricelimit['max_buy_enabled']    = False                                   # Set pricelimits maximum buy price toggle  
+use_pricelimit['min_sell_enabled']   = False                                   # Set pricelimits minimum sell price toggle
+use_pricelimit['max_sell_enabled']   = False                                   # Set pricelimits maximum sell price toggle
+use_pricelimit['max_buy']            = config.pricelimit_max_buy               # Maximum buy price 
+use_pricelimit['min_sell']           = config.pricelimit_min_sell              # Minimum sell price
+use_pricelimit['max_sell']          = config.pricelimit_max_sell              # Maximum sell price
+if config.pricelimit_max_buy > 0 : use_pricelimit['max_buy_enabled'] = True    # Maximum buy price enabled
+if config.pricelimit_min_sell > 0: use_pricelimit['min_sell_enabled'] = True   # Minimum sell price enabled
+if config.pricelimit_max_sell > 0: use_pricelimit['max_sell_enabled'] = True   # Maximum sell price enabled
 
 # Trailing order
 active_order                 = {}                             # Trailing order data
@@ -135,54 +147,46 @@ if not config.indicators_enabled:                             # Set intervals to
     intervals[3] = 0
 
 # Initialize indicators advice variable
-indicators_advice               = {}
-indicators_advice[intervals[0]] = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Average advice of all active intervals
-indicators_advice[intervals[1]] = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 1
-indicators_advice[intervals[2]] = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 2
-indicators_advice[intervals[3]] = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 3
+indicators_advice                = {}
+indicators_advice[intervals[0]]  = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Average advice of all active intervals
+indicators_advice[intervals[1]]  = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 1
+indicators_advice[intervals[2]]  = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 2
+indicators_advice[intervals[3]]  = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 3
 
 # Initialize orderbook advice variable
-orderbook_advice                = {}
-orderbook_advice['buy_perc']    = 0
-orderbook_advice['sell_perc']   = 0
-orderbook_advice['result']      = False
+orderbook_advice                 = {}
+orderbook_advice['buy_perc']     = 0
+orderbook_advice['sell_perc']    = 0
+orderbook_advice['result']       = False
 
 # Initialize trade advice variable
-trade_advice                    = {}
-trade_advice['buy_ratio']       = 0
-trade_advice['sell_ratio']      = 0
-trade_advice['result']          = False
+trade_advice                     = {}
+trade_advice['buy_ratio']        = 0
+trade_advice['sell_ratio']       = 0
+trade_advice['result']           = False
+
+# Initialize pricelimit advice variable
+pricelimit_advice                = {}
+pricelimit_advice['buy_result']  = False
+pricelimit_advice['sell_result'] = False
 
 # Initialize trades variable
-trades                          = {'time': [], 'side': [], 'size': [], 'price': []}
+trades                           = {'time': [], 'side': [], 'size': [], 'price': []}
 
 # Initialize depth variable
-depth_data                      = {'time': [], 'buy_perc': [], 'sell_perc': []}
-
-# Price limits
-pricelimit                     = {}                             # 
-pricelimit['enabled']          = config.pricelimit_enabled
-pricelimit['max_buy_enabled']  = False
-pricelimit['min_sell_enabled'] = False
-pricelimit['max_sell_enabled'] = False
-pricelimit['max_buy']          = config.pricelimit_max_buy
-pricelimit['min_sell']         = config.pricelimit_min_sell
-pricelimit['max_sell]']        = config.pricelimit_max_sell
-if config.pricelimit_max_buy > 0  : pricelimit['max_buy_enabled'] = True
-if config.pricelimit_min_sell > 0 : pricelimit['min_sell_enabled'] = True
-if config.pricelimit_max_sell > 0 : pricelimit['max_sell_enabled'] = True
+depth_data                       = {'time': [], 'buy_perc': [], 'sell_perc': []}
 
 # Compounding
-compounding                     = {}
-compounding['enabled']          = config.compounding
-compounding['start']            = config.compounding_start
-compounding['now']              = config.compounding_start
+compounding                      = {}
+compounding['enabled']           = config.compounding_enabled
+compounding['start']             = config.compounding_start
+compounding['now']               = config.compounding_start
 
 # Locking handle_ticker function to prevent race conditions
-lock_ticker                     = {}
-lock_ticker['time']             = defs.now_utc()[4]
-lock_ticker['delay']            = 1000
-lock_ticker['enabled']          = False
+lock_ticker                      = {}
+lock_ticker['time']              = defs.now_utc()[4]
+lock_ticker['delay']             = 1000
+lock_ticker['enabled']           = False
 
 
 ### Functions ###
@@ -190,8 +194,10 @@ lock_ticker['enabled']          = False
 # Handle messages to keep tickers up to date
 def handle_ticker(message):
     
-    # Debug
+    # Debug and speed
     debug = False
+    speed = False
+    stime = defs.now_utc()[4]
        
     # Errors are not reported within websocket
     try:
@@ -230,6 +236,7 @@ def handle_ticker(message):
         if lock_ticker['enabled']:
             spot = ticker['lastPrice']
             defs.announce("Function is busy, Sunflow will catch up with next tick")
+            if speed: defs.announce(defs.report_exec(stime, "function busy"))
             return
         
         # Lock handle_ticker function
@@ -253,19 +260,19 @@ def handle_ticker(message):
 
             # Optimize profit and distance percentages
             if optimizer['enabled']:
-                result       = defs.optimize(prices, profit, active_order, optimizer)
+                result       = optimum.optimize(prices, profit, active_order, optimizer)
                 profit       = result[0]
                 active_order = result[1]
                 optimizer    = result[2]
 
             # Check if and how much we can sell
-            result                  = orders.check_sell(new_spot, profit, active_order, all_buys, info)
+            result                  = orders.check_sell(new_spot, profit, active_order, all_buys, use_pricelimit, pricelimit_advice, info)
             all_sells_new           = result[0]
             active_order['qty_new'] = result[1]
             can_sell                = result[2]
             rise_to                 = result[3]
 
-            # Output to stdout
+            # Output to stdout "Price went up/down from ..."
             message = defs.report_ticker(spot, new_spot, rise_to, active_order, all_buys, info)
             defs.announce(message)
             
@@ -277,8 +284,8 @@ def handle_ticker(message):
                 
                 # Cancel trailing buy, remove from all_buys database
                 active_order['active'] = False
-                result     = orders.cancel(symbol, active_order['orderid'])
-                error_code = result[0]
+                result                 = orders.cancel(symbol, active_order['orderid'])
+                error_code             = result[0]
                 
                 if error_code == 0:
                     # Situation normal, just remove the order
@@ -359,6 +366,9 @@ def handle_ticker(message):
     spot = ticker['lastPrice']
     lock_ticker['enabled'] = False
     
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+    
     # Close function
     return
 
@@ -376,6 +386,11 @@ def handle_kline_3(message):
 
 # Handle messages to keep klines up to date
 def handle_kline(message, interval):
+
+    # Debug and speed
+    debug = False
+    speed = False
+    stime = defs.now_utc()[4]
 
     # Errors are not reported within websocket
     try:
@@ -421,6 +436,9 @@ def handle_kline(message, interval):
         filename, line, func, text = tb_info[-1]
         defs.announce(f"An error occurred in {filename} on line {line}: {e}")
         traceback.print_tb(e.__traceback__)
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
     
     # Close function
     return
@@ -428,9 +446,11 @@ def handle_kline(message, interval):
 # Handle messages to keep orderbook up to date
 def handle_orderbook(message):
     
-    # Debug
+    # Debug and speed
     debug_1 = False    # Show orderbook
     debug_2 = False    # Show buy and sell depth percentages
+    speed   = False
+    stime   = defs.now_utc()[4]
 
     # Errors are not reported within websocket
     try:
@@ -519,6 +539,9 @@ def handle_orderbook(message):
         defs.announce(f"An error occurred in {filename} on line {line}: {e}")
         traceback.print_tb(e.__traceback__)
     
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+
     # Close function
     return
 
@@ -526,19 +549,21 @@ def handle_orderbook(message):
 def handle_trade(message):
     
     # Debug
-    debug_1 = False
-    debug_2 = False
-
-    # Declare some variables global
-    global trade_advice, trades
-    
-    # Initialize variables
-    result     = ()
-    datapoints = {}
-    compare    = {'time': [], 'side': [], 'size': [], 'price': []}
+    debug_1 = False   # Show incoming trade
+    debug_2 = False   # Show datapoints
+    speed   = False
+    stime   = defs.now_utc()[4]
    
     # Errors are not reported within websocket
     try:
+
+        # Declare some variables global
+        global trade_advice, trades
+        
+        # Initialize variables
+        result     = ()
+        datapoints = {}
+        compare    = {'time': [], 'side': [], 'size': [], 'price': []}
 
         # Show incoming message
         if debug_1: 
@@ -576,7 +601,7 @@ def handle_trade(message):
         datapoints['compare'] = len(compare['time'])
         datapoints['limit']   = use_trade['limit']
         if (datapoints['compare'] >= datapoints['trade']) and (datapoints['trade'] >= datapoints['limit']):
-            defs.announce("*** Warning: Increase trade_limit variable in config file ***", True, 1)
+            defs.announce("*** Warning: Increase trade_limit variable in config file! ***", True, 1)
         
         # Debug
         if debug_2:
@@ -592,6 +617,9 @@ def handle_trade(message):
         defs.announce(f"An error occurred in {filename} on line {line}: {e}")
         traceback.print_tb(e.__traceback__)
        
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+
     # Close function
     return
 
@@ -599,25 +627,28 @@ def handle_trade(message):
 def buy_matrix(spot, active_order, all_buys, interval):
 
     # Declare some variables global
-    global indicators_advice, orderbook_advice, trade_advice, info
+    global indicators_advice, orderbook_advice, trade_advice, pricelimit_advice, info
     
     # Initialize variables
-    can_buy                = False
-    spread_advice          = {}
-    result                 = ()    
-          
+    can_buy       = False
+    spread_advice = {}
+    result        = ()
+    speed         = False
+    stime         = defs.now_utc()[4]
+              
     # Only initiate buy and do complex calculations when not already trailing
     if not active_order['active']:
         
         # Get buy advice
-        result            = defs.advice_buy(indicators_advice, orderbook_advice, trade_advice, use_indicators, use_spread, use_orderbook, use_trade, spot, klines, all_buys, interval)
+        result            = defs.advice_buy(indicators_advice, orderbook_advice, trade_advice, pricelimit_advice, use_indicators, use_spread, use_orderbook, use_trade, use_pricelimit, spot, klines, all_buys, interval)
         indicators_advice = result[0]
         spread_advice     = result[1]
         orderbook_advice  = result[2]
         trade_advice      = result[3]
+        pricelimit_advice = result[4]
                     
         # Get buy decission and report
-        result            = defs.decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, interval, intervals)
+        result            = defs.decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, pricelimit_advice, use_pricelimit, interval, intervals)
         can_buy           = result[0]
         message           = result[1]
         indicators_advice = result[2]
@@ -630,6 +661,9 @@ def buy_matrix(spot, active_order, all_buys, interval):
             all_buys     = result[1]
             info         = result[2]
     
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+
     # Return active_order
     return active_order
 
@@ -702,7 +736,7 @@ if optimizer['enabled']:
     prices       = preload.combine_prices(prices_old, prices)
     
     # Calulcate optimized data
-    result       = defs.optimize(prices, profit, active_order, optimizer)
+    result       = optimum.optimize(prices, profit, active_order, optimizer)
     profit       = result[0]
     active_order = result[1]
     optimizer    = result[2]

@@ -13,6 +13,11 @@ config = load_config()
 # Create a new all buy database file
 def save(all_buys, info):
 
+    # Debug and speed
+    debug = False
+    speed = True
+    stime = defs.now_utc()[4]
+
     # Write the file
     with open(config.dbase_file, 'w', encoding='utf-8') as json_file:
         json.dump(all_buys, json_file)
@@ -20,9 +25,20 @@ def save(all_buys, info):
     # Get statistics and output to stdout
     result = order_count(all_buys, info)
     defs.announce(f"Database contains {result[0]} buy transactions and {defs.format_number(result[1], info['basePrecision'])} {info['baseCoin']} was bought")
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+
+    # Return
+    return
     
 # Load the database with all buys
 def load(dbase_file, info):
+
+    # Debug and speed
+    debug = False
+    speed = True
+    stime = defs.now_utc()[4]
 
     # Initialize variables
     all_buys = []
@@ -42,15 +58,23 @@ def load(dbase_file, info):
     result = order_count(all_buys, info)
     defs.announce(f"Database contains {result[0]} buy transactions and {defs.format_number(result[1], info['basePrecision'])} {info['baseCoin']} was bought")
 
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
+
     # Return database
     return all_buys
 
 # Remove an order from the all buys database file
 def remove(orderid, all_buys, info):
-      
+
+    # Debug and speed
+    debug = False
+    speed = True
+    stime = defs.now_utc()[4]
+
     # Initialize variables
     all_buys_new = []
-    found_order   = False
+    found_order  = False
     
     # Remove the order
     for loop_buy in all_buys:
@@ -66,8 +90,11 @@ def remove(orderid, all_buys, info):
     
     # Save to database
     save(all_buys_new, info)
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
     
-    # Retrun database
+    # Return database
     return all_buys_new
 
 # Register all buys in a database file
@@ -75,6 +102,8 @@ def register_buy(buy_order, all_buys, info):
 
     # Debug
     debug = False
+    speed = False
+    stime = defs.now_utc()[4]
 
     # Initialize variables
     counter       = 0
@@ -102,6 +131,9 @@ def register_buy(buy_order, all_buys, info):
 
     # Save to database
     save(all_buys_new, info)    
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
     
     # Return new buy database
     return all_buys_new
@@ -111,6 +143,8 @@ def register_sell(all_buys, all_sells, info):
     
     # Debug
     debug = False
+    speed = False
+    stime = defs.now_utc()[4]
     
     # Initialize variables
     unique_ids = 0
@@ -141,17 +175,28 @@ def register_sell(all_buys, all_sells, info):
     
     # Output to stdout
     defs.announce(f"Sold {unique_ids} orders via trailing sell")
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
     
     # Return the cleaned buys
     return filtered_buys
 
 # Determine number of orders and qty
 def order_count(all_buys, info):
+
+    # Debug and speed
+    debug = False
+    speed = True
+    stime = defs.now_utc()[4]
     
     # Get number of transactions
     order_count = len(all_buys)
     total_qty   = sum(item['cumExecQty'] for item in all_buys)
     total_qty   = defs.round_number(total_qty, info['basePrecision'], "down")
+
+    # Report execution time
+    if speed: defs.announce(defs.report_exec(stime))
     
     # Return data
     return order_count, total_qty
