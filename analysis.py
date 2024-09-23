@@ -98,7 +98,7 @@ multiplier             = config.multiplier
 dbase_file             = config.dbase_file
 revenue_file           = config.revenue_file
 compounding            = {}
-compounding['enabled'] = config.compounding
+compounding['enabled'] = config.compounding_enabled
 compounding['start']   = config.compounding_start
 compounding['now']     = config.compounding_start
 
