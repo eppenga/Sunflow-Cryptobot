@@ -104,7 +104,7 @@ use_pricelimit['min_sell_enabled']   = False                                   #
 use_pricelimit['max_sell_enabled']   = False                                   # Set pricelimits maximum sell price toggle
 use_pricelimit['max_buy']            = config.pricelimit_max_buy               # Maximum buy price 
 use_pricelimit['min_sell']           = config.pricelimit_min_sell              # Minimum sell price
-use_pricelimit['max_sell']          = config.pricelimit_max_sell              # Maximum sell price
+use_pricelimit['max_sell']           = config.pricelimit_max_sell              # Maximum sell price
 if config.pricelimit_max_buy > 0 : use_pricelimit['max_buy_enabled'] = True    # Maximum buy price enabled
 if config.pricelimit_min_sell > 0: use_pricelimit['min_sell_enabled'] = True   # Minimum sell price enabled
 if config.pricelimit_max_sell > 0: use_pricelimit['max_sell_enabled'] = True   # Maximum sell price enabled
@@ -648,7 +648,7 @@ def buy_matrix(spot, active_order, all_buys, interval):
         pricelimit_advice = result[4]
                     
         # Get buy decission and report
-        result            = defs.decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, pricelimit_advice, use_pricelimit, interval, intervals)
+        result            = defs.decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, pricelimit_advice, use_pricelimit, interval, intervals, info)
         can_buy           = result[0]
         message           = result[1]
         indicators_advice = result[2]

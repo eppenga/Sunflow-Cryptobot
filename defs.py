@@ -387,7 +387,7 @@ def indicators_average(indicators_advice, intervals, use_indicators):
     return indicators_advice
 
 # Determines buy decission and outputs to stdout
-def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, pricelimit_advice, use_pricelimit, interval, intervals):
+def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, orderbook_advice, use_orderbook, trade_advice, use_trade, pricelimit_advice, use_pricelimit, interval, intervals, info):
             
     # Debug
     debug = False
@@ -487,7 +487,7 @@ def decide_buy(indicators_advice, use_indicators, spread_advice, use_spread, ord
     if use_pricelimit['enabled']:
         if pricelimit_advice['buy_result']:
             do_buy[7] = True
-        message += f"Pricelimit: "
+        message += f"Max buy: {defs.format_number(use_pricelimit['max_buy'], info['tickSize'])} {info['quoteCoin']} "
         message += report_buy(pricelimit_advice['buy_result']) + ", "
     else:
         do_buy[7] = True
