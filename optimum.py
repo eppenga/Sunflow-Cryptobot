@@ -167,9 +167,6 @@ def optimize(prices, profit, active_order, optimizer):
         if speed: defs.announce(defs.report_exec(stime, "early return due to error"))    
         return profit, active_order, optimizer
    
-    # Calculate the elapsed time
-    elapsed_time = defs.now_utc()[4] - start_time
-
     # Reset error counter
     df_errors = 0
   
