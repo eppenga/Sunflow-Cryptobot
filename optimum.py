@@ -177,7 +177,7 @@ def optimize(prices, profit, active_order, optimizer):
     if volatility != 0:
         defs.announce(f"Volatility {(volatility * 100):.4f} %, profit {profit_new:.4f} %, trigger price distance {distance_new:.4f} % and age {start_time - prices['time'][0]} ms")
     else:
-        defs.announce(f"Profit and trigger price distance not adjusted because volatility is out of range")
+        defs.announce(f"Profit and trigger price distance not adjusted, volatility is out of range")
 
     # Report execution time
     if speed: defs.announce(defs.report_exec(stime))
