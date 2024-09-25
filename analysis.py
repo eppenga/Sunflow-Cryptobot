@@ -248,11 +248,32 @@ message = message + f"Todays profit: {defs.format_number(today_profit, info['quo
 message = message + f"Total profit: {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']}"
 fig.text(0.99, 0.98, message, ha='right', va='top', fontsize=12, fontname='DejaVu Sans Mono')
 
-# First subplot: Histogram of average prices
-sns.histplot(df_all_buys['avgPrice'], bins=20, kde=False, ax=axes[0])
+# First subplot: Outstanding orders
+
+# Bin the avgPrice into 20 bins
+df_all_buys['price_bin'] = pd.cut(df_all_buys['avgPrice'], bins=20)
+
+# Group by the bins and sum the cumExecQty for each bin
+price_bins = df_all_buys.groupby('price_bin', observed=False)['cumExecValue'].sum().reset_index()
+
+# Calculate the mid-point of each bin for labeling purposes
+price_bins['bin_mid'] = price_bins['price_bin'].apply(lambda x: x.mid)
+
+# Create an evenly spaced array for bar positions
+x_positions = range(len(price_bins))
+
+# Plotting the modified histogram with evenly spaced bars
+axes[0].bar(x_positions, price_bins['cumExecValue'], width=0.9)  # Adjust width as needed
+
+# Set the x-axis ticks to the custom positions with mid-point price values as labels
+axes[0].set_xticks(x_positions)
+#axes[0].set_xticklabels([f'{mid:.3f}' for mid in price_bins['bin_mid']], rotation=45)
+axes[0].set_xticklabels([f'{mid:.4f}' for mid in price_bins['bin_mid']], rotation=45)
+
+# Set title and labels
 axes[0].set_title('Distribution of Outstanding Orders')
 axes[0].set_xlabel('Average Price')
-axes[0].set_ylabel('Frequency')
+axes[0].set_ylabel(f'Total ({info["quoteCoin"]})')
 
 # Second subplot: Profit per day
 sns.lineplot(data=profit_per_day, x='date', y='revenue', marker='o', ax=axes[1])
