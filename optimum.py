@@ -5,8 +5,7 @@
 # Load libraries
 from loader import load_config
 import defs, pprint
-import pandas as pd
-import numpy as np
+import math, pandas as pd
 
 # Load config
 config = load_config()
@@ -79,8 +78,8 @@ def optimize(prices, profit, active_order, optimizer):
     # Try to optimize
     try:
 
-        ## Create a dataframe in two steps, we do this for speed reasons. The first part of the dataframe is kept in
-        ## like a cache and then we always add the last one or two intervals. 
+        ## Create a dataframe in two steps, we do this for speed reasons. The first part of the dataframe is kept
+        ## in something like a cache, and then we always add the last one or two intervals. 
 
         # Resample and create dataframe for the first time or get it from cache
         if optimizer['df'].empty:
@@ -121,10 +120,10 @@ def optimize(prices, profit, active_order, optimizer):
 
         # Calculate the log returns
         df = df.to_frame()
-        df['log_return'] = np.log(df['price'] / df['price'].shift(1))
+        df['log_return'] = df['price'].apply(lambda x: math.log(x)) - df['price'].shift(1).apply(lambda x: math.log(x))
         
         # Calculate the rolling volatility (standard deviation of log returns)
-        df['volatility'] = df['log_return'].rolling(window=length).std() * np.sqrt(length)
+        df['volatility'] = df['log_return'].rolling(window=length).std() * math.sqrt(length)
         
         # Calculate the average volatility
         average_volatility = df['volatility'].mean()

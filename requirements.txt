@@ -4,4 +4,3 @@ pandas
 pandas_ta
 pyarrow
 apprise
-numpy
