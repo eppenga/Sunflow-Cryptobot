@@ -1,6 +1,4 @@
-setuptools
 pybit
-pandas
-pandas_ta
-pyarrow
+pandas==2.2.1
+pandas-ta==0.2.45b
 apprise
