@@ -581,8 +581,8 @@ def report_wallet(all_buys, info):
     total_quote  = equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
     
     # Create messsage
-    message = f"Wallet value {total_equity} {info['quoteCoin']}, "
-    message = message + f"database has {order_info[0]} transactions "
+    message = f"Wallet {total_equity} {info['quoteCoin']}, "
+    message = message + f"database {order_info[0]} orders "
     message = message + f"worth {defs.format_number(order_info[1], info['basePrecision'])} {info['baseCoin']}, "
     message = message + f"{total_quote} {info['quoteCoin']} is free"
     

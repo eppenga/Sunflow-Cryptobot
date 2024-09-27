@@ -891,10 +891,14 @@ def report_exec(start_time, supplement = "", always_display = False):
        
     # Initialize variables
     message    = ""
-    mess_delay = 500
-    warn_delay = 1000
+    mess_delay = config.func_norm_delay
+    warn_delay = config.func_warn_delay
     end_time   = now_utc()[4]
     exec_time  = end_time - start_time
+    
+    # Overrule always_display
+    if config.func_show_delay:
+        always_display = True
     
     # Create message
     if exec_time > mess_delay or always_display:
