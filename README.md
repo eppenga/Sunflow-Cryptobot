@@ -1,7 +1,7 @@
 # Sunflow Crypto Trading Bot
 **Crypto Trading Bot to use on Bybit, high frequency and efficient resource handling. Uses websockets to trade in realtime featuring trailing buy and sell. Option to use an additional klines interval to work as confirmation for buy orders, or via orderbook analysis or technical analysis simular to TradingView. Both prevent over-buying when price goes down. Can also behave as a dynamic gribot to save on funds where spread distance and profit percentage are customizable.**
 
-_Please note: Sunflow needs API Version 5 of the "unified trading account" of Bybit (basically, the newest version)._
+_Please note: Sunflow needs API Version 5 of the "unified trading account" of Bybit, and is tested on Ubuntu Server 24.04 LTS@AWS._
 
 ## Features
 - Trailing Buy and Sell
