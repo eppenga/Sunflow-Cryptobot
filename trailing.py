@@ -113,7 +113,7 @@ def check_order(symbol, spot, compounding, active_order, all_buys, all_sells, in
             else:
                 message_1 = message_1 + f", fill price {defs.format_number(transaction['avgPrice'], info['tickSize'])} {info['quoteCoin']} "
                 message_1 = message_1 + f"and profit {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
-                message_2 = f"sold {defs.format_number(active_order['qty'], currency_format)} {currency} and "
+                message_2 = f"sold {defs.format_number(active_order['qty'], currency_format)} {currency}, "
                 message_2 = message_2 + f"profit is {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
                 # Send message to group 2
                 defs.announce(message_2, False, 0, True, 1)

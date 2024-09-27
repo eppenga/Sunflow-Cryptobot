@@ -156,9 +156,13 @@ print("Exchange data")
 print("=============")
 print(f"Base assets   : {defs.format_number(equity_base, info['basePrecision'])} {info['baseCoin']}")
 print(f"Spot price    : {defs.format_number(spot, info['tickSize'])} {info['quoteCoin']}")
-print(f"Base value    : {defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']} (spot price * assets)")
-print(f"Quote value   : {defs.format_number(equity_quote, info['quotePrecision'])} {info['quoteCoin']} (free to spend by bot)")
+print(f"Total {info['baseCoin']}     : {defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']} (spot price * assets)")
+print(f"Total {info['quoteCoin']}    : {defs.format_number(equity_quote, info['quotePrecision'])} {info['quoteCoin']} (free to spend by bot)")
+if compounding['enabled']:
+    print(f"Start value   : {defs.format_number(compounding['start'], info['tickSize'])} {info['quoteCoin']} (when bot started)")
 print(f"Total value   : {defs.format_number(spot * equity_base + equity_quote, info['quotePrecision'])} {info['quoteCoin']} (total bot value)")
+if compounding['enabled']:
+    print(f"Profit now    : {defs.format_number((spot * equity_base + equity_quote) - compounding['start'], info['tickSize'])} {info['quoteCoin']} (net present value)")
 
 print()
 
@@ -219,7 +223,7 @@ today_profit = df_revenue[df_revenue['createdTime'].dt.normalize() == today_date
 print(f"Todays profit : {defs.format_number(today_profit, info['quotePrecision'])} {info['quoteCoin']} (today)")
 
 # Output total profit
-print(f"Total profit  : {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']}")
+print(f"Trade profit  : {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']} (alltime)")
 
 print()
 
@@ -245,7 +249,7 @@ fig.text(0.01, 0.98, message, ha='left', va='top', fontsize=12, fontname='DejaVu
 # Add top right text
 message = message_dp_graph
 message = message + f"Todays profit: {defs.format_number(today_profit, info['quotePrecision'])} {info['quoteCoin']}\n"
-message = message + f"Total profit: {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']}"
+message = message + f"Trade profit: {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']}"
 fig.text(0.99, 0.98, message, ha='right', va='top', fontsize=12, fontname='DejaVu Sans Mono')
 
 # First subplot: Outstanding orders
@@ -267,8 +271,7 @@ axes[0].bar(x_positions, price_bins['cumExecValue'], width=0.9)  # Adjust width 
 
 # Set the x-axis ticks to the custom positions with mid-point price values as labels
 axes[0].set_xticks(x_positions)
-#axes[0].set_xticklabels([f'{mid:.3f}' for mid in price_bins['bin_mid']], rotation=45)
-axes[0].set_xticklabels([f'{mid:.4f}' for mid in price_bins['bin_mid']], rotation=45)
+axes[0].set_xticklabels([f'{defs.format_number(mid, info["tickSize"])}' for mid in price_bins['bin_mid']], rotation=45)
 
 # Set title and labels
 axes[0].set_title('Distribution of Outstanding Orders')

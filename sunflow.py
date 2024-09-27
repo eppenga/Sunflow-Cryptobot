@@ -757,9 +757,9 @@ if compounding['enabled']:
 ## Announce start
 print("\n*** Starting ***\n")
 if config.timeutc_std:
-    time_output = defs.now_utc()[0] + " UTC"
+    time_output = defs.now_utc()[0] + " UTC time"
 else:
-    time_output = defs.now_utc()[5] + " local time"
+    time_output = defs.now_utc()[5] + " " + config.timezone_str + " time"
 defs.announce(f"Sunflow started at {time_output}", True, 1)
 
 
@@ -829,4 +829,8 @@ if __name__ == "__main__" and not defs.halt_sunflow:
 
 
 ### Say goodbye ###
-defs.announce(f"*** Sunflow terminated at {defs.now_utc()[5]} ***", True, 1)
+if config.timeutc_std:
+    time_output = defs.now_utc()[0] + " UTC time"
+else:
+    time_output = defs.now_utc()[5] + " " + config.timezone_str + " time"
+defs.announce(f"*** Sunflow terminated at {time_output} ***", True, 1)
