@@ -131,9 +131,11 @@ df_revenue  = df_revenue[df_revenue['side'] == 'Sell']
 ab_elem = calc_time(df_all_buys)
 rv_elem = calc_time(df_revenue)
 
-# Get total wallet
-equity_base  = orders.get_equity(info['baseCoin'])
-equity_quote = orders.get_equity(info['quoteCoin'])
+# Get wallet for base and quote coin
+coins        = info['baseCoin'] + "," + info['quoteCoin']
+wallet       = orders.get_wallet(coins)
+equity_base  = orders.equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
+equity_quote = orders.equity_safe(wallet['result']['list'][0]['coin'][1]['equity'])
 
 # Group the revenue data by date
 df_revenue['date'] = df_revenue['createdTime'].dt.date
