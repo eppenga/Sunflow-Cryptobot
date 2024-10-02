@@ -578,7 +578,7 @@ def report_wallet(spot, all_buys, info):
       
     # Output to stdout
     defs.announce(message_1, True, 1)
-    defs.announce(message_2, True, 1)    
+    defs.announce(message_2)
 
     # Report execution time
     if speed: defs.announce(defs.report_exec(stime))
