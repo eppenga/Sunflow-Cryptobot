@@ -747,7 +747,7 @@ if config.database_rebalance:
 
 # Preload wallet, quote and base currency to stdout
 if config.wallet_report:
-    compounding['now'] = orders.report_wallet(all_buys, info)[0]
+    compounding['now'] = orders.report_wallet(spot, all_buys, info)[0]
 
 # Preload compounding
 if compounding['enabled']:

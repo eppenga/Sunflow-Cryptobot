@@ -424,6 +424,35 @@ def sell(symbol, spot, active_order, prices, info):
     # Return data
     return active_order
 
+# Get wallet
+def get_wallet(coins):
+
+    # Debug
+    debug = False
+
+    # Get wallet
+    message = defs.announce("session: get_wallet_balance")
+    try:
+        wallet = session.get_wallet_balance(
+            accountType = "UNIFIED",
+            coin        = coins
+        )
+    except Exception as e:
+        defs.log_error(e)
+        
+    # Check API rate limit and log data if possible
+    if wallet:
+        wallet = defs.rate_limit(wallet)
+        defs.log_exchange(wallet, message)
+
+    # Debug
+    if debug:
+        defs.announce("Wallet information:")
+        pprint.pprint(wallet)
+
+    # Return wallet
+    return wallet
+
 # Handle equity requests safely
 def equity_safe(equity):
     
@@ -435,46 +464,6 @@ def equity_safe(equity):
     
     # Return equity
     return equity
-
-# Get total equity of wallet
-def get_equity(coin):
-    
-    # Debug and speed
-    debug = False
-    speed = True
-    stime = defs.now_utc()[4]
-
-    # Initialize variables
-    wallet        = {}
-    equity_wallet = 0
-
-    # Get wallet
-    message = defs.announce("session: get_wallet_balance")
-    try:
-        wallet = session.get_wallet_balance(
-            accountType = "UNIFIED",
-            coin        = coin
-        )
-    except Exception as e:
-        defs.log_error(e)
-        
-    # Check API rate limit and log data if possible
-    if wallet:
-        wallet = defs.rate_limit(wallet)
-        defs.log_exchange(wallet, message)
-
-    if debug:
-        defs.announce("Wallet information:")
-        pprint.pprint(wallet)
-
-    # Get equity from wallet
-    equity_wallet = equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
-
-    # Report execution time
-    if speed: defs.announce(defs.report_exec(stime))
-
-    # Return equity of wallet
-    return equity_wallet
 
 # Rebalances the database vs exchange by removing orders with the highest price
 def rebalance(all_buys, info):
@@ -497,10 +486,13 @@ def rebalance(all_buys, info):
     if debug:
         defs.announce("Trying to rebalance buys database with exchange data")
 
-    # Get equity from wallet
-    equity_wallet = get_equity(info['baseCoin'])
+    # Get wallet for base coin
+    wallet = get_wallet(info['baseCoin'])
+    
+    # Get equity from wallet for basecoin
+    equity_wallet = equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
   
-    # Get equity from all buys
+    # Get equity from all buys for basecoin
     equity_dbase  = float(sum(order['cumExecQty'] for order in all_buys))
     equity_remind = float(equity_dbase)
     equity_diff   = equity_wallet - equity_dbase
@@ -546,7 +538,7 @@ def rebalance(all_buys, info):
     return all_buys
 
 # Report wallet info to stdout
-def report_wallet(all_buys, info):
+def report_wallet(spot, all_buys, info):
 
     # Debug and speed
     debug = False
@@ -554,43 +546,42 @@ def report_wallet(all_buys, info):
     stime = defs.now_utc()[4]
 
     # Initialize variables
-    message    = ""
-    wallet     = {}
-    order_info = ()
+    coins     = ""
+    message_1 = ""
+    message_2 = ""
+    wallet    = {}
+    result    = ()
 
     # Get order count and quantity
-    order_info = database.order_count(all_buys, info)
+    result  = database.order_count(all_buys, info)
+    base_d = result[1]
     
-    # Get wallet values
-    message = defs.announce("session: get_wallet_balance")
-    try:
-        wallet = session.get_wallet_balance(
-            accountType = "UNIFIED",
-            coin        = info['quoteCoin']
-        )
-    except Exception as e:
-        defs.log_error(e)
-        
-    # Check API rate limit and log data if possible
-    if wallet:
-        wallet = defs.rate_limit(wallet)
-        defs.log_exchange(wallet, message)
-
-    # Get results
-    total_equity = equity_safe(wallet['result']['list'][0]['totalEquity'])
-    total_quote  = equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
+    # Get wallet for base and quote coin
+    coins   = info['baseCoin'] + "," + info['quoteCoin']
+    wallet  = get_wallet(coins)
+    base_e  = equity_safe(wallet['result']['list'][0]['coin'][0]['equity'])
+    quote_e = equity_safe(wallet['result']['list'][0]['coin'][1]['equity'])
+       
+    # Get wallet equity
+    equity = equity_safe(wallet['result']['list'][0]['totalEquity'])
+    
+    # Calculate values
+    bot    = base_e * spot + quote_e    # Bot value in quote according to exchange
+    lost   = base_e - base_d            # Lost due to inconsistancies
     
     # Create messsage
-    message = f"Wallet {total_equity} {info['quoteCoin']}, "
-    message = message + f"database {order_info[0]} orders "
-    message = message + f"worth {defs.format_number(order_info[1], info['basePrecision'])} {info['baseCoin']}, "
-    message = message + f"{total_quote} {info['quoteCoin']} is free"
-    
+    message_1 = f"Sunflow Cryptobot value is {defs.round_number(bot, info['quotePrecision'])} {info['quoteCoin']} "
+    message_1 = message_1 + f"({defs.round_number(base_e, info['basePrecision'])} {info['baseCoin']} / {defs.round_number(quote_e, info['quotePrecision'])} {info['quoteCoin']})"    
+    message_2 = f"Database has {defs.round_number(base_d, info['basePrecision'])} {info['baseCoin']} "
+    message_2 = message_2 + f"(lost {defs.round_number(lost, info['basePrecision'])} {info['baseCoin']}). "
+    message_2 = message_2 + f"Equity of entire wallet is {equity:.2f} USD"
+      
     # Output to stdout
-    defs.announce(message, True, 1)
+    defs.announce(message_1, True, 1)
+    defs.announce(message_2, True, 1)    
 
     # Report execution time
     if speed: defs.announce(defs.report_exec(stime))
  
-    # Return message
-    return total_equity, total_quote
+    # Return total equity and quote
+    return bot, base_e, quote_e, base_d, lost, equity

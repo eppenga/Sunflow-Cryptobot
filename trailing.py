@@ -123,9 +123,9 @@ def check_order(symbol, spot, compounding, active_order, all_buys, all_sells, in
 
             # Report wallet, quote and base currency to stdout and adjust compounding
             if config.wallet_report:
-                compounding['now'] = orders.report_wallet(all_buys, info)[0]
+                compounding['now'] = orders.report_wallet(spot, all_buys, info)[0]
             
-            # Report compounding
+            # Report compounding, only possible when wallet reporting is active, see config file
             if compounding['enabled']:
                 info = defs.calc_compounding(info, spot, compounding)
                 
