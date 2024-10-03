@@ -173,7 +173,7 @@ def log_error(exception):
 
     # Error: Dataframe failure
     if ("(30908)" in exception) or ("Length of values" in exception) or ("All arrays must be of the same length" in exception):
-        defs.announce(f"*** Warning: Dataframe issue for the {df_errors} time! ***", True, 1)
+        defs.announce(f"*** Warning: Dataframe issue for the {df_errors + 1} time! ***", True, 1)
         halt_execution = False
 
     # Error: Remote disconnected

@@ -49,6 +49,7 @@ pricelimit_max_sell = 0            # Maximum sell price, set to 0 if do not want
 
 # Optimizer
 optimizer_enabled   = False        # Try to optimize the minimum profit and trigger price distance percentage
+optimizer_spread    = True         # If optimize is active, also optimize spread distance
 optimizer_sides     = "Buy,Sell"   # When optimizing optimize both on buy and sell or only sell
 optimizer_interval  = 30           # Interval in minutes used for indicator KPI
 optimizer_limit_min = 25920000     # Minimum miliseconds of spot price data (8,640,000 is one day)

@@ -5,7 +5,7 @@
 # Load libraries
 from loader import load_config
 from pybit.unified_trading import HTTP
-import database, defs, distance, orders, pprint
+import database, defs, distance, orders, pprint, threading
 
 # Load config
 config = load_config()
@@ -121,10 +121,14 @@ def check_order(symbol, spot, compounding, active_order, all_buys, all_sells, in
             # Send message to group 1
             defs.announce(message_1, True, 1)
 
-            # Report wallet, quote and base currency to stdout and adjust compounding
-            if config.wallet_report:
+            def report_wallet_task():
                 compounding['now'] = orders.report_wallet(spot, all_buys, info)[0]
             
+            # Report wallet, quote and base currency to stdout and adjust compounding
+            if config.wallet_report:
+                wallet_thread = threading.Thread(target=report_wallet_task)
+                wallet_thread.start()
+                            
             # Report compounding, only possible when wallet reporting is active, see config file
             if compounding['enabled']:
                 info = defs.calc_compounding(info, spot, compounding)

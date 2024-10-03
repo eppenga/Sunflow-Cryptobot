@@ -43,7 +43,7 @@ def resample_optimzer(prices, interval):
     return df_resampled
 
 # Optimize profit and default trigger price distance based on previous prices
-def optimize(prices, profit, active_order, optimizer):
+def optimize(prices, profit, active_order, use_spread, optimizer):
        
     # Debug and speed
     debug = False
@@ -57,10 +57,12 @@ def optimize(prices, profit, active_order, optimizer):
     volatility   = 0                                    # Volatility
     length       = 10                                   # Length over which the volatility is calculated
     interval     = str(optimizer['interval']) + "min"   # Interval used for indicator KPI (in our case historical volatility)
-    profit       = profit                               # Current profit
-    profit_new   = profit                               # Proposed new profit to be
-    distance     = active_order['distance']             # Current distance
-    distance_new = active_order['distance']             # Proposed new distance to be
+    profit       = optimizer['profit']                  # Initial profit
+    profit_new   = optimizer['profit']                  # New profit to be
+    distance     = optimizer['distance']                # Initial distance
+    distance_new = optimizer['distance']                # New distance to be
+    spread       = optimizer['spread']                  # Initial spread
+    spread_new   = optimizer['spread']                  # New spread to be
     start_time   = defs.now_utc()[4]                    # Current time
 
     # Optimize only on desired sides
@@ -138,17 +140,24 @@ def optimize(prices, profit, active_order, optimizer):
         if debug:
             defs.announce(f"Raw optimized volatility {df['volatility_deviation_pct'].iloc[-1]:.4f} %")
         
-        # Get volatility deviation and calculate new price and distance
+        # Get volatility deviation
         volatility   = df['volatility_deviation_pct'].iloc[-1] * optimizer['scaler']
         volatility   = min(volatility, optimizer['adj_max'] / 100)
         volatility   = max(volatility, optimizer['adj_min'] / 100)
-        profit_new   = optimizer['profit'] * (1 + volatility)
-        distance_new = (optimizer['distance'] / optimizer['profit']) * profit_new
+
+        # Set new profit and trigger price distance
+        profit_new   = profit * (1 + volatility)
+        distance_new = (distance / profit) * profit_new
+        
+        # Set new spread distance
+        if optimizer['spread_enabled']:
+            spread_new = spread * (1 + volatility)
 
         # Debug to stdout
         if debug:
             defs.announce("Optimized full dataframe:")
             print(df)
+            defs.annouce(f"Age of database {start_time - prices['time'][0]} ms")
             
         # Store the dataframe for future use, except for the last row
         optimizer['df'] = df.iloc[:-1]
@@ -170,11 +179,12 @@ def optimize(prices, profit, active_order, optimizer):
     df_errors = 0
   
     # Rework to original variable
+    use_spread['distance']   = spread_new
     active_order['distance'] = distance_new
   
     # Report to stdout
     if volatility != 0:
-        defs.announce(f"Volatility {(volatility * 100):.4f} %, profit {profit_new:.4f} %, trigger price distance {distance_new:.4f} % and age {start_time - prices['time'][0]} ms")
+        defs.announce(f"Volatility {(volatility * 100):.4f} %, profit {profit_new:.4f} %, trigger price distance {distance_new:.4f} %, spread {spread_new:.4f} %")
     else:
         defs.announce(f"Profit and trigger price distance not adjusted, volatility out of range")
 
@@ -182,4 +192,4 @@ def optimize(prices, profit, active_order, optimizer):
     if speed: defs.announce(defs.report_exec(stime))
 
     # Return
-    return profit_new, active_order, optimizer
+    return profit_new, active_order, use_spread, optimizer

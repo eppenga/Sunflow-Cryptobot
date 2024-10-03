@@ -57,9 +57,11 @@ depth_data                   = {}                             # Depth buy and se
 # Optimize profit and trigger price distance
 optimizer                    = {}                             # Profit and trigger price distance optimizer
 optimizer['enabled']         = config.optimizer_enabled       # Try to optimize the minimum profit and distance percentage
-optimizer['sides']           = config.optimizer_sides         # When optimizing optimize both on buy and sell or only sell
+optimizer['spread_enabled']  = config.optimizer_spread        # If optimizer is active, also optimize spread
+optimizer['sides']           = config.optimizer_sides         # If optimizer is active, optimize both buy and sell, or only sell
 optimizer['profit']          = config.profit                  # Initial profit percentage when Sunflow started, will never change
 optimizer['distance']        = config.distance                # Initial trigger price distance percentage when Sunflow started, will never change
+optimizer['spread']          = config.spread_distance         # Initial minimum spread in percentages when Sunflow started, will never change
 optimizer['interval']        = config.optimizer_interval      # Interval used for indicator KPI
 optimizer['limit_min']       = config.optimizer_limit_min     # Minimum miliseconds of spot price data
 optimizer['limit_max']       = config.optimizer_limit_max     # Maximum miliseconds of spot price data
@@ -260,10 +262,11 @@ def handle_ticker(message):
 
             # Optimize profit and distance percentages
             if optimizer['enabled']:
-                result       = optimum.optimize(prices, profit, active_order, optimizer)
+                result       = optimum.optimize(prices, profit, active_order, use_spread, optimizer)
                 profit       = result[0]
                 active_order = result[1]
-                optimizer    = result[2]
+                use_spread   = result[2]
+                optimizer    = result[3]
 
             # Check if and how much we can sell
             result                  = orders.check_sell(new_spot, profit, active_order, all_buys, use_pricelimit, pricelimit_advice, info)
@@ -736,10 +739,11 @@ if optimizer['enabled']:
     prices       = preload.combine_prices(prices_old, prices)
     
     # Calulcate optimized data
-    result       = optimum.optimize(prices, profit, active_order, optimizer)
+    result       = optimum.optimize(prices, profit, active_order, use_spread, optimizer)
     profit       = result[0]
     active_order = result[1]
-    optimizer    = result[2]
+    use_spread   = result[2]
+    optimizer    = result[3]
 
 # Preload database inconsistencies
 if config.database_rebalance: 
@@ -753,6 +757,8 @@ if config.wallet_report:
 if compounding['enabled']:
     info = defs.calc_compounding(info, spot, compounding)
 
+
+exit()
 
 ## Announce start
 print("\n*** Starting ***\n")
@@ -804,6 +810,7 @@ def simulated_ticker():
         }
     }
 
+# Main
 def main():
     ws = connect_websocket()
     subscribe_streams(ws)
@@ -824,6 +831,7 @@ def main():
             ws = connect_websocket()
             subscribe_streams(ws)
 
+# Start
 if __name__ == "__main__" and not defs.halt_sunflow:
     main()
 
