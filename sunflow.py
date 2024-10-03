@@ -205,7 +205,7 @@ def handle_ticker(message):
     try:
    
         # Declare some variables global
-        global spot, ticker, profit, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker, optimizer, compounding, info
+        global spot, ticker, profit, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker, use_spread, optimizer, compounding, info
 
         # Initialize variables
         ticker              = {}
@@ -757,8 +757,6 @@ if config.wallet_report:
 if compounding['enabled']:
     info = defs.calc_compounding(info, spot, compounding)
 
-
-exit()
 
 ## Announce start
 print("\n*** Starting ***\n")
