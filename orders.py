@@ -570,11 +570,11 @@ def report_wallet(spot, all_buys, info):
     lost   = base_e - base_d            # Lost due to inconsistancies
     
     # Create messsage
-    message_1 = f"Sunflow Cryptobot value is {defs.round_number(bot, info['quotePrecision'])} {info['quoteCoin']} "
+    message_1 = f"Bot value is {defs.round_number(bot, info['quotePrecision'])} {info['quoteCoin']} "
     message_1 = message_1 + f"({defs.round_number(base_e, info['basePrecision'])} {info['baseCoin']} / {defs.round_number(quote_e, info['quotePrecision'])} {info['quoteCoin']})"    
     message_2 = f"Database has {defs.round_number(base_d, info['basePrecision'])} {info['baseCoin']} "
-    message_2 = message_2 + f"(lost {defs.round_number(lost, info['basePrecision'])} {info['baseCoin']}). "
-    message_2 = message_2 + f"Equity of entire wallet is {equity:.2f} USD"
+    message_2 = message_2 + f"(lost {defs.round_number(lost, info['basePrecision'])} {info['baseCoin']}), and "
+    message_2 = message_2 + f"equity of wallet is {equity:.2f} USD"
       
     # Output to stdout
     defs.announce(message_1, True, 1)
