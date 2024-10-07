@@ -336,11 +336,8 @@ def handle_ticker(message):
                 
                 else:
                     # Only amend order if the quantity to be sold has changed (task)
-                    def aqs_helper_task():
+                    def aqs_helper_task(active_order, all_sells, all_sells_new):
                         
-                        # Declare some variables global
-                        global active_order, all_sells, all_sells_new
-
                         # Amend order quantity
                         result        = trailing.aqs_helper(symbol, active_order, info, all_sells, all_sells_new)
                         active_order  = result[0]
@@ -349,7 +346,7 @@ def handle_ticker(message):
                                         
                     # Only amend order if the quantity to be sold has changed (threat)
                     if active_order['qty_new'] != active_order['qty'] and active_order['qty_new'] > 0:
-                        aqs_helper_threat = threading.Thread(target=aqs_helper_task)
+                        aqs_helper_threat = threading.Thread(target=lambda: aqs_helper_task(active_order, all_sells, all_sells_new))
                         aqs_helper_threat.start()
 
             # Work as a true gridbot when only spread is used

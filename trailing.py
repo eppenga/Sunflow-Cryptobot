@@ -347,13 +347,13 @@ def trail(symbol, spot, compounding, active_order, info, all_buys, all_sells, pr
 
         else:            
             # Amend trigger price (task)
-            def atp_helper_task():
-                global active_order
+            def atp_helper_task(active_order):
                 active_order = atp_helper(symbol, active_order, info)
+                return active_order
 
             # Amend trigger price (threat)
             if do_amend:
-                atp_helper_threat = threading.Thread(target=atp_helper_task)
+                atp_helper_threat = threading.Thread(target=lambda: atp_helper_task(active_order))
                 atp_helper_threat.start()
         
     # Report execution time
