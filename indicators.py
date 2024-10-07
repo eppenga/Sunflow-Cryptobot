@@ -3,8 +3,8 @@
 # Calculate technical indicators
 
 # Load libraries
-import pandas as pd, pandas_ta as ta
 import defs
+import pandas as pd, pandas_ta as ta
 
 # Calculcate indicators based on klines
 def calculate(klines, spot):

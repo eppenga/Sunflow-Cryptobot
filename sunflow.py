@@ -9,7 +9,7 @@ from pybit.unified_trading import WebSocket
 from requests.exceptions import ChunkedEncodingError
 from urllib3.exceptions import ProtocolError
 from http.client import RemoteDisconnected
-import argparse, importlib, pprint, sys, traceback
+import argparse, importlib, pprint, sys, threading, traceback
 import pandas as pd
 
 # Load internal libraries
@@ -324,40 +324,32 @@ def handle_ticker(message):
             # Amend existing sell trailing order if required
             if active_order['active'] and active_order['side'] == "Sell":
 
-                # Only amend order if the quantity to be sold has changed
-                if active_order['qty_new'] != active_order['qty'] and active_order['qty_new'] > 0:
-                    result      = trailing.amend_quantity_sell(symbol, active_order, info)
-                    amend_code  = result[0]
-                    amend_error = result[1]
+                # Only amend order if the quantity to be sold has changed (direct / threat)
+                if config.amend_exec:
 
-                    # Determine what to do based on error code of amend result
-                    if amend_code == 0:
-                        # Everything went fine, we can continue trailing
-                        message = f"Adjusted quantity from {defs.format_number(active_order['qty'], info['basePrecision'])} "
-                        message = message + f"to {defs.format_number(active_order['qty_new'], info['basePrecision'])} {info['baseCoin']} in {active_order['side'].lower()} order"
-                        defs.announce(message, True, 0)
-                        all_sells           = all_sells_new
-                        active_order['qty'] = active_order['qty_new']
+                    # Only amend order if the quantity to be sold has changed
+                    if active_order['qty_new'] != active_order['qty'] and active_order['qty_new'] > 0:
 
-                    if amend_code == 1:
-                        # Order does not exist, trailing order was sold in between
-                        all_sells_new = all_sells
-                        defs.announce("Adjusting trigger quantity not possible, sell order already hit", True, 0)
-                        
-                    if amend_code == 2:
-                        # Quantity could not be changed, do nothing
-                        all_sells_new = all_sells
-                        defs.announce("Sell order quantity could not be changed, doing nothing", True, 0)
-                        
-                    if amend_code == 10:
-                        all_sells_new = all_sells                        
-                        # Order does not support modification, do nothing
-                        defs.announce("Sell order quantity could not be changed, order does not support modification", True, 0)                        
+                        # Amend order quantity
+                        result        = trailing.aqs_helper(symbol, active_order, info, all_sells, all_sells_new)
+                        active_order  = result[0]
+                        all_sells     = result[1]
+                        all_sells_new = result[2]
+                
+                else:
+                    # Only amend order if the quantity to be sold has changed (task)
+                    def aqs_helper_task():
 
-                    if amend_code == 100:
-                        # Critical error, let's log it and revert
-                        defs.announce("Critical error while trailing", True, 1)
-                        defs.log_error(amend_error)
+                        # Amend order quantity
+                        result        = trailing.aqs_helper(symbol, active_order, info, all_sells, all_sells_new)
+                        active_order  = result[0]
+                        all_sells     = result[1]
+                        all_sells_new = result[2]
+                                        
+                    # Only amend order if the quantity to be sold has changed (threat)
+                    if active_order['qty_new'] != active_order['qty'] and active_order['qty_new'] > 0:
+                        aqs_helper_threat = threading.Thread(target=aqs_helper_task)
+                        aqs_helper_threat.start()
 
             # Work as a true gridbot when only spread is used
             if use_spread['enabled'] and not use_indicators['enabled'] and not active_order['active']:

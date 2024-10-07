@@ -6,8 +6,7 @@
 from loader import load_config
 from pathlib import Path
 from datetime import datetime, timezone
-import defs, indicators, preload
-import apprise, inspect, math, pprint, pytz, time
+import apprise, defs, indicators, inspect, math, preload, pprint, pytz, time
 
 # Load config
 config = load_config()

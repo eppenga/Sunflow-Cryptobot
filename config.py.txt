@@ -49,7 +49,7 @@ pricelimit_max_sell = 0            # Maximum sell price, set to 0 if do not want
 
 # Optimizer
 optimizer_enabled   = False        # Try to optimize the minimum profit and trigger price distance percentage
-optimizer_spread    = True         # If optimize is active, also optimize spread distance
+optimizer_spread    = False        # If optimize is active, also optimize spread distance
 optimizer_sides     = "Buy,Sell"   # When optimizing optimize both on buy and sell or only sell
 optimizer_interval  = 30           # Interval in minutes used for indicator KPI
 optimizer_limit_min = 25920000     # Minimum miliseconds of spot price data (8,640,000 is one day)
@@ -113,6 +113,7 @@ session_report      = True                                       # Report exchan
 database_rebalance  = True                                       # Sync the base asset of the buys database to the exchange
 protect_peaks       = True                                       # Slow down distance to minimum
 quick_check         = False                                      # Quick check orders on startup
+amend_exec          = True                                       # Amend orders direct or via threat
 func_show_delay     = False                                      # When set to True, delay messages are always shown
 func_norm_delay     = 500                                        # Show message when execution of a function is greater in ms
 func_warn_delay     = 1000                                       # Show warning when execution of a function is greater in ms

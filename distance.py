@@ -4,7 +4,8 @@
 
 # Load libraries
 from loader import load_config
-import defs, math, pandas as pd, pandas_ta as ta, preload
+import defs, math, preload
+import pandas as pd, pandas_ta as ta
 
 # Load config
 config = load_config()

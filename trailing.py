@@ -121,10 +121,11 @@ def check_order(symbol, spot, compounding, active_order, all_buys, all_sells, in
             # Send message to group 1
             defs.announce(message_1, True, 1)
 
+            # Report wallet, quote and base currency to stdout and adjust compounding (task)
             def report_wallet_task():
                 compounding['now'] = orders.report_wallet(spot, all_buys, info)[0]
             
-            # Report wallet, quote and base currency to stdout and adjust compounding
+            # Report wallet, quote and base currency to stdout and adjust compounding (threat)
             if config.wallet_report:
                 wallet_thread = threading.Thread(target=report_wallet_task)
                 wallet_thread.start()
@@ -339,39 +340,75 @@ def trail(symbol, spot, compounding, active_order, info, all_buys, all_sells, pr
             if active_order['trigger_new'] < active_order['trigger']:
                 do_amend = True
 
-        # Amend trigger price
-        if do_amend:
-            result      = amend_trigger_price(symbol, active_order, info)
-            amend_code  = result[0]
-            amend_error = result[1]
+        # Amend trigger price (direct / threat)
+        if config.amend_exec:
 
-            # Determine what to do based on error code of amend result
-            if amend_code == 0:
-                # Everything went fine, we can continue trailing
-                message = f"Adjusted trigger price from {defs.format_number(active_order['trigger'], info['tickSize'])} to "
-                message = message + f"{defs.format_number(active_order['trigger_new'], info['tickSize'])} {info['quoteCoin']} in {active_order['side'].lower()} order"
-                defs.announce(message, True, 0)
-                active_order['trigger'] = active_order['trigger_new']
+            # Amend trigger price
+            if do_amend:
+                active_order = atp_helper(symbol, active_order, info)
 
-            if amend_code == 1:
-                # Order does not exist, trailing order sold or bought in between
-                defs.announce(f"Adjusting trigger price not possible, {active_order['side'].lower()} order already hit", True, 0)
+        else:            
+            # Amend trigger price (task)
+            def atp_helper_task():
+                active_order = atp_helper(symbol, active_order, info)
 
-            if amend_code == 10:
-                # Order does not support modification
-                defs.announce(f"Adjusting trigger price not possible, {active_order['side'].lower()} order does not support modification", True, 0)
-
-            if amend_code == 100:
-                # Critical error, let's log it and revert
-                defs.announce("Critical error while trailing", True, 1)
-                defs.log_error(amend_error)
+            # Amend trigger price (threat)
+            if do_amend:
+                atp_helper_threat = threading.Thread(target=atp_helper_task)
+                atp_helper_threat.start()
         
     # Report execution time
     if speed: defs.announce(defs.report_exec(stime))
 
     # Return modified data
     return active_order, all_buys, compounding, info
-   
+
+# Change trigger price current trailing sell helper
+def aqs_helper(symbol, active_order, info, all_sells, all_sells_new):
+
+    # Initialize variables
+    debug       = False
+    result      = ()
+    amend_code  = 0
+    amend_error = ""
+
+    # Amend order quantity
+    result      = amend_quantity_sell(symbol, active_order, info)
+    amend_code  = result[0]
+    amend_error = result[1]
+
+    # Determine what to do based on error code of amend result
+    if amend_code == 0:
+        # Everything went fine, we can continue trailing
+        message = f"Adjusted quantity from {defs.format_number(active_order['qty'], info['basePrecision'])} "
+        message = message + f"to {defs.format_number(active_order['qty_new'], info['basePrecision'])} {info['baseCoin']} in {active_order['side'].lower()} order"
+        defs.announce(message, True, 0)
+        all_sells           = all_sells_new
+        active_order['qty'] = active_order['qty_new']
+
+    if amend_code == 1:
+        # Order does not exist, trailing order was sold in between
+        all_sells_new = all_sells
+        defs.announce("Adjusting trigger quantity not possible, sell order already hit", True, 0)
+        
+    if amend_code == 2:
+        # Quantity could not be changed, do nothing
+        all_sells_new = all_sells
+        defs.announce("Sell order quantity could not be changed, doing nothing", True, 0)
+        
+    if amend_code == 10:
+        all_sells_new = all_sells                        
+        # Order does not support modification, do nothing
+        defs.announce("Sell order quantity could not be changed, order does not support modification", True, 0)                        
+
+    if amend_code == 100:
+        # Critical error, let's log it and revert
+        defs.announce("Critical error while trailing", True, 1)
+        defs.log_error(amend_error)
+
+    # Return data
+    return active_order, all_sells, all_sells_new
+
 # Change the quantity of the current trailing sell
 def amend_quantity_sell(symbol, active_order, info):
 
@@ -424,6 +461,44 @@ def amend_quantity_sell(symbol, active_order, info):
 
     # Return error code 
     return error_code, exception
+
+# Change quantity trailing sell helper
+def atp_helper(symbol, active_order, info):
+
+    # Initialize variables
+    debug      = False
+    result     = ()
+    amend_code = 0
+    amend_error = ""
+    
+    # Amend trigger price
+    result      = amend_trigger_price(symbol, active_order, info)
+    amend_code  = result[0]
+    amend_error = result[1]
+
+    # Determine what to do based on error code of amend result
+    if amend_code == 0:
+        # Everything went fine, we can continue trailing
+        message = f"Adjusted trigger price from {defs.format_number(active_order['trigger'], info['tickSize'])} to "
+        message = message + f"{defs.format_number(active_order['trigger_new'], info['tickSize'])} {info['quoteCoin']} in {active_order['side'].lower()} order"
+        defs.announce(message, True, 0)
+        active_order['trigger'] = active_order['trigger_new']
+
+    if amend_code == 1:
+        # Order does not exist, trailing order sold or bought in between
+        defs.announce(f"Adjusting trigger price not possible, {active_order['side'].lower()} order already hit", True, 0)
+
+    if amend_code == 10:
+        # Order does not support modification
+        defs.announce(f"Adjusting trigger price not possible, {active_order['side'].lower()} order does not support modification", True, 0)
+
+    if amend_code == 100:
+        # Critical error, let's log it and revert
+        defs.announce("Critical error while trailing", True, 1)
+        defs.log_error(amend_error)
+    
+    # Return active_order
+    return active_order
 
 # Change the trigger price of the current trailing sell
 def amend_trigger_price(symbol, active_order, info):

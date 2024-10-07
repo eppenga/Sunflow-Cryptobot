@@ -5,8 +5,7 @@
 # Load external libraries
 from loader import load_config
 from pybit.unified_trading import HTTP
-import database, defs, orders
-import os
+import database, defs, orders, os
 
 # Load config
 config = load_config()

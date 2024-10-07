@@ -4,8 +4,8 @@
 
 # Load libraries
 from loader import load_config
-import defs, pprint
-import math, pandas as pd
+import defs, math, pprint
+import pandas as pd
 
 # Load config
 config = load_config()

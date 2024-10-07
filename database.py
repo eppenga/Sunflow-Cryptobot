@@ -4,8 +4,7 @@
 
 # Load libraries
 from loader import load_config
-import defs
-import json
+import defs, json
 
 # Load config
 config = load_config()
