@@ -190,6 +190,11 @@ lock_ticker['time']              = defs.now_utc()[4]
 lock_ticker['delay']             = 1000
 lock_ticker['enabled']           = False
 
+# Periodic tasks
+periodic                         = {}
+periodic['time']                 = defs.now_utc()[4]
+periodic['delay']                = 3600000
+periodic['enabled']              = True
 
 ### Functions ###
 
@@ -767,6 +772,20 @@ else:
 defs.announce(f"Sunflow started at {time_output}", True, 1)
 
 
+### Periodic tasks ###
+
+# Run tasks periodically
+def periodic_tasks():
+    
+    # Debug
+    debug = False
+    
+    # Pass
+    pass
+    
+    return
+
+
 ### Websockets ###
 
 # Connect websocket
@@ -818,8 +837,17 @@ def main():
             # Simulate or fetch the latest ticker message
             current_time      = defs.now_utc()[4]
             simulated_message = simulated_ticker()
+
+            # Send simulate ticker message
             if current_time - lock_ticker['time'] > lock_ticker['delay']:
                 handle_ticker(simulated_message)
+                
+            # Periodic tasks
+            if current_time - periodic['time'] > periodic['delay']:
+                periodic['time'] = current_time
+                periodic_tasks()
+            
+            # Sleep to prevent CPU overloading
             sleep(1)
         except (RemoteDisconnected, ProtocolError, ChunkedEncodingError) as e:
             exception = str(e)
