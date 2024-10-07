@@ -338,23 +338,9 @@ def trail(symbol, spot, compounding, active_order, info, all_buys, all_sells, pr
             if active_order['trigger_new'] < active_order['trigger']:
                 do_amend = True
 
-        # Amend trigger price (direct / threat)
-        if config.amend_exec:
-
-            # Amend trigger price
-            if do_amend:
-                active_order = atp_helper(symbol, active_order, info)
-
-        else:            
-            # Amend trigger price (task)
-            def atp_helper_task(active_order):
-                active_order = atp_helper(symbol, active_order, info)
-                return active_order
-
-            # Amend trigger price (threat)
-            if do_amend:
-                atp_helper_threat = threading.Thread(target=lambda: atp_helper_task(active_order))
-                atp_helper_threat.start()
+        # Amend trigger price
+        if do_amend:
+            active_order = atp_helper(symbol, active_order, info)
         
     # Report execution time
     if speed: defs.announce(defs.report_exec(stime))

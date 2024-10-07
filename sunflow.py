@@ -322,32 +322,14 @@ def handle_ticker(message):
             # Amend existing sell trailing order if required
             if active_order['active'] and active_order['side'] == "Sell":
 
-                # Only amend order if the quantity to be sold has changed (direct / threat)
-                if config.amend_exec:
+                # Only amend order if the quantity to be sold has changed
+                if active_order['qty_new'] != active_order['qty'] and active_order['qty_new'] > 0:
 
-                    # Only amend order if the quantity to be sold has changed
-                    if active_order['qty_new'] != active_order['qty'] and active_order['qty_new'] > 0:
-
-                        # Amend order quantity
-                        result        = trailing.aqs_helper(symbol, active_order, info, all_sells, all_sells_new)
-                        active_order  = result[0]
-                        all_sells     = result[1]
-                        all_sells_new = result[2]
-                
-                else:
-                    # Only amend order if the quantity to be sold has changed (task)
-                    def aqs_helper_task(active_order, all_sells, all_sells_new):
-                        
-                        # Amend order quantity
-                        result        = trailing.aqs_helper(symbol, active_order, info, all_sells, all_sells_new)
-                        active_order  = result[0]
-                        all_sells     = result[1]
-                        all_sells_new = result[2]
-                                        
-                    # Only amend order if the quantity to be sold has changed (threat)
-                    if active_order['qty_new'] != active_order['qty'] and active_order['qty_new'] > 0:
-                        aqs_helper_threat = threading.Thread(target=lambda: aqs_helper_task(active_order, all_sells, all_sells_new))
-                        aqs_helper_threat.start()
+                    # Amend order quantity
+                    result        = trailing.aqs_helper(symbol, active_order, info, all_sells, all_sells_new)
+                    active_order  = result[0]
+                    all_sells     = result[1]
+                    all_sells_new = result[2]
 
             # Work as a true gridbot when only spread is used
             if use_spread['enabled'] and not use_indicators['enabled'] and not active_order['active']:
