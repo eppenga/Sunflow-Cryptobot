@@ -214,8 +214,6 @@ def handle_ticker(message):
 
         # Initialize variables
         ticker              = {}
-        amend_code          = 0
-        amend_error         = ""
         result              = ()
         current_time        = defs.now_utc()[4]
         lock_ticker['time'] = current_time
@@ -339,6 +337,9 @@ def handle_ticker(message):
                 else:
                     # Only amend order if the quantity to be sold has changed (task)
                     def aqs_helper_task():
+                        
+                        # Declare some variables global
+                        global active_order, all_sells, all_sells_new
 
                         # Amend order quantity
                         result        = trailing.aqs_helper(symbol, active_order, info, all_sells, all_sells_new)

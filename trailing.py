@@ -301,10 +301,8 @@ def trail(symbol, spot, compounding, active_order, info, all_buys, all_sells, pr
     stime = defs.now_utc()[4]
     
     # Initialize variables
-    result           = ()
-    amend_code       = 0
-    amend_error      = ""
-    do_amend         = False
+    result   = ()
+    do_amend = False
 
     # Output trailing to stdout
     if debug:
@@ -350,6 +348,7 @@ def trail(symbol, spot, compounding, active_order, info, all_buys, all_sells, pr
         else:            
             # Amend trigger price (task)
             def atp_helper_task():
+                global active_order
                 active_order = atp_helper(symbol, active_order, info)
 
             # Amend trigger price (threat)
