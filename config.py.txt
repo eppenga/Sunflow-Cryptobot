@@ -113,7 +113,6 @@ session_report      = True                                       # Report exchan
 database_rebalance  = True                                       # Sync the base asset of the buys database to the exchange
 protect_peaks       = True                                       # Slow down distance to minimum
 quick_check         = False                                      # Quick check orders on startup
-amend_exec          = True                                       # Amend orders direct or via threat
 func_show_delay     = False                                      # When set to True, delay messages are always shown
 func_norm_delay     = 500                                        # Show message when execution of a function is greater in ms
 func_warn_delay     = 1000                                       # Show warning when execution of a function is greater in ms
