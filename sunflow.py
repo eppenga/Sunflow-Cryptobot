@@ -35,166 +35,167 @@ config = importlib.import_module(config_module_name)
 ### Initialize variables ###
 
 # Set default values
-debug                        = config.debug                   # Debug
-symbol                       = config.symbol                  # Symbol bot used for trading
-klines                       = {}                             # Klines for symbol
-intervals                    = {}                             # Klines intervals
-intervals[0]                 = 0                              # Average of all active intervals
-intervals[1]                 = config.interval_1              # Klines timeframe interval 1
-intervals[2]                 = config.interval_2              # Klines timeframe interval 2
-intervals[3]                 = config.interval_3              # Klines timeframe interval 3
-limit                        = config.limit                   # Number of klines downloaded, used for calculcating technical indicators
-trades                       = {}                             # Trades for symbol
-ticker                       = {}                             # Ticker data, including lastPrice and time
-info                         = {}                             # Instrument info on symbol
-spot                         = 0                              # Spot price, always equal to lastPrice
-profit                       = config.profit                  # Minimum profit percentage
-depth                        = config.depth                   # Depth in percentages used to calculate market depth from orderbook
-multiplier                   = config.multiplier              # Multiply minimum order quantity by this
-prices                       = {}                             # Last {limit} prices based on ticker
-depth_data                   = {}                             # Depth buy and sell percentage indexed by time
+debug                                = config.debug                                # Debug
+symbol                               = config.symbol                               # Symbol bot used for trading
+klines                               = {}                                          # Klines for symbol
+intervals                            = {}                                          # Klines intervals
+intervals[0]                         = 0                                           # Average of all active intervals
+intervals[1]                         = config.interval_1                           # Klines timeframe interval 1
+intervals[2]                         = config.interval_2                           # Klines timeframe interval 2
+intervals[3]                         = config.interval_3                           # Klines timeframe interval 3
+limit                                = config.limit                                # Number of klines downloaded, used for calculcating technical indicators
+trades                               = {}                                          # Trades for symbol
+ticker                               = {}                                          # Ticker data, including lastPrice and time
+info                                 = {}                                          # Instrument info on symbol
+spot                                 = 0                                           # Spot price, always equal to lastPrice
+profit                               = config.profit                               # Minimum profit percentage
+depth                                = config.depth                                # Depth in percentages used to calculate market depth from orderbook
+multiplier                           = config.multiplier                           # Multiply minimum order quantity by this
+prices                               = {}                                          # Last {limit} prices based on ticker
+depth_data                           = {}                                          # Depth buy and sell percentage indexed by time
 
 # Optimize profit and trigger price distance
-optimizer                    = {}                             # Profit and trigger price distance optimizer
-optimizer['enabled']         = config.optimizer_enabled       # Try to optimize the minimum profit and distance percentage
-optimizer['spread_enabled']  = config.optimizer_spread        # If optimizer is active, also optimize spread
-optimizer['sides']           = config.optimizer_sides         # If optimizer is active, optimize both buy and sell, or only sell
-optimizer['profit']          = config.profit                  # Initial profit percentage when Sunflow started, will never change
-optimizer['distance']        = config.distance                # Initial trigger price distance percentage when Sunflow started, will never change
-optimizer['spread']          = config.spread_distance         # Initial minimum spread in percentages when Sunflow started, will never change
-optimizer['interval']        = config.optimizer_interval      # Interval used for indicator KPI
-optimizer['limit_min']       = config.optimizer_limit_min     # Minimum miliseconds of spot price data
-optimizer['limit_max']       = config.optimizer_limit_max     # Maximum miliseconds of spot price data
-optimizer['adj_min']         = config.optimizer_adj_min       # Minimum profit and trigger price adjustment
-optimizer['adj_max']         = config.optimizer_adj_max       # Maximum profit and trigger price adjustment
-optimizer['scaler']          = config.optimizer_scaler        # Scales the final optimizer value by multiplying by this value
-optimizer['df']              = pd.DataFrame()                 # Dataframe is empty at start
+optimizer                            = {}                                          # Profit and trigger price distance optimizer
+optimizer['enabled']                 = config.optimizer_enabled                    # Try to optimize the minimum profit and distance percentage
+optimizer['spread_enabled']          = config.optimizer_spread                     # If optimizer is active, also optimize spread
+optimizer['sides']                   = config.optimizer_sides                      # If optimizer is active, optimize both buy and sell, or only sell
+optimizer['profit']                  = config.profit                               # Initial profit percentage when Sunflow started, will never change
+optimizer['distance']                = config.distance                             # Initial trigger price distance percentage when Sunflow started, will never change
+optimizer['spread']                  = config.spread_distance                      # Initial minimum spread in percentages when Sunflow started, will never change
+optimizer['interval']                = config.optimizer_interval                   # Interval used for indicator KPI
+optimizer['limit_min']               = config.optimizer_limit_min                  # Minimum miliseconds of spot price data
+optimizer['limit_max']               = config.optimizer_limit_max                  # Maximum miliseconds of spot price data
+optimizer['adj_min']                 = config.optimizer_adj_min                    # Minimum profit and trigger price adjustment
+optimizer['adj_max']                 = config.optimizer_adj_max                    # Maximum profit and trigger price adjustment
+optimizer['scaler']                  = config.optimizer_scaler                     # Scales the final optimizer value by multiplying by this value
+optimizer['df']                      = pd.DataFrame()                              # Dataframe is empty at start
 
 # Minimum spread between historical buy orders
-use_spread                   = {}                             # Spread
-use_spread['enabled']        = config.spread_enabled          # Use spread as buy trigger
-use_spread['distance']       = config.spread_distance         # Minimum spread in percentages
+use_spread                           = {}                                          # Spread
+use_spread['enabled']                = config.spread_enabled                       # Use spread as buy trigger
+use_spread['distance']               = config.spread_distance                      # Minimum spread in percentages
 
 # Technical indicators
-use_indicators               = {}                             # Technical indicators
-use_indicators['enabled']    = config.indicators_enabled      # Use technical indicators as buy trigger
-use_indicators['minimum']    = config.indicators_minimum      # Minimum advice value
-use_indicators['maximum']    = config.indicators_maximum      # Maximum advice value
+use_indicators                       = {}                                          # Technical indicators
+use_indicators['enabled']            = config.indicators_enabled                   # Use technical indicators as buy trigger
+use_indicators['minimum']            = config.indicators_minimum                   # Minimum advice value
+use_indicators['maximum']            = config.indicators_maximum                   # Maximum advice value
 
 # Orderbook
-use_orderbook                = {}                             # Orderbook
-use_orderbook['enabled']     = config.orderbook_enabled       # Use orderbook as buy trigger
-use_orderbook['minimum']     = config.orderbook_minimum       # Minimum orderbook buy percentage
-use_orderbook['maximum']     = config.orderbook_maximum       # Maximum orderbook buy percentage
-use_orderbook['average']     = config.orderbook_average       # Average out orderbook depth data or use last data point
-use_orderbook['limit']       = config.orderbook_limit         # Number of orderbook data elements to keep in database
-use_orderbook['timeframe']   = config.orderbook_timeframe     # Timeframe for averaging out
+use_orderbook                        = {}                                          # Orderbook
+use_orderbook['enabled']             = config.orderbook_enabled                    # Use orderbook as buy trigger
+use_orderbook['minimum']             = config.orderbook_minimum                    # Minimum orderbook buy percentage
+use_orderbook['maximum']             = config.orderbook_maximum                    # Maximum orderbook buy percentage
+use_orderbook['average']             = config.orderbook_average                    # Average out orderbook depth data or use last data point
+use_orderbook['limit']               = config.orderbook_limit                      # Number of orderbook data elements to keep in database
+use_orderbook['timeframe']           = config.orderbook_timeframe                  # Timeframe for averaging out
 
 # Trade
-use_trade                    = {}
-use_trade['enabled']         = config.trade_enabled           # Use realtime trades as buy trigger
-use_trade['minimum']         = config.trade_minimum           # Minimum trade buy ratio percentage
-use_trade['maximum']         = config.trade_maximum           # Maximum trade buy ratio percentage
-use_trade['limit']           = config.trade_limit             # Number of trade orders to keep in database
-use_trade['timeframe']       = config.trade_timeframe         # Timeframe in ms to collect realtime trades
+use_trade                            = {}
+use_trade['enabled']                 = config.trade_enabled                        # Use realtime trades as buy trigger
+use_trade['minimum']                 = config.trade_minimum                        # Minimum trade buy ratio percentage
+use_trade['maximum']                 = config.trade_maximum                        # Maximum trade buy ratio percentage
+use_trade['limit']                   = config.trade_limit                          # Number of trade orders to keep in database
+use_trade['timeframe']               = config.trade_timeframe                      # Timeframe in ms to collect realtime trades
 
 # Price limits
-use_pricelimit                       = {}                                      # Use pricelimits to prevent buy or sell
-use_pricelimit['enabled']            = config.pricelimit_enabled               # Set pricelimits functionality
-use_pricelimit['max_buy_enabled']    = False                                   # Set pricelimits maximum buy price toggle  
-use_pricelimit['min_sell_enabled']   = False                                   # Set pricelimits minimum sell price toggle
-use_pricelimit['max_sell_enabled']   = False                                   # Set pricelimits maximum sell price toggle
-use_pricelimit['max_buy']            = config.pricelimit_max_buy               # Maximum buy price 
-use_pricelimit['min_sell']           = config.pricelimit_min_sell              # Minimum sell price
-use_pricelimit['max_sell']           = config.pricelimit_max_sell              # Maximum sell price
-if config.pricelimit_max_buy > 0 : use_pricelimit['max_buy_enabled'] = True    # Maximum buy price enabled
-if config.pricelimit_min_sell > 0: use_pricelimit['min_sell_enabled'] = True   # Minimum sell price enabled
-if config.pricelimit_max_sell > 0: use_pricelimit['max_sell_enabled'] = True   # Maximum sell price enabled
+use_pricelimit                       = {}                                          # Use pricelimits to prevent buy or sell
+use_pricelimit['enabled']            = config.pricelimit_enabled                   # Set pricelimits functionality
+use_pricelimit['max_buy_enabled']    = False                                       # Set pricelimits maximum buy price toggle  
+use_pricelimit['min_sell_enabled']   = False                                       # Set pricelimits minimum sell price toggle
+use_pricelimit['max_sell_enabled']   = False                                       # Set pricelimits maximum sell price toggle
+use_pricelimit['max_buy']            = config.pricelimit_max_buy                   # Maximum buy price 
+use_pricelimit['min_sell']           = config.pricelimit_min_sell                  # Minimum sell price
+use_pricelimit['max_sell']           = config.pricelimit_max_sell                  # Maximum sell price
+if config.pricelimit_max_buy > 0     : use_pricelimit['max_buy_enabled'] = True    # Maximum buy price enabled
+if config.pricelimit_min_sell > 0    : use_pricelimit['min_sell_enabled'] = True   # Minimum sell price enabled
+if config.pricelimit_max_sell > 0    : use_pricelimit['max_sell_enabled'] = True   # Maximum sell price enabled
 
 # Trailing order
-active_order                 = {}                             # Trailing order data
-active_order['side']         = ""                             # Trailing Buy or Sell
-active_order['active']       = False                          # Trailing order active or not
-active_order['start']        = 0                              # Start price when trailing order began     
-active_order['previous']     = 0                              # Previous price
-active_order['current']      = 0                              # Current price
-active_order['wiggle']       = config.wiggle                  # Method to use to calculate trigger price distance
-active_order['distance']     = config.distance                # Trigger price distance percentage when set to default
-active_order['distance_ini'] = config.distance                # Keep initial distance always stored
-active_order['fluctuation']  = config.distance                # Trigger price distance percentage when set to wiggle
-active_order['wave']         = config.distance                # Trigger price distance percentage when set to wave
-active_order['orderid']      = 0                              # Orderid
-active_order['trigger']      = 0                              # Trigger price for order
-active_order['trigger_new']  = 0                              # New trigger price when trailing 
-active_order['trigger_ini']  = 0                               # Initial trigger price when trailing
-active_order['qty']          = 0                              # Order quantity
-active_order['qty_new']      = 0                              # New order quantity when trailing
+active_order                         = {}                                          # Trailing order data
+active_order['side']                 = ""                                          # Trailing Buy or Sell
+active_order['active']               = False                                       # Trailing order active or not
+active_order['start']                = 0                                           # Start price when trailing order began     
+active_order['previous']             = 0                                           # Previous price
+active_order['current']              = 0                                           # Current price
+active_order['wiggle']               = config.wiggle                               # Method to use to calculate trigger price distance
+active_order['distance']             = config.distance                             # Trigger price distance percentage when set to default
+active_order['distance_ini']         = config.distance                             # Keep initial distance always stored
+active_order['fluctuation']          = config.distance                             # Trigger price distance percentage when set to wiggle
+active_order['wave']                 = config.distance                             # Trigger price distance percentage when set to wave
+active_order['orderid']              = 0                                           # Orderid
+active_order['trigger']              = 0                                           # Trigger price for order
+active_order['trigger_new']          = 0                                           # New trigger price when trailing 
+active_order['trigger_ini']          = 0                                           # Initial trigger price when trailing
+active_order['qty']                  = 0                                           # Order quantity
+active_order['qty_new']              = 0                                           # New order quantity when trailing
 
 # Databases for buy and sell orders
-all_buys                     = {}                             # All buys retreived from database file buy orders
-all_sells                    = {}                             # Sell order linked to database with all buys orders
+all_buys                             = {}                                          # All buys retreived from database file buy orders
+all_sells                            = {}                                          # Sell order linked to database with all buys orders
 
 # Websockets to use
-ws_kline                     = False                          # Initialize ws_kline
-ws_orderbook                 = False                          # Initialize ws_orderbook
-ws_trade                     = False                          # Initialize ws_trade
-if config.indicators_enabled : ws_kline     = True            # Use klines websocket
-if config.orderbook_enabled  : ws_orderbook = True            # Use orderbook websocket
-if config.trade_enabled      : ws_trade     = True            # Use trade websocker
+ws_kline                             = False                                       # Initialize ws_kline
+ws_orderbook                         = False                                       # Initialize ws_orderbook
+ws_trade                             = False                                       # Initialize ws_trade
+if config.indicators_enabled         : ws_kline     = True                         # Use klines websocket
+if config.orderbook_enabled          : ws_orderbook = True                         # Use orderbook websocket
+if config.trade_enabled              : ws_trade     = True                         # Use trade websocker
 
 # Initialize indicator advice variable
-if not config.indicators_enabled:                             # Set intervals to zero if indicators are disabled
+if not config.indicators_enabled:
     intervals[1] = 0
     intervals[2] = 0
     intervals[3] = 0
 
 # Initialize indicators advice variable
-indicators_advice                = {}
-indicators_advice[intervals[0]]  = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Average advice of all active intervals
-indicators_advice[intervals[1]]  = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 1
-indicators_advice[intervals[2]]  = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 2
-indicators_advice[intervals[3]]  = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}  # Advice for interval 3
+indicators_advice                    = {}
+indicators_advice[intervals[0]]      = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}   # Average advice of all active intervals
+indicators_advice[intervals[1]]      = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}   # Advice for interval 1
+indicators_advice[intervals[2]]      = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}   # Advice for interval 2
+indicators_advice[intervals[3]]      = {'result': False, 'value': 0, 'level': 'Neutral', 'filled': False}   # Advice for interval 3
 
 # Initialize orderbook advice variable
-orderbook_advice                 = {}
-orderbook_advice['buy_perc']     = 0
-orderbook_advice['sell_perc']    = 0
-orderbook_advice['result']       = False
+orderbook_advice                     = {}
+orderbook_advice['buy_perc']         = 0
+orderbook_advice['sell_perc']        = 0
+orderbook_advice['result']           = False
 
 # Initialize trade advice variable
-trade_advice                     = {}
-trade_advice['buy_ratio']        = 0
-trade_advice['sell_ratio']       = 0
-trade_advice['result']           = False
+trade_advice                         = {}
+trade_advice['buy_ratio']            = 0
+trade_advice['sell_ratio']           = 0
+trade_advice['result']               = False
 
 # Initialize pricelimit advice variable
-pricelimit_advice                = {}
-pricelimit_advice['buy_result']  = False
-pricelimit_advice['sell_result'] = False
+pricelimit_advice                    = {}
+pricelimit_advice['buy_result']      = False
+pricelimit_advice['sell_result']     = False
 
 # Initialize trades variable
-trades                           = {'time': [], 'side': [], 'size': [], 'price': []}
+trades                               = {'time': [], 'side': [], 'size': [], 'price': []}
 
 # Initialize depth variable
-depth_data                       = {'time': [], 'buy_perc': [], 'sell_perc': []}
+depth_data                           = {'time': [], 'buy_perc': [], 'sell_perc': []}
 
 # Compounding
-compounding                      = {}
-compounding['enabled']           = config.compounding_enabled
-compounding['start']             = config.compounding_start
-compounding['now']               = config.compounding_start
+compounding                          = {}
+compounding['enabled']               = config.compounding_enabled
+compounding['start']                 = config.compounding_start
+compounding['now']                   = config.compounding_start
 
 # Locking handle_ticker function to prevent race conditions
-lock_ticker                      = {}
-lock_ticker['time']              = defs.now_utc()[4]
-lock_ticker['delay']             = 1000
-lock_ticker['enabled']           = False
+lock_ticker                          = {}
+lock_ticker['time']                  = defs.now_utc()[4]
+lock_ticker['delay']                 = 1000
+lock_ticker['enabled']               = False
 
 # Periodic tasks
-periodic                         = {}
-periodic['time']                 = defs.now_utc()[4]
-periodic['delay']                = 3600000
-periodic['enabled']              = True
+periodic                             = {}
+periodic['time']                     = defs.now_utc()[4]
+periodic['delay']                    = 3600000
+periodic['enabled']                  = True
+
 
 ### Functions ###
 
