@@ -32,7 +32,10 @@ def history(orderId):
     debug = False
     speed = True
     stime = defs.now_utc()[4]
-           
+    
+    # Initialize error code
+    error_code = 0 
+    
     # First try realtime
     order   = {}
     message = defs.announce("session: get_open_orders")
@@ -69,6 +72,7 @@ def history(orderId):
     if order['result']['list'] == []:
         message = defs.announce("Trying to load non-existing order, something is corrupt!")
         defs.log_error(message)
+        error_code = 1
 
     # Debug
     if debug:
@@ -78,7 +82,7 @@ def history(orderId):
     # Report execution time
     if speed: defs.announce(defs.report_exec(stime))
 
-    return order
+    return order, error_code
 
 # Decode order from exchange to proper dictionary
 def decode(order):
@@ -148,19 +152,32 @@ def cancel(symbol, orderid):
 # Turn an order from the exchange into a properly formatted transaction after placing or amending an order
 def transaction_from_order(order):
 
+    # Initialize variables
+    order_history = {}
+    transaction   = {}
+    result        = ()
+    error_code    = 0
+
     # Get orderId first
     orderId       = order_id(order)
-    order_history = history(orderId)
-    transaction   = decode(order_history)
-    
+
+    # Get order history and status
+    result        = history(orderId)
+    order_history = result[0]
+    error_code    = result[1] 
+
+    # Check for status
+    if error_code == 0:
+        transaction = decode(order_history)
+
     # Return transaction
-    return transaction
+    return transaction, error_code
 
 # Turn an order from the exchange into a properly formatted transaction after the order already exists
 def transaction_from_id(orderId):
     
     # Do logic
-    order_history = history(orderId)
+    order_history = history(orderId)[0]
     transaction   = decode(order_history)
 
     # Return transaction
@@ -288,6 +305,11 @@ def buy(symbol, spot, compounding, active_order, all_buys, prices, info):
     debug = False
     speed = True
     stime = defs.now_utc()[4]
+    
+    # Initialize variables
+    order      = {}
+    error_code = 0
+    result     = ()
 
     # Output to stdout
     defs.announce("*** BUY BUY BUY! ***")
@@ -326,7 +348,7 @@ def buy(symbol, spot, compounding, active_order, all_buys, prices, info):
         
         # Buy order failed, reset active_order and return
         active_order['active'] = False
-        defs.announce("Buy order failed due to error, trailing stopped")
+        defs.announce("Buy order failed when placing, trailing stopped")
         if speed: defs.announce(defs.report_exec(stime))    
         return active_order, all_buys
         
@@ -345,7 +367,18 @@ def buy(symbol, spot, compounding, active_order, all_buys, prices, info):
     defs.announce(message, True)
 
     # Get the transaction
-    transaction = transaction_from_order(order)
+    result      = transaction_from_order(order)
+    transaction = result[0]
+    error_code  = result[1]
+    
+    # Check the transaction
+    if error_code == 1:
+        active_order['active'] = False
+        defs.announce("Buy order failed because it disappeared from exchange, trailing stopped")
+        if speed: defs.announce(defs.report_exec(stime))    
+        return active_order, all_buys
+            
+    # Change the status of the transaction
     transaction['status'] = "Open"
 
     # Store the transaction in the database buys file
