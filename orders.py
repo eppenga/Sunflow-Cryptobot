@@ -350,7 +350,7 @@ def buy(symbol, spot, compounding, active_order, all_buys, prices, info):
         active_order['active'] = False
         defs.announce("Buy order failed when placing, trailing stopped")
         if speed: defs.announce(defs.report_exec(stime))    
-        return active_order, all_buys
+        return active_order, all_buys, info
         
     # Check API rate limit and log data if possible
     if order:
@@ -376,7 +376,7 @@ def buy(symbol, spot, compounding, active_order, all_buys, prices, info):
         active_order['active'] = False
         defs.announce("Buy order failed because it disappeared from exchange, trailing stopped")
         if speed: defs.announce(defs.report_exec(stime))    
-        return active_order, all_buys
+        return active_order, all_buys, info
             
     # Change the status of the transaction
     transaction['status'] = "Open"
