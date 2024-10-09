@@ -558,11 +558,11 @@ def rebalance(all_buys, info):
     # Save new database
     if dbase_changed:
         equity_lost = equity_remind - equity_dbase
-        defs.announce(f"Rebalanced buys database with exchange data and lost {defs.round_number(equity_lost, info['basePrecision'])} {info['baseCoin']}")
+        defs.announce(f"Rebalanced buys database with exchange data and lost {defs.format_number(equity_lost, info['basePrecision'])} {info['baseCoin']}")
         database.save(all_buys, info)
     
     # Report to stdout
-    defs.announce(f"Difference between exchange and database is {defs.round_number(equity_diff, info['basePrecision'])} {info['baseCoin']}")
+    defs.announce(f"Difference between exchange and database is {defs.format_number(equity_diff, info['basePrecision'])} {info['baseCoin']}")
 
     # Report execution time
     if speed: defs.announce(defs.report_exec(stime))
@@ -603,10 +603,10 @@ def report_wallet(spot, all_buys, info):
     lost   = base_e - base_d            # Lost due to inconsistancies
     
     # Create messsage
-    message_1 = f"Bot value is {defs.round_number(bot, info['quotePrecision'])} {info['quoteCoin']} "
-    message_1 = message_1 + f"({defs.round_number(base_e, info['basePrecision'])} {info['baseCoin']} / {defs.round_number(quote_e, info['quotePrecision'])} {info['quoteCoin']})"    
-    message_2 = f"Database has {defs.round_number(base_d, info['basePrecision'])} {info['baseCoin']} "
-    message_2 = message_2 + f"(lost {defs.round_number(lost, info['basePrecision'])} {info['baseCoin']}), and "
+    message_1 = f"Bot value is {defs.format_number(bot, info['quotePrecision'])} {info['quoteCoin']} "
+    message_1 = message_1 + f"({defs.format_number(base_e, info['basePrecision'])} {info['baseCoin']} / {defs.format_number(quote_e, info['quotePrecision'])} {info['quoteCoin']})"    
+    message_2 = f"Database has {defs.format_number(base_d, info['basePrecision'])} {info['baseCoin']} "
+    message_2 = message_2 + f"(lost {defs.format_number(lost, info['basePrecision'])} {info['baseCoin']}), and "
     message_2 = message_2 + f"equity of wallet is {equity:.2f} USD"
       
     # Output to stdout
