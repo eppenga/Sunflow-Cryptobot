@@ -348,7 +348,7 @@ def buy(symbol, spot, compounding, active_order, all_buys, prices, info):
         
         # Buy order failed, reset active_order and return
         active_order['active'] = False
-        defs.announce("Buy order failed when placing, trailing stopped")
+        defs.announce("*** Warning: Buy order failed when placing, trailing stopped! ***")
         if speed: defs.announce(defs.report_exec(stime))    
         return active_order, all_buys, info
         
@@ -374,7 +374,7 @@ def buy(symbol, spot, compounding, active_order, all_buys, prices, info):
     # Check the transaction
     if error_code == 1:
         active_order['active'] = False
-        defs.announce("Buy order failed because it disappeared from exchange, trailing stopped")
+        defs.announce("*** Warning: Buy order failed because it disappeared from exchange, trailing stopped! ***")
         if speed: defs.announce(defs.report_exec(stime))    
         return active_order, all_buys, info
             
