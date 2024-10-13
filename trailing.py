@@ -63,7 +63,7 @@ def check_order(symbol, spot, compounding, active_order, all_buys, all_sells, in
     if do_check_order:
 
         # Report to stdout
-        defs.announce(f"Doing {type_check} check on {active_order['side'].lower()} order")        
+        defs.announce(f"Performing {type_check} check on {active_order['side'].lower()} order")        
 
         # Reset stuck
         stuck['check'] = True
