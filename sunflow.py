@@ -187,7 +187,7 @@ compounding['now']                   = config.compounding_start
 # Locking handle_ticker function to prevent race conditions
 lock_ticker                          = {}
 lock_ticker['time']                  = defs.now_utc()[4]
-lock_ticker['delay']                 = 1000
+lock_ticker['delay']                 = 10000
 lock_ticker['enabled']               = False
 
 # Periodic tasks
@@ -246,18 +246,17 @@ def handle_ticker(message):
             return
         
         # Lock handle_ticker function
-        lock_ticker['enabled'] = True        
-         
+        lock_ticker['enabled'] = True
+
         # Run trailing if active
         if active_order['active']:
             active_order['current'] = ticker['lastPrice']
-            active_order['status']  = 'Trailing'
             result       = trailing.trail(symbol, ticker['lastPrice'], compounding, active_order, info, all_buys, all_sells, prices)
             active_order = result[0]
             all_buys     = result[1]
             compounding  = result[2]
             info         = result[3]
-
+         
         # Has price changed, then run all kinds of actions
         if spot != ticker['lastPrice']:
 

@@ -821,7 +821,7 @@ def average_depth(depth_data, use_orderbook, buy_percentage, sell_percentage):
 
     # Debug
     debug_1 = False
-    debug_2 = True
+    debug_2 = False
 
     # Initialize variables
     datapoints   = {}
