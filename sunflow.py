@@ -318,7 +318,7 @@ def handle_ticker(message):
                 all_sells = all_sells_new                
                 # Place the first sell order
                 active_order = orders.sell(symbol, new_spot, active_order, prices, info)
-                
+              
             # Amend existing sell trailing order if required
             if active_order['active'] and active_order['side'] == "Sell":
 
@@ -338,9 +338,9 @@ def handle_ticker(message):
     # Report error
     except Exception as e:
         tb_info = traceback.extract_tb(e.__traceback__)
-        filename, line, func, text = tb_info[-1]
-        defs.announce(f"An error occurred in {filename} on line {line}: {e}")
-        traceback.print_tb(e.__traceback__)
+        frame_summary = tb_info[-1]
+        line = frame_summary.lineno
+        defs.announce(f"*** Error: Failure at line {line}: {e} ***")
 
     # Always set new spot price and unlock function
     spot = ticker['lastPrice']
@@ -413,9 +413,9 @@ def handle_kline(message, interval):
     # Report error
     except Exception as e:
         tb_info = traceback.extract_tb(e.__traceback__)
-        filename, line, func, text = tb_info[-1]
-        defs.announce(f"An error occurred in {filename} on line {line}: {e}")
-        traceback.print_tb(e.__traceback__)
+        frame_summary = tb_info[-1]
+        line = frame_summary.lineno
+        defs.announce(f"*** Error: Failure at line {line}: {e} ***")
 
     # Report execution time
     if speed: defs.announce(defs.report_exec(stime))
@@ -515,9 +515,9 @@ def handle_orderbook(message):
     # Report error
     except Exception as e:
         tb_info = traceback.extract_tb(e.__traceback__)
-        filename, line, func, text = tb_info[-1]
-        defs.announce(f"An error occurred in {filename} on line {line}: {e}")
-        traceback.print_tb(e.__traceback__)
+        frame_summary = tb_info[-1]
+        line = frame_summary.lineno
+        defs.announce(f"*** Error: Failure at line {line}: {e} ***")
     
     # Report execution time
     if speed: defs.announce(defs.report_exec(stime))
@@ -593,9 +593,9 @@ def handle_trade(message):
     # Report error
     except Exception as e:
         tb_info = traceback.extract_tb(e.__traceback__)
-        filename, line, func, text = tb_info[-1]
-        defs.announce(f"An error occurred in {filename} on line {line}: {e}")
-        traceback.print_tb(e.__traceback__)
+        frame_summary = tb_info[-1]
+        line = frame_summary.lineno
+        defs.announce(f"*** Error: Failure at line {line}: {e} ***")
        
     # Report execution time
     if speed: defs.announce(defs.report_exec(stime))

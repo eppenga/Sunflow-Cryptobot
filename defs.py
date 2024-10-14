@@ -194,7 +194,7 @@ def log_error(exception):
     
     # Terminate hard
     if halt_execution:
-        defs.announce("*** Terminating Sunflow, error to severe! ***", True, 1)
+        defs.announce("*** Error: Terminating Sunflow! ***", True, 1)
         defs.announce(exception, True, 1)
         halt_sunflow = True
 
