@@ -301,7 +301,7 @@ def handle_ticker(message):
                 if error_code == 1:
                     # Trailing buy was bought
                     defs.announce("Buy order could not be cancelled, closing trailing buy", True, 1)
-                    result       = trailing.close_trail(active_order, all_buys, all_sells, info)
+                    result       = trailing.close_trail(active_order, all_buys, all_sells, spot, info)
                     active_order = result[0]
                     all_buys     = result[1]
                     all_sells    = result[2]
@@ -755,6 +755,7 @@ def periodic_tasks():
     # Pass
     pass
     
+    # Return
     return
 
 

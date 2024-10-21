@@ -100,7 +100,7 @@ def check_order(symbol, spot, compounding, active_order, all_buys, all_sells, in
             message_1 = message_1 + f"at trigger price {defs.format_number(active_order['trigger'], info['tickSize'])} {info['quoteCoin']}"
             
             # Close trailing process
-            result       = close_trail(active_order, all_buys, all_sells, info)
+            result       = close_trail(active_order, all_buys, all_sells, spot, info)
             active_order = result[0]
             all_buys     = result[1]
             all_sells    = result[2]
@@ -199,10 +199,10 @@ def check_spike(symbol, spot, active_order, order, all_buys, info):
     return active_order, all_buys
 
 # Calculate revenue from sell
-def calculate_revenue(transaction, all_sells, info):
+def calculate_revenue(transaction, all_sells, spot, info):
     
     # Debug and speed
-    debug = False
+    debug = True
     speed = True
     stime = defs.now_utc()[4]
     
@@ -218,14 +218,15 @@ def calculate_revenue(transaction, all_sells, info):
     # Logic
     sells  = transaction['cumExecValue']
     buys   = sum(item['cumExecValue'] for item in all_sells)
-    #fees['buy']   = sum(item['cumExecFee'] for item in all_sells)    # **** CHECK *** is trading fee in quote or base?
-    #fees['sell']  = transaction['cumExecFee']
-    #fees['total'] = fees['buy'] + fees['sell']
+    fees['buy']   = sum(item['cumExecFee'] for item in all_sells) * spot
+    fees['sell']  = transaction['cumExecFee']
+    fees['total'] = fees['buy'] + fees['sell']
     revenue = sells - buys - fees['total']
     
     # Output to stdout for debug
     if debug:
-        message = f"Total sells were {sells} {info['quoteCoin']}, buys were {buys} {info['quoteCoin']} and fees were {fees['total']} {info['quoteCoin']}, "
+        message = f"Total sells {sells} {info['quoteCoin']}, buys {buys} {info['quoteCoin']}, "
+        message = message + f"buy fees {fees['buy']} {info['quoteCoin']}, sell were {fees['sell']}, total fees {fees['total']}, "
         message = message + f"giving a revenue of {defs.format_number(revenue, info['quotePrecision'])} {info['quoteCoin']}"
         defs.announce(message)
 
@@ -236,7 +237,7 @@ def calculate_revenue(transaction, all_sells, info):
     return revenue
     
 # Trailing order does not exist anymore, close it
-def close_trail(active_order, all_buys, all_sells, info):
+def close_trail(active_order, all_buys, all_sells, spot, info):
 
     # Debug and speed
     debug = False
@@ -271,7 +272,7 @@ def close_trail(active_order, all_buys, all_sells, info):
             print()
 
         # Calculate revenue
-        revenue = calculate_revenue(transaction, all_sells, info)
+        revenue = calculate_revenue(transaction, all_sells, spot, info)
         
         # Create new all buys database
         all_buys = database.register_sell(all_buys, all_sells, info)
