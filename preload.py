@@ -5,7 +5,7 @@
 # Load external libraries
 from loader import load_config
 from pybit.unified_trading import HTTP
-import database, defs, orders, os
+import database, defs, orders, os, pprint
 
 # Load config
 config = load_config()
@@ -22,29 +22,29 @@ def get_ticker(symbol):
     # Debug
     debug = False
 
-    # Initialize ticker
-    ticker = {'time': 0, 'lastPrice': 0}
+    # Initialize variables
+    data   = {}
+    ticker = {'time': 0, 'symbol': symbol, 'lastPrice': 0}
    
     # Load ticker via normal session
-    pre_ticker = {}
     message = defs.announce("session: get_tickers")
     try:
-        pre_ticker   = session.get_tickers(
+        data = session.get_tickers(
             category = "spot",
             symbol   = symbol,
         )
     except Exception as e:
         defs.log_error(e)
-
+  
     # Check API rate limit and log data if possible
-    if pre_ticker:
-        pre_ticker = defs.rate_limit(pre_ticker)
-        defs.log_exchange(pre_ticker, message)
+    if data:
+        data = defs.rate_limit(data)
+        defs.log_exchange(data, message)
    
     # Transform ticker into required format
-    ticker['time']      = int(pre_ticker['time'])
-    ticker['symbol']    = pre_ticker['result']['list'][0]['symbol']
-    ticker['lastPrice'] = float(pre_ticker['result']['list'][0]['lastPrice'])
+    ticker['time']      = int(data['time'])
+    ticker['symbol']    = data['result']['list'][0]['symbol']
+    ticker['lastPrice'] = float(data['result']['list'][0]['lastPrice'])
     
     # Output to stdout
     defs.announce(f"Initial ticker price set to {ticker['lastPrice']} {ticker['symbol']} via exchange")
@@ -62,14 +62,15 @@ def get_klines(symbol, interval, limit):
     debug = False
     
     # Initialize variables
-    pre_klines = {}
-    klines     = {'time': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volume': [], 'turnover': []}
-    
+    data            = {}
+    klines          = {'time': [], 'open': [], 'high': [], 'low': [], 'close': [], 'volume': [], 'turnover': []}
+    end_timestamp   = defs.now_utc()[4]
+    start_timestamp = end_timestamp - (interval * (limit - 1) * 60 * 1000)
+
     # Load klines via normal session
-    pre_klines = {}
     message = defs.announce("session: getkline")
     try:
-        pre_klines = session.get_kline(
+        data = session.get_kline(
             category = "spot",
             symbol   = symbol,
             interval = interval,
@@ -79,19 +80,19 @@ def get_klines(symbol, interval, limit):
         defs.log_error(e)
 
     # Check API rate limit and log data if possible
-    if pre_klines:
-        pre_klines = defs.rate_limit(pre_klines)
-        defs.log_exchange(pre_klines, message)
+    if data:
+        data = defs.rate_limit(data)
+        defs.log_exchange(data, message)
     
     # Transform klines into required format
-    for item in pre_klines['result']['list']:
-        klines['time'].append(int(item[0]))
-        klines['open'].append(float(item[1]))
-        klines['high'].append(float(item[2]))
-        klines['low'].append(float(item[3]))
-        klines['close'].append(float(item[4]))
-        klines['volume'].append(float(item[5]))
-        klines['turnover'].append(float(item[6]))
+    for item in data['result']['list']:
+        klines['time'].append(int(item[0]))         # Time
+        klines['open'].append(float(item[1]))       # Open prices
+        klines['high'].append(float(item[2]))       # High prices
+        klines['low'].append(float(item[3]))        # Low prices
+        klines['close'].append(float(item[4]))      # Close prices
+        klines['volume'].append(float(item[5]))     # Volume
+        klines['turnover'].append(float(item[6]))   # Turnover
         
     # Reverse the items in the lists of the dictionary klines (thank you Bybit!)
     for key in klines:
@@ -161,17 +162,18 @@ def calc_info(info, spot, multiplier, compounding):
     debug = False
     
     # Initialize variables
-    compounding_ratio = 1
+    add_up            = 1.1
+    compounding_ratio = 1.0
 
-    # Calculate minimum order value, add 10 % and round up to prevent strange errors
+    # Calculate minimum order value, add up and round up to prevent strange errors
     minimumQty = info['minOrderQty'] * spot
     minimumAmt = info['minOrderAmt']
 
     # Choose to use quantity or amount
     if minimumQty < minimumAmt:
-        minimumOrder = (minimumAmt / spot) * 1.1
+        minimumOrder = (minimumAmt / spot) * add_up
     else:
-        minimumOrder = (minimumQty / spot) * 1.1
+        minimumOrder = (minimumQty / spot) * add_up
 
     # Do compounding if enabled
     if compounding['enabled']:
@@ -196,72 +198,54 @@ def get_info(symbol, spot, multiplier, compounding):
 
     # Debug
     debug = False
-
-    # Initialize info
-    info = {'time': 0, 'symbol': '', 'baseCoin': '', 'quoteCoin': '', 'status': '', 'basePrecision': 0, 'quotePrecision': 0, 'minOrderQty': 0, 'maxOrderQty': 0, 'minOrderAmt': 0, 'maxOrderAmt': 0, 'tickSize': 0} 
+    
+    # Initialize variables
+    data = {}
+    info = {}
 
     # Load instrument info via normal session
-    pre_info = {}
     message  = defs.announce("session: get_instruments_info")
     try:
-        pre_info = session.get_instruments_info(
+        data = session.get_instruments_info(
             category = "spot",
             symbol   = symbol
         )
     except Exception as e:
         defs.log_error(e)
-        
+
     # Check API rate limit and log data if possible
-    if pre_info:
-        pre_info = defs.rate_limit(pre_info)
-        defs.log_exchange(pre_info, message)
+    if data:
+        data = defs.rate_limit(data)
+        defs.log_exchange(data, message)
      
     # Transform instrument info intro rquired format
-    info                   = {}
-    info['time']           = pre_info['time']
-    info['symbol']         = pre_info['result']['list'][0]['symbol']
-    info['baseCoin']       = pre_info['result']['list'][0]['baseCoin']
-    info['quoteCoin']      = pre_info['result']['list'][0]['quoteCoin']
-    info['status']         = pre_info['result']['list'][0]['status']
-    info['basePrecision']  = float(pre_info['result']['list'][0]['lotSizeFilter']['basePrecision'])
-    info['quotePrecision'] = float(pre_info['result']['list'][0]['lotSizeFilter']['quotePrecision'])
-    info['minOrderQty']    = float(pre_info['result']['list'][0]['lotSizeFilter']['minOrderQty'])
-    info['maxOrderQty']    = float(pre_info['result']['list'][0]['lotSizeFilter']['maxOrderQty'])
-    info['minOrderAmt']    = float(pre_info['result']['list'][0]['lotSizeFilter']['minOrderAmt'])
-    info['maxOrderAmt']    = float(pre_info['result']['list'][0]['lotSizeFilter']['maxOrderAmt'])
-    info['tickSize']       = float(pre_info['result']['list'][0]['priceFilter']['tickSize'])
+    info['time']           = data['time']                                                           # Time of last instrument update
+    info['symbol']         = data['result']['list'][0]['symbol']                                    # Symbol
+    info['baseCoin']       = data['result']['list'][0]['baseCoin']                                  # Base asset, in case of BTCUSDT it is BTC
+    info['quoteCoin']      = data['result']['list'][0]['quoteCoin']                                 # Quote asset, in case of BTCUSDT it is USDT
+    info['status']         = data['result']['list'][0]['status']                                    # Is the symbol trading?
+    info['basePrecision']  = float(data['result']['list'][0]['lotSizeFilter']['basePrecision'])     # Decimal precision of base asset (BTC)
+    info['quotePrecision'] = float(data['result']['list'][0]['lotSizeFilter']['quotePrecision'])    # Decimal precision of quote asset (USDT)
+    info['minOrderQty']    = float(data['result']['list'][0]['lotSizeFilter']['minOrderQty'])       # Minimum order quantity in quote asset (BTC)
+    info['maxOrderQty']    = float(data['result']['list'][0]['lotSizeFilter']['maxOrderQty'])       # Maximum order quantity in base asset (BTC)
+    info['minOrderAmt']    = float(data['result']['list'][0]['lotSizeFilter']['minOrderAmt'])       # Minimum order quantity in quote asset (USDT)
+    info['maxOrderAmt']    = float(data['result']['list'][0]['lotSizeFilter']['maxOrderAmt'])       # Maximum order quantity in quote asset (USDT)
+    info['tickSize']       = float(data['result']['list'][0]['priceFilter']['tickSize'])            # Smallest possible price increment of base asset (USDT)
 
-    # Calculate minimum order value, add 10 % and round up to prevent strange errors
-    info = calc_info(info, spot, multiplier, compounding)
-
-    # Output to stdout
-    if debug:
-        defs.announce("Instrument info loaded")
-       
-    # Summarize all info and return data
-    data                   = {}                            # Declare data variable
-    data['time']           = info['time']                  # Time of last instrument update
-    data['symbol']         = info['symbol']                # Symbol
-    data['baseCoin']       = info['baseCoin']              # Base asset, in case of BTCUSDT it is BTC 
-    data['quoteCoin']      = info['quoteCoin']             # Quote asset, in case of BTCUSDT it is USDT
-    data['status']         = info['status']                # Is the symbol trading?
-    data['basePrecision']  = info['basePrecision']         # Decimal precision of base asset
-    data['quotePrecision'] = info['quotePrecision']        # Decimal precision of quote asset
-    data['minOrderQty']    = info['minOrderQty']           # Minimum order quantity in base asset
-    data['maxOrderQty']    = info['maxOrderQty']           # Maximum order quantity in base asset
-    data['minOrderAmt']    = info['minOrderAmt']           # Minimum order quantity in quote asset
-    data['maxOrderAmt']    = info['maxOrderAmt']           # Maximum order quantity in quote asset
-    data['tickSize']       = info['tickSize']              # Smallest possible price increment (of base asset) 
-    data['minBuyBase']     = info['minBuyBase']            # Minimum buy value in Base Asset (possibly corrected for multiplier and compounding!)
-    data['minBuyQuote']    = info['minBuyQuote']           # Minimum buy value in Quote Asset (possibly corrected for multiplier and compounding!)
+    # Calculate additional values
+    data = calc_info(info, spot, multiplier, compounding)
+    
+    # Add info
+    info['minBuyBase']     = data['minBuyBase']                                                     # Minimum buy value in Base Asset (possibly corrected for multiplier and compounding!)
+    info['minBuyQuote']    = data['minBuyQuote']                                                    # Minimum buy value in Quote Asset (possibly corrected for multiplier and compounding!)
 
     # Debug
     if debug:
         defs.announce("Instrument info")
-        print(data)
+        pprint.pprint(info)
   
     # Return instrument info
-    return data
+    return info
     
 # Create empty files for check_files
 def create_file(create_file, content=""):

@@ -72,6 +72,24 @@ def update_kline(kline, klines):
     # Return klines
     return klines
 
+# Update matching kline based on time
+def add_kline(kline, klines):
+
+    # Find the index
+    if kline['time'] in klines['time']:
+        index = klines['time'].index(kline['time'])
+        
+        # Override the values
+        klines['open'][index]     = kline['open']
+        klines['high'][index]     = kline['high']
+        klines['low'][index]      = kline['low']
+        klines['close'][index]    = kline['close']
+        klines['turnover'][index] = kline['turnover']
+        klines['volume'][index]   = kline['volume']
+    
+    # Return klines
+    return klines
+
 # Check if there are no adjacent orders already 
 def check_spread(all_buys, spot, spread):
 
@@ -872,7 +890,7 @@ def calculate_total_values(trades):
     # Do logic
     for i in range(len(trades['price'])):
         price = float(trades['price'][i])
-        size = float(trades['size'][i])
+        size  = float(trades['size'][i])
         value = price * size
 
         if trades['side'][i] == 'Sell':
@@ -880,6 +898,7 @@ def calculate_total_values(trades):
         elif trades['side'][i] == 'Buy':
             total_buy += value
 
+    # Calculate total
     total_all = total_buy + total_sell
     
     # Return totals
