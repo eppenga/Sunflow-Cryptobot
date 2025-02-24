@@ -193,7 +193,7 @@ lock_ticker['enabled']               = False
 # Uptime ping
 uptime_ping                          = {}
 uptime_ping['time']                  = defs.now_utc()[4]
-uptime_ping['delay']                 = 10000
+uptime_ping['delay']                 = 60000
 uptime_ping['enabled']               = True
 
 # Periodic tasks
