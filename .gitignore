@@ -18,5 +18,9 @@ todo*
 /outputs
 /test
 
+# Ignore helper files
+*.sh
+checksum.txt
+
 # Ignore python
 /__pycache__

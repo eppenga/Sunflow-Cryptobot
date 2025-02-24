@@ -190,6 +190,12 @@ lock_ticker['time']                  = defs.now_utc()[4]
 lock_ticker['delay']                 = 10000
 lock_ticker['enabled']               = False
 
+# Uptime ping
+uptime_ping                          = {}
+uptime_ping['time']                  = defs.now_utc()[4]
+uptime_ping['delay']                 = 10000
+uptime_ping['enabled']               = True
+
 # Periodic tasks
 periodic                             = {}
 periodic['time']                     = defs.now_utc()[4]
@@ -211,7 +217,7 @@ def handle_ticker(message):
     try:
    
         # Declare some variables global
-        global spot, ticker, profit, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker, use_spread, optimizer, compounding, info
+        global spot, ticker, profit, active_order, all_buys, all_sells, prices, indicators_advice, lock_ticker, use_spread, optimizer, compounding, uptime_ping, info
 
         # Initialize variables
         ticker              = {}
@@ -278,6 +284,9 @@ def handle_ticker(message):
             can_sell                = result[2]
             rise_to                 = result[3]
 
+            # Reset uptime notice
+            uptime_ping['time'] = current_time
+            
             # Output to stdout "Price went up/down from ..."
             message = defs.report_ticker(spot, new_spot, rise_to, active_order, all_buys, info)
             defs.announce(message)
@@ -744,7 +753,7 @@ else:
 defs.announce(f"Sunflow started at {time_output}", True, 1)
 
 
-### Periodic tasks ###
+### Tasks and pings ###
 
 # Run tasks periodically
 def periodic_tasks():
@@ -758,6 +767,18 @@ def periodic_tasks():
     # Return
     return
 
+# Run tasks periodically
+def ping_message():
+    
+    # Debug
+    debug = False
+
+    # Output to stdout
+    if uptime_ping['enabled']:
+        defs.announce(f"Ping, Sunflow is up and running, received no ticker data since {uptime_ping['delay'] / 1000} seconds")
+    
+    # Return
+    return
 
 ### Websockets ###
 
@@ -808,12 +829,17 @@ def main():
     while not defs.halt_sunflow:
         try:
             # Simulate or fetch the latest ticker message
-            current_time      = defs.now_utc()[4]
-            simulated_message = simulated_ticker()
+            current_time = defs.now_utc()[4]
+            simulated    = simulated_ticker()
 
             # Send simulate ticker message
             if current_time - lock_ticker['time'] > lock_ticker['delay']:
-                handle_ticker(simulated_message)
+                handle_ticker(simulated)
+
+            # Utpime ping
+            if current_time - uptime_ping['time'] > uptime_ping['delay']:
+                uptime_ping['time'] = current_time
+                ping_message()           
                 
             # Periodic tasks
             if current_time - periodic['time'] > periodic['delay']:
