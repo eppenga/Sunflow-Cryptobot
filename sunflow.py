@@ -123,7 +123,7 @@ active_order['distance']             = config.distance                          
 active_order['distance_ini']         = config.distance                             # Keep initial distance always stored
 active_order['fluctuation']          = config.distance                             # Trigger price distance percentage when set to wiggle
 active_order['wave']                 = config.distance                             # Trigger price distance percentage when set to wave
-active_order['orderid']              = 0                                           # Orderid
+active_order['orderid']              = 0                                           # Order ID
 active_order['trigger']              = 0                                           # Trigger price for order
 active_order['trigger_new']          = 0                                           # New trigger price when trailing 
 active_order['trigger_ini']          = 0                                           # Initial trigger price when trailing
@@ -193,7 +193,7 @@ lock_ticker['enabled']               = False
 # Uptime ping
 uptime_ping                          = {}
 uptime_ping['time']                  = defs.now_utc()[4]
-uptime_ping['delay']                 = 60000
+uptime_ping['delay']                 = 10000
 uptime_ping['enabled']               = True
 
 # Periodic tasks
@@ -775,7 +775,7 @@ def ping_message():
 
     # Output to stdout
     if uptime_ping['enabled']:
-        defs.announce(f"Ping, Sunflow is up and running, received no ticker data since {uptime_ping['delay'] / 1000} seconds")
+        defs.announce(f"Ping, Sunflow is up and running, received no ticker data since {uptime_ping['delay']} ms")
     
     # Return
     return
@@ -836,7 +836,7 @@ def main():
             if current_time - lock_ticker['time'] > lock_ticker['delay']:
                 handle_ticker(simulated)
 
-            # Utpime ping
+            # Uptime ping
             if current_time - uptime_ping['time'] > uptime_ping['delay']:
                 uptime_ping['time'] = current_time
                 ping_message()           

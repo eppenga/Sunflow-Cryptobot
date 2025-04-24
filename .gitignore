@@ -9,6 +9,7 @@
 # Ignore application files
 *copy*
 *.backup
+*.bak
 config*.py
 test*.*
 todo*
