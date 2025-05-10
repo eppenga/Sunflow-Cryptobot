@@ -756,7 +756,7 @@ defs.announce(f"Sunflow started at {time_output}", True, 1)
 ### Tasks and pings ###
 
 # Run tasks periodically
-def periodic_tasks():
+def periodic_tasks(current_time):
     
     # Debug
     debug = False
@@ -768,14 +768,17 @@ def periodic_tasks():
     return
 
 # Run tasks periodically
-def ping_message():
+def ping_message(current_time):
     
     # Debug
     debug = False
+    
+    # Delay
+    delay = current_time - uptime_ping['time']
 
     # Output to stdout
     if uptime_ping['enabled']:
-        defs.announce(f"Ping, Sunflow is up and running, received no ticker data since {uptime_ping['delay']} ms")
+        defs.announce(f"Ping, Sunflow is up and running, last message was {delay} ms ago")
     
     # Return
     return
@@ -838,14 +841,14 @@ def main():
 
             # Uptime ping
             if current_time - uptime_ping['time'] > uptime_ping['delay']:
+                ping_message(current_time)
                 uptime_ping['time'] = current_time
-                ping_message()           
-                
+
             # Periodic tasks
             if current_time - periodic['time'] > periodic['delay']:
+                periodic_tasks(current_time)
                 periodic['time'] = current_time
-                periodic_tasks()
-            
+
             # Sleep to prevent CPU overloading
             sleep(1)
         except (RemoteDisconnected, ProtocolError, ChunkedEncodingError) as e:

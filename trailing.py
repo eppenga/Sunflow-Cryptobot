@@ -304,6 +304,7 @@ def trail(symbol, spot, compounding, active_order, info, all_buys, all_sells, pr
     # Initialize variables
     result   = ()
     do_amend = False
+    do_check = False
 
     # Output trailing to stdout
     if debug:
@@ -341,7 +342,17 @@ def trail(symbol, spot, compounding, active_order, info, all_buys, all_sells, pr
 
         # Amend trigger price
         if do_amend:
-            active_order = atp_helper(symbol, active_order, info)
+            result       = atp_helper(symbol, active_order, info)
+            active_order = result[0]
+            do_check     = result[1]
+            
+        # Double check the order
+        if do_check:
+            result       = check_order(symbol, spot, compounding, active_order, all_buys, all_sells, info)
+            active_order = result[0]
+            all_buys     = result[1]
+            compounding  = result[2]
+            info         = result[3]
         
     # Report execution time
     if speed: defs.announce(defs.report_exec(stime))
@@ -456,6 +467,7 @@ def atp_helper(symbol, active_order, info):
     result     = ()
     amend_code = 0
     amend_error = ""
+    do_check    = False
     
     # Amend trigger price
     result      = amend_trigger_price(symbol, active_order, info)
@@ -472,6 +484,7 @@ def atp_helper(symbol, active_order, info):
 
     if amend_code == 1:
         # Order does not exist, trailing order sold or bought in between
+        do_check = True
         defs.announce(f"Adjusting trigger price not possible, {active_order['side'].lower()} order already hit", True, 0)
 
     if amend_code == 10:
@@ -480,11 +493,12 @@ def atp_helper(symbol, active_order, info):
 
     if amend_code == 100:
         # Critical error, let's log it and revert
+        do_check = True
         defs.announce("*** Warning: Critical failure while trailing", True, 1)
         defs.log_error(amend_error)
     
     # Return active_order
-    return active_order
+    return active_order, do_check
 
 # Change the trigger price of the current trailing sell
 def amend_trigger_price(symbol, active_order, info):
