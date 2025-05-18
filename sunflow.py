@@ -778,7 +778,7 @@ def ping_message(current_time):
 
     # Output to stdout
     if uptime_ping['enabled']:
-        defs.announce(f"Ping, Sunflow is up and running, last message was {delay} ms ago")
+        defs.announce(f"Ping, Sunflow is up and running, last ticker update was {delay} ms ago")
     
     # Return
     return
