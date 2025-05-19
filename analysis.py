@@ -156,16 +156,12 @@ print("*** Sunflow Cryptobot Report ***\n")
 
 print("Exchange data")
 print("=============")
-print(f"Base assets   : {defs.format_number(equity_base, info['basePrecision'])} {info['baseCoin']}")
 print(f"Spot price    : {defs.format_number(spot, info['tickSize'])} {info['quoteCoin']}")
-print(f"Total {info['baseCoin']}     : {defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']} (spot price * assets)")
-print(f"Total {info['quoteCoin']}    : {defs.format_number(equity_quote, info['quotePrecision'])} {info['quoteCoin']} (free to spend by bot)")
-if compounding['enabled']:
+print(f"Base assets   : {defs.format_number(equity_base, info['basePrecision'])} {info['baseCoin']} ({defs.format_number(spot * equity_base, info['quotePrecision'])} {info['quoteCoin']})")
+print(f"Quote assets  : {defs.format_number(equity_quote, info['quotePrecision'])} {info['quoteCoin']} (free to spend by bot)")
+if compounding['enabled'] or compounding['start'] != 0:
     print(f"Start value   : {defs.format_number(compounding['start'], info['tickSize'])} {info['quoteCoin']} (when bot started)")
-print(f"Total value   : {defs.format_number(spot * equity_base + equity_quote, info['quotePrecision'])} {info['quoteCoin']} (total bot value)")
-if compounding['enabled']:
-    print(f"Profit now    : {defs.format_number((spot * equity_base + equity_quote) - compounding['start'], info['tickSize'])} {info['quoteCoin']} (net present value)")
-
+print(f"Current value : {defs.format_number(spot * equity_base + equity_quote, info['quotePrecision'])} {info['quoteCoin']} (total bot value)")
 print()
 
 print("Database data")
@@ -226,6 +222,8 @@ print(f"Todays profit : {defs.format_number(today_profit, info['quotePrecision']
 
 # Output total profit
 print(f"Trade profit  : {defs.format_number(df_revenue['revenue'].sum(), info['quotePrecision'])} {info['quoteCoin']} (alltime)")
+if compounding['enabled'] or compounding['start'] != 0:
+    print(f"Real profit   : {defs.format_number((spot * equity_base + equity_quote) - compounding['start'], info['tickSize'])} {info['quoteCoin']} (alltime)")
 
 print()
 
