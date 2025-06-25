@@ -514,7 +514,7 @@ def amend_trigger_price(symbol, active_order, info):
     exception  = ""
     
     # Output to stdout
-    message = f"Trying to adjusted trigger price from {defs.format_number(active_order['trigger'], info['tickSize'])} to "
+    message = f"Trying to adjust trigger price from {defs.format_number(active_order['trigger'], info['tickSize'])} to "
     message = message + f"{defs.format_number(active_order['trigger_new'], info['tickSize'])} {info['quoteCoin']}"
     defs.announce(message)
     

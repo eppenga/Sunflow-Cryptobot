@@ -193,7 +193,9 @@ lock_ticker['enabled']               = False
 # Uptime ping
 uptime_ping                          = {}
 uptime_ping['time']                  = defs.now_utc()[4]
+uptime_ping['record']                = defs.now_utc()[4]
 uptime_ping['delay']                 = 10000
+uptime_ping['expire']                = 1000000
 uptime_ping['enabled']               = True
 
 # Periodic tasks
@@ -285,7 +287,8 @@ def handle_ticker(message):
             rise_to                 = result[3]
 
             # Reset uptime notice
-            uptime_ping['time'] = current_time
+            uptime_ping['time']   = current_time
+            uptime_ping['record'] = current_time
             
             # Output to stdout "Price went up/down from ..."
             message = defs.report_ticker(spot, new_spot, rise_to, active_order, all_buys, info)
@@ -773,12 +776,22 @@ def ping_message(current_time):
     # Debug
     debug = False
     
-    # Delay
-    delay = current_time - uptime_ping['time']
+    # Initialize variables
+    expire        = uptime_ping['expire']
+    delay_ping    = current_time - uptime_ping['time']
+    delay_tickers = current_time - uptime_ping['record']
+    
+    # Check for to little action
+    if delay_tickers > expire:
+        message = f"*** Error: Ping, last ticker update of {delay_tickers} ms ago is larger than {expire} ms maximum! ***"
+        defs.log_error(message)
 
     # Output to stdout
     if uptime_ping['enabled']:
-        defs.announce(f"Ping, Sunflow is up and running, last ticker update was {delay} ms ago")
+        if delay_ping == delay_tickers:
+            defs.announce(f"Ping, {delay_ping} ms since last message and ticker update")
+        else:
+            defs.announce(f"Ping, {delay_ping} ms since last message and last ticker update was {delay_tickers} ms ago")
     
     # Return
     return
